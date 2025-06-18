@@ -35,6 +35,11 @@ app.use(session({
   }
 }));
 
+app.get('/', (_req, res) => {
+  res.send('Backend is working! 🚀');
+});
+
+
 // Routes
 app.use('/api/admin', adminRoutes);
 app.use('/api/team',teamRoutes)

@@ -78,7 +78,7 @@ const Home = () => {
       if (loginType === "admin") {
         navigate("/admindashboard");
       } else {
-        navigate("/teamlogin");
+        navigate("/spteamlogin");
       }
     } catch (err) {
       const errorMessage =

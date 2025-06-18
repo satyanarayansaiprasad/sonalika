@@ -9,7 +9,7 @@ const App = () => {
   return (
     <Routes>
       <Route path="/" element={<Home />} />
-      <Route  path='/teamlogin' element={<TeamLogin/>}/>
+      <Route  path='/spteamlogin' element={<TeamLogin/>}/>
       <Route path='/admindashboard' element={<AdmiDashboard/>}/>
       <Route  path='/salesteamdashboard' element={<SalesTeamDashboard/>}/>
       {/* Add more routes here when needed */}

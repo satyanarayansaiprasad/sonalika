@@ -18,7 +18,7 @@ const Home = () => {
   // Premium gold and jewel tones color palette
   const colors = {
     gold: "#D4AF37",
-    darkGold: "#996515",
+    darkGold: "#D4AF37",
     roseGold: "#B76E79",
     platinum: "#E5E4E2",
     deepNavy: "#00072D",
@@ -215,7 +215,7 @@ const Home = () => {
                 transition={{ delay: 1.2, duration: 1 }}
                 style={{ color: colors.platinum }}
               >
-                SONALIKA
+                
               </motion.h1>
               <motion.p
                 className="text-lg tracking-widest"

@@ -4,6 +4,7 @@ import Home from './Components/Home';
 import TeamLogin from './Components/TeamLogin';
 import SalesTeamDashboard from './Components/SalesTeamDashboard';
 import AdmiDashboard from './Components/AdmiDashboard';
+import ProductionTeam from './Components/ProductionTeam';
 
 const App = () => {
   return (
@@ -12,6 +13,7 @@ const App = () => {
       <Route  path='/spteamlogin' element={<TeamLogin/>}/>
       <Route path='/admindashboard' element={<AdmiDashboard/>}/>
       <Route  path='/salesteamdashboard' element={<SalesTeamDashboard/>}/>
+      <Route  path='/productiondashboard' element={<ProductionTeam/>}/>
       {/* Add more routes here when needed */}
     </Routes>
   );

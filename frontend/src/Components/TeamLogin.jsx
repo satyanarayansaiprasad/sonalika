@@ -18,9 +18,9 @@ const TeamLogin = () => {
 
   // Premium Jewellery Color Palette
   const colors = {
-    gold: '#D4AF37',
-    darkGold: '#996515',
-    roseGold: '#B76E79',
+    gold: '#f9e79f',
+    darkGold: '#f9e79f',
+    roseGold: '#f9e79f',
     platinum: '#E5E4E2',
     deepNavy: '#00072D',
     velvet: '#3D0C02',
@@ -469,7 +469,7 @@ const TeamLogin = () => {
                 ease: "linear"
               }}
             >
-              <svg width="140" height="140" viewBox="0 0 140 140">
+              {/* <svg width="140" height="140" viewBox="0 0 140 140">
                 <circle cx="70" cy="70" r="60" fill="none" stroke={colors.gold} strokeWidth="1.5" strokeDasharray="5,5" strokeOpacity="0.5" />
                 <motion.path 
                   d="M70,20 L80,40 L100,45 L85,60 L90,80 L70,70 L50,80 L55,60 L40,45 L60,40 Z"
@@ -484,7 +484,7 @@ const TeamLogin = () => {
                     repeatType: "reverse"
                   }}
                 />
-              </svg>
+              </svg> */}
             </motion.div>
 
             <motion.h2 
@@ -685,7 +685,7 @@ const TeamLogin = () => {
         animate={{ opacity: 1 }}
         transition={{ delay: 1, duration: 1.5 }}
       >
-        SONALIKA JEWELLERY ® | PRIVATE ACCESS ONLY
+        
       </motion.div>
     </div>
   );

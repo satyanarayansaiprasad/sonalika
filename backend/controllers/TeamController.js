@@ -87,8 +87,8 @@ exports.addOrderToClient = async (req, res) => {
   try {
     const { uniqueId, orderItems, orderStatus, memoId } = req.body;
 
-    if (!uniqueId || !orderItems || !Array.isArray(orderItems)) {
-      return res.status(400).json({ error: "Unique ID and valid order items are required" });
+    if (!uniqueId || !Array.isArray(orderItems)) {
+      return res.status(400).json({ error: "Unique ID and order items are required" });
     }
 
     const client = await Clients.findOne({ uniqueId });
@@ -97,22 +97,25 @@ exports.addOrderToClient = async (req, res) => {
       return res.status(404).json({ error: "Client not found" });
     }
 
-    // Push order items into existing client record
-    client.orderItems.push(...orderItems);
+    // ✅ Ensure orderItems is initialized
+    const existingItems = Array.isArray(client.orderItems) ? client.orderItems : [];
 
-    // Optional: update order status and memoId
+    // ✅ Set updated orderItems without using push
+    client.orderItems = [...existingItems, ...orderItems];
+
+    // ✅ Optional fields
     if (orderStatus) client.order = orderStatus;
     if (memoId) client.memoId = memoId;
 
     await client.save();
 
     res.status(200).json({ message: "Order added to client successfully", client });
-
   } catch (error) {
     console.error("Error adding order:", error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
+
 
 
 

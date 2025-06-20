@@ -43,7 +43,7 @@ app.get('/', (_req, res) => {
 // Routes
 app.use('/api/admin', adminRoutes);
 app.use('/api/team',teamRoutes)
-// app.use('/api/team', userRoutes);
+
 
 // Start Server
 const PORT = process.env.PORT || 5000;

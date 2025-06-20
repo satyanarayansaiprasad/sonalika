@@ -32,66 +32,51 @@ exports.loginSalesteam = async (req, res) => {
 
 
 // Step 1: Create client KYC with auto-generated uniqueId
+
+
+// Auto-generate a unique ID (e.g., C001, C002...)
+const generateUniqueId = async () => {
+  const count = await Clients.countDocuments();
+  const nextNumber = count + 1;
+  return `Sonalika${String(nextNumber).padStart(3, '0')}`;
+};
+
 exports.createClientKYC = async (req, res) => {
   try {
     const { name, phone, address, gstNo, memoId } = req.body;
 
-    // Validate required fields
     if (!name || !phone || !address || !gstNo) {
-      return res.status(400).json({ error: "All fields are required: name, phone, address, gstNo" });
+      return res.status(400).json({ error: 'All fields are required: name, phone, address, gstNo' });
     }
 
-    // Get total clients to determine next serial number
-    const clientCount = await Clients.countDocuments();
+    const uniqueId = await generateUniqueId();
 
-    // Generate next uniqueId like "Sonalika0001", "Sonalika0002"
-    const nextSerial = clientCount + 1;
-    const paddedSerial = String(nextSerial).padStart(4, "0");
-    const uniqueId = `Sonalika${paddedSerial}`;
-
-    // Double check if uniqueId exists (edge case)
-    const existingClient = await Clients.findOne({ uniqueId });
-    if (existingClient) {
-      return res.status(409).json({ error: "Client with this Unique ID already exists" });
-    }
-
-    // Save new client
-    const newClient = new Clients({
+    const client = new Clients({
       name,
       phone,
       address,
       gstNo,
       memoId,
-      uniqueId,
+      uniqueId
     });
 
-    await newClient.save();
+    await client.save();
 
-    res.status(201).json({
-      message: "KYC submitted successfully",
-      clientId: newClient._id,
-      uniqueId: newClient.uniqueId,
-    });
-
+    res.status(201).json({ message: 'Client KYC created', client });
   } catch (error) {
-    console.error("Error submitting KYC:", error);
-    res.status(500).json({ error: "Internal Server Error" });
+    console.error('Error in createClientKYC:', error);
+    res.status(500).json({ error: 'Server error' });
   }
 };
 
 
 exports.getClients = async (req, res) => {
   try {
-    const clients = await Clients.find().sort({ createdAt: -1 }); // newest first
-
-    res.status(200).json({
-      message: "Clients fetched successfully",
-      total: clients.length,
-      clients,
-    });
+    const clients = await Clients.find().sort({ createdAt: -1 });
+    res.status(200).json({ clients });
   } catch (error) {
-    console.error("Error fetching clients:", error);
-    res.status(500).json({ error: "Internal Server Error" });
+    console.error('Error fetching clients:', error);
+    res.status(500).json({ error: 'Failed to fetch clients' });
   }
 };
 

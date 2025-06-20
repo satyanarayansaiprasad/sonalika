@@ -44,4 +44,4 @@ const  clientsSchema = new mongoose.Schema(
   }
 );
 
-module.exports = mongoose.model("clients", clientsSchema);
+module.exports = mongoose.model("Clients", clientsSchema);

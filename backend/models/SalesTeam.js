@@ -14,5 +14,5 @@ const salesTeamSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 
-const SalesTeam = mongoose.model('salesTeam', salesTeamSchema);
+const SalesTeam = mongoose.model('SalesTeam', salesTeamSchema);
 module.exports=SalesTeam;

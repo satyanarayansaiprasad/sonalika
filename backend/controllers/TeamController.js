@@ -84,8 +84,6 @@ exports.getClients = async (req, res) => {
 
 
 // Add order items to existing client by uniqueId or _id
-
-
 exports.createOrder = async (req, res) => {
   try {
     const { clientId, orderItems } = req.body;
@@ -144,8 +142,14 @@ exports.createOrder = async (req, res) => {
     });
 
     // Add new order items
-    client.orderItems.push(...processedItems);
-    client.orderStatus = 'ongoing';
+// Add new order items
+if (!Array.isArray(client.orderItems)) {
+  client.orderItems = [];
+}
+
+client.orderItems.push(...processedItems);
+client.orderStatus = 'ongoing';
+
 
     await client.save();
 

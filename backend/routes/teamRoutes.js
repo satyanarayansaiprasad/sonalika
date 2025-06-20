@@ -4,4 +4,8 @@ const teamController = require('../controllers/TeamController');
 
 router.post('/productionteam-login',teamController.loginProduction)
 router.post('/salesteam-login',teamController.loginSalesteam)
+router.post('/client-kyc',teamController.createClientKYC)
+router.get('/get-clients',teamController.getClients)
+router.post('/clients-order',teamController.addOrderToClient)
+router.get('/order-History',teamController.getOrderHistory)
 module.exports = router;

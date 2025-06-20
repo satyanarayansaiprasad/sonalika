@@ -1,811 +1,841 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import axios from 'axios';
+import { 
+  FiHome, FiUser, FiShoppingCart, FiClock, FiMenu, FiX, 
+  FiPlus, FiSearch, FiDollarSign, FiCheck, FiTruck 
+} from 'react-icons/fi';
+import { FaRegCheckCircle, FaRegClock, FaUserPlus } from 'react-icons/fa';
 
-// Premium Jewelry Color Palette
-const colors = {
-  gold: '#FFD700', // 24K Gold
-  roseGold: '#E0BFB8',
-  antiqueGold: '#D4AF37', // Metallic Gold
-  diamond: '#E5F2FF',
-  blackOnyx: '#00072D',
-  deepVelvet: '#00072D', // Jewelry box interior
-  pearl: '#00072D',
-  platinum: '#E5E4E2'
-};
-
-// Diamond particle generator
-const generateDiamonds = (count = 15) => {
-  const diamonds = [];
-  
-  for (let i = 0; i < count; i++) {
-    const size = Math.random() * 8 + 4;
-    const left = Math.random() * 100;
-    const top = Math.random() * 100;
-    const delay = Math.random() * 5;
-    const duration = 4 + Math.random() * 6;
-    const rotation = Math.random() * 360;
-    
-    diamonds.push(
-      <motion.div
-        key={i}
-        className="absolute pointer-events-none"
-        style={{
-          width: `${size}px`,
-          height: `${size}px`,
-          left: `${left}%`,
-          top: `${top}%`,
-          background: `linear-gradient(135deg, 
-            rgba(255,255,255,0.9) 0%, 
-            ${colors.diamond} 50%, 
-            rgba(255,255,255,0.7) 100%)`,
-          clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)',
-          transform: `rotate(${rotation}deg)`,
-          filter: 'blur(0.5px)'
-        }}
-        initial={{ opacity: 0 }}
-        animate={{ 
-          opacity: [0, 0.7, 0],
-          scale: [1, 1.4, 1]
-        }}
-        transition={{
-          duration: duration,
-          repeat: Infinity,
-          repeatType: "reverse",
-          delay: delay
-        }}
-      />
-    );
-  }
-  
-  return diamonds;
-};
-
-// Gold filigree pattern component
-const GoldFiligree = () => (
-  <div className="absolute inset-0 overflow-hidden opacity-10 pointer-events-none">
-    <svg width="100%" height="100%" viewBox="0 0 1440 900" preserveAspectRatio="none">
-      <path 
-        d="M0,450 C150,300 300,600 450,450 C600,300 750,600 900,450 C1050,300 1200,600 1350,450 L1440,540 L1440,900 L1350,900 C1200,900 1050,900 900,900 C750,900 600,900 450,900 C300,900 150,900 0,900 Z"
-        fill="none" 
-        stroke={colors.gold} 
-        strokeWidth="1.2"
-        strokeLinecap="round"
-        strokeOpacity="0.2"
-      />
-      <path 
-        d="M0,450 C150,600 300,300 450,450 C600,600 750,300 900,450 C1050,600 1200,300 1350,450 L1440,360 L1440,0 L1350,0 C1200,0 1050,0 900,0 C750,0 600,0 450,0 C300,0 150,0 0,0 Z"
-        fill="none" 
-        stroke={colors.gold} 
-        strokeWidth="1.2"
-        strokeLinecap="round"
-        strokeOpacity="0.2"
-      />
-    </svg>
-  </div>
-);
-
-const WelcomeMessage = () => {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      className="p-8 rounded-xl text-center flex flex-col items-center justify-center relative overflow-hidden"
-      style={{ 
-        backgroundColor: `rgba(20, 20, 20, 0.2)`,
-        border: `1px solid ${colors.gold}20`,
-        boxShadow: `0 10px 50px ${colors.gold}05`,
-        minHeight: '50vh',
-        backdropFilter: 'blur(4px)'
-      }}
-    >
-      {/* Diamond ornament */}
-      <motion.div 
-        className="absolute top-8 left-1/2 transform -translate-x-1/2"
-        animate={{
-          rotate: 360,
-          scale: [1, 1.1, 1]
-        }}
-        transition={{
-          duration: 20,
-          repeat: Infinity,
-          ease: "linear"
-        }}
-      >
-        <svg width="60" height="60" viewBox="0 0 24 24">
-          <path 
-            d="M12 1L3 5v6l9 5 9-5V5l-9-4z" 
-            fill={colors.diamond}
-            stroke={colors.gold}
-            strokeWidth="0.5"
-          />
-        </svg>
-      </motion.div>
-
-      <motion.h2 
-        className="text-3xl font-serif mb-6"
-        style={{ 
-          color: colors.gold,
-          textShadow: `0 0 10px ${colors.gold}20`
-        }}
-        animate={{
-          letterSpacing: ['2px', '4px', '2px'],
-        }}
-        transition={{
-          duration: 5,
-          repeat: Infinity,
-          repeatType: "reverse"
-        }}
-      >
-        WELCOME TO SONALIKA
-      </motion.h2>
-      
-      <motion.p 
-        className="text-xl mb-4 font-serif tracking-wider"
-        style={{ color: colors.pearl }}
-        animate={{
-          opacity: [0.8, 1, 0.8]
-        }}
-        transition={{
-          duration: 3,
-          repeat: Infinity,
-          repeatType: "reverse"
-        }}
-      >
-        Exclusive Sales Dashboard
-      </motion.p>
-      
-      <motion.p 
-        className="text-sm tracking-wider mt-4"
-        style={{ color: colors.gold }}
-        animate={{
-          opacity: [0.6, 0.9, 0.6]
-        }}
-        transition={{
-          duration: 4,
-          repeat: Infinity,
-          repeatType: "reverse",
-          delay: 0.5
-        }}
-      >
-        Select an option from the sidebar to begin
-      </motion.p>
-    </motion.div>
-  );
-};
-
-const CustomerKYCForm = () => {
-  const [formData, setFormData] = useState({
-    name: '',
-    address: '',
-    contact: '',
-    gstNumber: ''
-  });
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    // Handle form submission
-  };
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      className="p-8 rounded-xl relative overflow-hidden"
-      style={{ 
-        backgroundColor: `rgba(20, 20, 20, 0.2)`,
-        border: `1px solid ${colors.gold}20`,
-        boxShadow: `0 10px 50px ${colors.gold}05`,
-        backdropFilter: 'blur(4px)'
-      }}
-    >
-      <motion.h2 
-        className="text-2xl font-serif mb-8"
-        style={{ 
-          color: colors.gold,
-          textShadow: `0 0 8px ${colors.gold}20`
-        }}
-        animate={{
-          letterSpacing: ['1px', '2px', '1px'],
-        }}
-        transition={{
-          duration: 4,
-          repeat: Infinity,
-          repeatType: "reverse"
-        }}
-      >
-        CLIENT REGISTRATION
-      </motion.h2>
-      
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div>
-          <motion.label 
-            className="block mb-3 text-sm uppercase tracking-widest font-light"
-            style={{ color: colors.gold }}
-            animate={{
-              opacity: [0.7, 0.9, 0.7],
-              x: [0, 2, 0]
-            }}
-            transition={{
-              duration: 5,
-              repeat: Infinity,
-              repeatType: "reverse"
-            }}
-          >
-            CLIENT NAME
-          </motion.label>
-          <motion.div
-            className="relative"
-            whileHover={{ scale: 1.01 }}
-          >
-            <input
-              type="text"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              className="w-full px-5 py-3 rounded-lg focus:outline-none font-serif tracking-wider"
-              style={{ 
-                backgroundColor: `rgba(20, 20, 20, 0.3)`,
-                border: `1px solid ${colors.gold}20`,
-                color: colors.pearl,
-                letterSpacing: '1px'
-              }}
-            />
-          </motion.div>
-        </div>
-        
-        <div>
-          <motion.label 
-            className="block mb-3 text-sm uppercase tracking-widest font-light"
-            style={{ color: colors.gold }}
-            animate={{
-              opacity: [0.7, 0.9, 0.7],
-              x: [0, -2, 0]
-            }}
-            transition={{
-              duration: 5,
-              repeat: Infinity,
-              repeatType: "reverse",
-              delay: 0.3
-            }}
-          >
-            ADDRESS
-          </motion.label>
-          <motion.div
-            className="relative"
-            whileHover={{ scale: 1.01 }}
-          >
-            <textarea
-              name="address"
-              value={formData.address}
-              onChange={handleChange}
-              rows={3}
-              className="w-full px-5 py-3 rounded-lg focus:outline-none font-serif tracking-wider"
-              style={{ 
-                backgroundColor: `rgba(20, 20, 20, 0.3)`,
-                border: `1px solid ${colors.gold}20`,
-                color: colors.pearl,
-                letterSpacing: '1px'
-              }}
-            />
-          </motion.div>
-        </div>
-        
-        <div>
-          <motion.label 
-            className="block mb-3 text-sm uppercase tracking-widest font-light"
-            style={{ color: colors.gold }}
-            animate={{
-              opacity: [0.7, 0.9, 0.7],
-              x: [0, 2, 0]
-            }}
-            transition={{
-              duration: 5,
-              repeat: Infinity,
-              repeatType: "reverse",
-              delay: 0.6
-            }}
-          >
-            CONTACT NUMBER
-          </motion.label>
-          <motion.div
-            className="relative"
-            whileHover={{ scale: 1.01 }}
-          >
-            <input
-              type="text"
-              name="contact"
-              value={formData.contact}
-              onChange={handleChange}
-              className="w-full px-5 py-3 rounded-lg focus:outline-none font-serif tracking-wider"
-              style={{ 
-                backgroundColor: `rgba(20, 20, 20, 0.3)`,
-                border: `1px solid ${colors.gold}20`,
-                color: colors.pearl,
-                letterSpacing: '1px'
-              }}
-            />
-          </motion.div>
-        </div>
-        
-        <div>
-          <motion.label 
-            className="block mb-3 text-sm uppercase tracking-widest font-light"
-            style={{ color: colors.gold }}
-            animate={{
-              opacity: [0.7, 0.9, 0.7],
-              x: [0, -2, 0]
-            }}
-            transition={{
-              duration: 5,
-              repeat: Infinity,
-              repeatType: "reverse",
-              delay: 0.9
-            }}
-          >
-            GST NUMBER
-          </motion.label>
-          <motion.div
-            className="relative"
-            whileHover={{ scale: 1.01 }}
-          >
-            <input
-              type="text"
-              name="gstNumber"
-              value={formData.gstNumber}
-              onChange={handleChange}
-              className="w-full px-5 py-3 rounded-lg focus:outline-none font-serif tracking-wider"
-              style={{ 
-                backgroundColor: `rgba(20, 20, 20, 0.3)`,
-                border: `1px solid ${colors.gold}20`,
-                color: colors.pearl,
-                letterSpacing: '1px'
-              }}
-            />
-          </motion.div>
-        </div>
-        
-        <motion.button
-          type="submit"
-          className="w-full py-4 rounded-xl font-medium mt-8 relative overflow-hidden group"
-          style={{ 
-            background: `linear-gradient(135deg, ${colors.gold} 0%, ${colors.antiqueGold} 100%)`,
-            color: colors.blackOnyx,
-            boxShadow: `0 5px 25px ${colors.gold}20`,
-            textShadow: `0 1px 2px rgba(0,0,0,0.3)`
-          }}
-          whileHover={{ 
-            scale: 1.02,
-            boxShadow: `0 10px 40px ${colors.gold}30`
-          }}
-          whileTap={{ scale: 0.98 }}
-        >
-          <motion.span 
-            className="relative z-10"
-            animate={{
-              opacity: [1, 0.9, 1],
-              letterSpacing: ['1px', '2px', '1px']
-            }}
-            transition={{
-              duration: 3,
-              repeat: Infinity,
-              repeatType: "reverse"
-            }}
-          >
-            REGISTER CLIENT
-          </motion.span>
-          <motion.div 
-            className="absolute inset-0 opacity-0 group-hover:opacity-50"
-            initial={{ x: '-100%' }}
-            whileHover={{ x: '100%' }}
-            transition={{ duration: 0.8 }}
-            style={{ 
-              background: `linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)`
-            }}
-          />
-        </motion.button>
-      </form>
-    </motion.div>
-  );
-};
-
-const OrderForm = () => {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      className="p-8 rounded-xl text-center flex flex-col items-center justify-center relative overflow-hidden"
-      style={{ 
-        backgroundColor: `rgba(15, 15, 15, 0.2)`,
-        border: `1px solid ${colors.gold}20`,
-        boxShadow: `0 10px 50px ${colors.gold}05`,
-        minHeight: '50vh',
-        backdropFilter: 'blur(8px)'
-      }}
-    >
-      {/* Rotating diamond ring animation */}
-      <motion.div 
-        className="relative mb-8"
-        animate={{
-          rotate: 360,
-        }}
-        transition={{
-          duration: 20,
-          repeat: Infinity,
-          ease: "linear"
-        }}
-      >
-        <svg width="120" height="120" viewBox="0 0 120 120">
-          <circle cx="60" cy="60" r="50" fill="none" stroke={colors.gold} strokeWidth="1.5" strokeDasharray="5,5" strokeOpacity="0.3" />
-          <motion.path 
-            d="M60,20 L70,40 L90,45 L85,60 L90,80 L60,70 L30,80 L35,60 L20,45 L40,40 Z"
-            fill={colors.diamond}
-            stroke={colors.gold}
-            strokeWidth="0.5"
-            initial={{ scale: 1 }}
-            animate={{ scale: [1, 1.1, 1] }}
-            transition={{
-              duration: 3,
-              repeat: Infinity,
-              repeatType: "reverse"
-            }}
-          />
-        </svg>
-      </motion.div>
-
-      <motion.h2 
-        className="text-2xl font-serif mb-4"
-        style={{ 
-          color: colors.gold,
-          textShadow: `0 0 8px ${colors.gold}20`
-        }}
-        animate={{
-          letterSpacing: ['1px', '3px', '1px'],
-        }}
-        transition={{
-          duration: 4,
-          repeat: Infinity,
-          repeatType: "reverse"
-        }}
-      >
-        ORDER MANAGEMENT
-      </motion.h2>
-      
-      <motion.p 
-        className="text-lg font-serif tracking-wider mb-6"
-        style={{ color: colors.pearl }}
-        animate={{
-          opacity: [0.7, 0.9, 0.7]
-        }}
-        transition={{
-          duration: 3,
-          repeat: Infinity,
-          repeatType: "reverse"
-        }}
-      >
-        Coming Soon
-      </motion.p>
-      
-      <motion.div
-        className="relative h-1.5 w-48 mx-auto mb-6 overflow-hidden"
-        style={{ backgroundColor: `${colors.gold}10` }}
-      >
-        <motion.div
-          className="absolute top-0 left-0 h-full"
-          style={{ backgroundColor: colors.gold }}
-          initial={{ width: '0%' }}
-          animate={{ width: '100%' }}
-          transition={{
-            duration: 2,
-            repeat: Infinity,
-            repeatType: "reverse",
-            ease: "easeInOut"
-          }}
-        />
-      </motion.div>
-      
-      <motion.p 
-        className="text-sm tracking-wider"
-        style={{ color: colors.gold }}
-        animate={{
-          opacity: [0.6, 0.9, 0.6]
-        }}
-        transition={{
-          duration: 4,
-          repeat: Infinity,
-          repeatType: "reverse",
-          delay: 0.5
-        }}
-      >
-        Premium order management tools in development
-      </motion.p>
-    </motion.div>
-  );
-};
+// Base API URL - replace with your actual backend URL
+const API_BASE_URL = 'https://sonalikaj.onrender.com';
 
 const SalesTeamDashboard = () => {
-  const [activeTab, setActiveTab] = useState('welcome');
+  const [activeTab, setActiveTab] = useState('dashboard');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
+  const [clients, setClients] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [orderHistory, setOrderHistory] = useState(null);
+  
+  // Form states
+  const [kycForm, setKycForm] = useState({
+    name: '',
+    phone: '',
+    address: '',
+    gstNo: '',
+    memoId: ''
+  });
+  
+  const [orderForm, setOrderForm] = useState({
+    uniqueId: '',
+    orderItems: [{ product: '', quantity: 1, price: 0 }],
+    orderStatus: 'ongoing',
+    memoId: ''
+  });
 
+  const [historySearch, setHistorySearch] = useState({
+    uniqueId: '',
+    clientId: ''
+  });
+
+  // Fetch clients data with Axios
   useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
-      if (window.innerWidth >= 768) {
-        setMobileMenuOpen(false);
+    const fetchClients = async () => {
+      try {
+        setLoading(true);
+        const response = await axios.get(`${API_BASE_URL}/api/team/get-clients`);
+        setClients(Array.isArray(response?.data) ? response.data : []);
+      } catch (err) {
+        setError(err.response?.data?.error || err.message);
+        setClients([]);
+      } finally {
+        setLoading(false);
       }
     };
     
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    fetchClients();
   }, []);
 
-  return (
-    <div 
-      className="relative w-full min-h-screen overflow-hidden flex flex-col md:flex-row"
-      style={{ 
-        backgroundColor: colors.blackOnyx,
-        backgroundImage: `
-          radial-gradient(circle at 20% 30%, ${colors.deepVelvet}66 0%, transparent 40%),
-          radial-gradient(circle at 80% 70%, ${colors.deepVelvet}66 0%, transparent 40%),
-          linear-gradient(${colors.blackOnyx}, ${colors.blackOnyx})
-        `
-      }}
-    >
-      {/* Diamond particles background */}
-      <div className="absolute inset-0 overflow-hidden">
-        {generateDiamonds(25)}
-      </div>
+  // Submit KYC with Axios
+  const handleKYCSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      setLoading(true);
+      const response = await axios.post(`${API_BASE_URL}/api/team/client-kyc`, kycForm);
+      
+      setClients(prev => [...(Array.isArray(prev) ? prev : []), response.data.client]);
+      
+      alert(`KYC Submitted Successfully! Client ID: ${response.data.uniqueId}`);
+      setKycForm({
+        name: '',
+        phone: '',
+        address: '',
+        gstNo: '',
+        memoId: ''
+      });
+    } catch (err) {
+      console.error('KYC Submission Error:', err);
+      setError(err.response?.data?.error || err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-      {/* Ornate gold filigree borders */}
-      <GoldFiligree />
+  // Add order with Axios
+  const handleAddOrderSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      setLoading(true);
+      const response = await axios.post(`${API_BASE_URL}/clients/orders`, orderForm);
+      
+      setClients(prev => {
+        const prevClients = Array.isArray(prev) ? prev : [];
+        return prevClients.map(client => 
+          client.uniqueId === orderForm.uniqueId ? response.data.client : client
+        );
+      });
+      
+      alert(response.data.message);
+      setOrderForm({
+        uniqueId: '',
+        orderItems: [{ product: '', quantity: 1, price: 0 }],
+        orderStatus: 'ongoing',
+        memoId: ''
+      });
+    } catch (err) {
+      console.error('Order Submission Error:', err);
+      setError(err.response?.data?.error || err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-      {/* Mobile Header */}
-      <div className="md:hidden flex items-center justify-between p-4 z-20" 
-        style={{ 
-          backgroundColor: `rgba(10, 10, 10, 0.7)`,
-          borderBottom: `1px solid ${colors.gold}20`
-        }}
-      >
-        <h2 className="text-lg font-serif tracking-wider" style={{ color: colors.gold }}>
-          SONALIKA
-        </h2>
-        <motion.button
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="p-2 rounded-lg"
-          style={{ 
-            color: colors.gold,
-            border: `1px solid ${colors.gold}20`
-          }}
-          whileTap={{ scale: 0.95 }}
+  // Handle order history search
+  const handleHistorySearch = async (e) => {
+    e.preventDefault();
+    try {
+      setLoading(true);
+      const response = await axios.get(
+        `${API_BASE_URL}/clients/orders?uniqueId=${historySearch.uniqueId}&clientId=${historySearch.clientId}`
+      );
+      setOrderHistory(response.data);
+    } catch (err) {
+      console.error('History Search Error:', err);
+      setError(err.response?.data?.error || err.message);
+      setOrderHistory(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Order item management
+  const addOrderItem = () => {
+    setOrderForm(prev => ({
+      ...prev,
+      orderItems: [...prev.orderItems, { product: '', quantity: 1, price: 0 }]
+    }));
+  };
+
+  const removeOrderItem = (index) => {
+    setOrderForm(prev => ({
+      ...prev,
+      orderItems: prev.orderItems.filter((_, i) => i !== index)
+    }));
+  };
+
+  const updateOrderItem = (index, field, value) => {
+    const updatedItems = [...orderForm.orderItems];
+    updatedItems[index][field] = value;
+    setOrderForm(prev => ({ ...prev, orderItems: updatedItems }));
+  };
+
+  // Utility functions
+  const getFilteredClients = (status) => {
+    return Array.isArray(clients) ? 
+      clients.filter(client => client.order === status) : 
+      [];
+  };
+
+  const calculateOrderTotal = (orderItems) => {
+    return (orderItems || []).reduce((sum, item) => 
+      sum + (item.price * (item.quantity || 0)), 0
+    );
+  };
+
+  // Dashboard Tables Component
+  const DashboardTables = () => {
+    const registeredClients = Array.isArray(clients) ? clients : [];
+    const ongoingOrders = getFilteredClients('ongoing');
+    const completedOrders = getFilteredClients('completed');
+
+    return (
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        {/* Registered Clients Table */}
+        <motion.div 
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.1 }}
+          className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl shadow-lg overflow-hidden"
         >
-          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
-        </motion.button>
-      </div>
+          <div className="p-4 bg-indigo-600 text-white flex items-center">
+            <FaUserPlus className="mr-2" />
+            <h3 className="font-semibold">Registered Clients</h3>
+            <span className="ml-auto bg-white text-indigo-600 px-2 py-1 rounded-full text-xs font-bold">
+              {registeredClients.length}
+            </span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-indigo-100">
+                <tr>
+                  <th className="p-3 text-left text-xs font-medium text-indigo-800 uppercase">ID</th>
+                  <th className="p-3 text-left text-xs font-medium text-indigo-800 uppercase">Name</th>
+                  <th className="p-3 text-left text-xs font-medium text-indigo-800 uppercase">Phone</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-indigo-200">
+                {registeredClients.slice(0, 5).map(client => (
+                  <tr key={client._id} className="hover:bg-indigo-50">
+                    <td className="p-3 text-sm font-medium text-indigo-900">{client.uniqueId}</td>
+                    <td className="p-3 text-sm text-gray-700">{client.name}</td>
+                    <td className="p-3 text-sm text-gray-700">{client.phone}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="p-3 bg-indigo-50 text-center">
+            <button 
+              onClick={() => setActiveTab('kyc')}
+              className="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
+            >
+              View All Clients →
+            </button>
+          </div>
+        </motion.div>
 
-      {/* Sidebar - Mobile Overlay */}
+        {/* Ongoing Orders Table */}
+        <motion.div 
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.2 }}
+          className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl shadow-lg overflow-hidden"
+        >
+          <div className="p-4 bg-amber-600 text-white flex items-center">
+            <FaRegClock className="mr-2" />
+            <h3 className="font-semibold">Ongoing Orders</h3>
+            <span className="ml-auto bg-white text-amber-600 px-2 py-1 rounded-full text-xs font-bold">
+              {ongoingOrders.length}
+            </span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-amber-100">
+                <tr>
+                  <th className="p-3 text-left text-xs font-medium text-amber-800 uppercase">Client</th>
+                  <th className="p-3 text-left text-xs font-medium text-amber-800 uppercase">Items</th>
+                  <th className="p-3 text-left text-xs font-medium text-amber-800 uppercase">Amount</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-amber-200">
+                {ongoingOrders.slice(0, 5).map(client => (
+                  <tr key={client._id} className="hover:bg-amber-50">
+                    <td className="p-3">
+                      <p className="text-sm font-medium text-amber-900">{client.name}</p>
+                      <p className="text-xs text-amber-700">{client.uniqueId}</p>
+                    </td>
+                    <td className="p-3 text-sm text-gray-700">
+                      {client.orderItems?.length || 0} items
+                    </td>
+                    <td className="p-3 text-sm font-medium text-amber-900">
+                      ₹{calculateOrderTotal(client.orderItems).toLocaleString()}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="p-3 bg-amber-50 text-center">
+            <button 
+              onClick={() => setActiveTab('order')}
+              className="text-amber-600 hover:text-amber-800 text-sm font-medium"
+            >
+              Manage Orders →
+            </button>
+          </div>
+        </motion.div>
+
+        {/* Completed Orders Table */}
+        <motion.div 
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.3 }}
+          className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl shadow-lg overflow-hidden"
+        >
+          <div className="p-4 bg-emerald-600 text-white flex items-center">
+            <FaRegCheckCircle className="mr-2" />
+            <h3 className="font-semibold">Completed Orders</h3>
+            <span className="ml-auto bg-white text-emerald-600 px-2 py-1 rounded-full text-xs font-bold">
+              {completedOrders.length}
+            </span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-emerald-100">
+                <tr>
+                  <th className="p-3 text-left text-xs font-medium text-emerald-800 uppercase">Client</th>
+                  <th className="p-3 text-left text-xs font-medium text-emerald-800 uppercase">Date</th>
+                  <th className="p-3 text-left text-xs font-medium text-emerald-800 uppercase">Amount</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-emerald-200">
+                {completedOrders.slice(0, 5).map(client => (
+                  <tr key={client._id} className="hover:bg-emerald-50">
+                    <td className="p-3">
+                      <p className="text-sm font-medium text-emerald-900">{client.name}</p>
+                      <p className="text-xs text-emerald-700">{client.uniqueId}</p>
+                    </td>
+                    <td className="p-3 text-sm text-gray-700">
+                      {client.orderDate ? new Date(client.orderDate).toLocaleDateString() : 'N/A'}
+                    </td>
+                    <td className="p-3 text-sm font-medium text-emerald-900">
+                      ₹{calculateOrderTotal(client.orderItems).toLocaleString()}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="p-3 bg-emerald-50 text-center">
+            <button 
+              onClick={() => setActiveTab('history')}
+              className="text-emerald-600 hover:text-emerald-800 text-sm font-medium"
+            >
+              View History →
+            </button>
+          </div>
+        </motion.div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50 flex">
+      {/* Mobile menu button */}
+      <button
+        className="md:hidden fixed top-4 left-4 z-50 bg-white p-3 rounded-xl shadow-lg"
+        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+      >
+        {mobileMenuOpen ? <FiX size={24} /> : <FiMenu size={24} />}
+      </button>
+
+      {/* Luxury Sidebar */}
       <AnimatePresence>
-        {mobileMenuOpen && (
-          <motion.div 
-            className="fixed inset-0 z-30 w-72 min-h-screen p-6 flex flex-col"
-            style={{ 
-              backgroundColor: `rgba(15, 15, 15, 0.85)`,
-              borderRight: `1px solid ${colors.gold}30`,
-              backdropFilter: 'blur(10px)'
-            }}
-            initial={{ x: -400, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            exit={{ x: -400, opacity: 0 }}
+        {(mobileMenuOpen || window.innerWidth >= 768) && (
+          <motion.div
+            initial={{ x: -300 }}
+            animate={{ x: 0 }}
+            exit={{ x: -300 }}
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+            className="w-72 bg-gradient-to-b from-indigo-900 to-blue-900 text-white fixed md:static h-screen z-40 shadow-2xl"
           >
-            <div className="flex justify-between items-center mb-8">
-              <h2 className="text-xl font-serif tracking-wider" style={{ color: colors.gold }}>
-                MENU
-              </h2>
-              <motion.button
-                onClick={() => setMobileMenuOpen(false)}
-                className="p-1 rounded-full"
-                style={{ color: colors.gold }}
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-              >
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </motion.button>
+            <div className="p-6 h-full flex flex-col">
+              <h1 className="text-2xl font-bold mb-8 mt-4 flex items-center">
+                <FiTruck className="mr-2" />
+                Sonalika Sales
+              </h1>
+              <nav className="flex-1">
+                <ul className="space-y-2">
+                  {[
+                    { id: 'dashboard', label: 'Dashboard', icon: <FiHome /> },
+                    { id: 'kyc', label: 'Client KYC', icon: <FiUser /> },
+                    { id: 'order', label: 'Add Order', icon: <FiShoppingCart /> },
+                    { id: 'history', label: 'Order History', icon: <FiClock /> }
+                  ].map((item) => (
+                    <li key={item.id}>
+                      <button
+                        onClick={() => {
+                          setActiveTab(item.id);
+                          setMobileMenuOpen(false);
+                        }}
+                        className={`w-full flex items-center p-4 rounded-xl transition-all ${activeTab === item.id ? 'bg-blue-700 shadow-md' : 'hover:bg-blue-800'}`}
+                      >
+                        <span className="mr-3 text-lg">{item.icon}</span>
+                        <span className="font-medium">{item.label}</span>
+                        {activeTab === item.id && (
+                          <span className="ml-auto w-2 h-2 bg-white rounded-full"></span>
+                        )}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </nav>
+              <div className="mt-auto p-4 text-center text-sm text-blue-200">
+                © {new Date().getFullYear()} Sonalika Tractors
+              </div>
             </div>
-            
-            <nav className="space-y-2">
-              <motion.button
-                onClick={() => {
-                  setActiveTab('welcome');
-                  setMobileMenuOpen(false);
-                }}
-                className={`w-full text-left px-4 py-3 rounded-lg flex items-center transition-all ${activeTab === 'welcome' ? '' : 'opacity-80 hover:opacity-100'}`}
-                style={{ 
-                  backgroundColor: activeTab === 'welcome' ? `${colors.gold}15` : 'transparent',
-                  color: activeTab === 'welcome' ? colors.gold : colors.platinum,
-                  border: activeTab === 'welcome' ? `1px solid ${colors.gold}30` : '1px solid transparent'
-                }}
-                whileHover={{ 
-                  backgroundColor: `${colors.gold}10`,
-                  borderColor: `${colors.gold}20`
-                }}
-                whileTap={{ scale: 0.98 }}
-              >
-                <svg className="w-5 h-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                </svg>
-                Dashboard
-              </motion.button>
-              
-              <motion.button
-                onClick={() => {
-                  setActiveTab('kyc');
-                  setMobileMenuOpen(false);
-                }}
-                className={`w-full text-left px-4 py-3 rounded-lg flex items-center transition-all ${activeTab === 'kyc' ? '' : 'opacity-80 hover:opacity-100'}`}
-                style={{ 
-                  backgroundColor: activeTab === 'kyc' ? `${colors.gold}15` : 'transparent',
-                  color: activeTab === 'kyc' ? colors.gold : colors.platinum,
-                  border: activeTab === 'kyc' ? `1px solid ${colors.gold}30` : '1px solid transparent'
-                }}
-                whileHover={{ 
-                  backgroundColor: `${colors.gold}10`,
-                  borderColor: `${colors.gold}20`
-                }}
-                whileTap={{ scale: 0.98 }}
-              >
-                <svg className="w-5 h-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-                Client KYC
-              </motion.button>
-              
-              <motion.button
-                onClick={() => {
-                  setActiveTab('order');
-                  setMobileMenuOpen(false);
-                }}
-                className={`w-full text-left px-4 py-3 rounded-lg flex items-center transition-all ${activeTab === 'order' ? '' : 'opacity-80 hover:opacity-100'}`}
-                style={{ 
-                  backgroundColor: activeTab === 'order' ? `${colors.gold}15` : 'transparent',
-                  color: activeTab === 'order' ? colors.gold : colors.platinum,
-                  border: activeTab === 'order' ? `1px solid ${colors.gold}30` : '1px solid transparent'
-                }}
-                whileHover={{ 
-                  backgroundColor: `${colors.gold}10`,
-                  borderColor: `${colors.gold}20`
-                }}
-                whileTap={{ scale: 0.98 }}
-              >
-                <svg className="w-5 h-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-                Orders
-              </motion.button>
-            </nav>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Desktop Sidebar - Always visible on desktop */}
-      <div className="hidden md:flex w-72 min-h-screen p-6 flex-col z-10"
-        style={{ 
-          backgroundColor: `rgba(15, 15, 15, 0.7)`,
-          borderRight: `1px solid ${colors.gold}30`,
-          backdropFilter: 'blur(8px)'
-        }}
-      >
-        <h2 className="text-xl font-serif tracking-wider mb-10 pt-4" style={{ color: colors.gold }}>
-          SONALIKA JEWELLERY
-        </h2>
-        
-        <nav className="space-y-3">
-          <motion.button
-            onClick={() => setActiveTab('welcome')}
-            className={`w-full text-left px-4 py-3 rounded-lg flex items-center transition-all ${activeTab === 'welcome' ? '' : 'opacity-80 hover:opacity-100'}`}
-            style={{ 
-              backgroundColor: activeTab === 'welcome' ? `${colors.gold}15` : 'transparent',
-              color: activeTab === 'welcome' ? colors.gold : colors.platinum,
-              border: activeTab === 'welcome' ? `1px solid ${colors.gold}30` : '1px solid transparent'
-            }}
-            whileHover={{ 
-              backgroundColor: `${colors.gold}10`,
-              borderColor: `${colors.gold}20`
-            }}
-            whileTap={{ scale: 0.98 }}
-          >
-            <svg className="w-5 h-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-            </svg>
-            Dashboard
-          </motion.button>
-          
-          <motion.button
-            onClick={() => setActiveTab('kyc')}
-            className={`w-full text-left px-4 py-3 rounded-lg flex items-center transition-all ${activeTab === 'kyc' ? '' : 'opacity-80 hover:opacity-100'}`}
-            style={{ 
-              backgroundColor: activeTab === 'kyc' ? `${colors.gold}15` : 'transparent',
-              color: activeTab === 'kyc' ? colors.gold : colors.platinum,
-              border: activeTab === 'kyc' ? `1px solid ${colors.gold}30` : '1px solid transparent'
-            }}
-            whileHover={{ 
-              backgroundColor: `${colors.gold}10`,
-              borderColor: `${colors.gold}20`
-            }}
-            whileTap={{ scale: 0.98 }}
-          >
-            <svg className="w-5 h-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </svg>
-            Client KYC
-          </motion.button>
-          
-          <motion.button
-            onClick={() => setActiveTab('order')}
-            className={`w-full text-left px-4 py-3 rounded-lg flex items-center transition-all ${activeTab === 'order' ? '' : 'opacity-80 hover:opacity-100'}`}
-            style={{ 
-              backgroundColor: activeTab === 'order' ? `${colors.gold}15` : 'transparent',
-              color: activeTab === 'order' ? colors.gold : colors.platinum,
-              border: activeTab === 'order' ? `1px solid ${colors.gold}30` : '1px solid transparent'
-            }}
-            whileHover={{ 
-              backgroundColor: `${colors.gold}10`,
-              borderColor: `${colors.gold}20`
-            }}
-            whileTap={{ scale: 0.98 }}
-          >
-            <svg className="w-5 h-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-            </svg>
-            Orders
-          </motion.button>
-        </nav>
-      </div>
+      {/* Main content */}
+      <div className="flex-1 md:ml-72 p-6">
+        {loading && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white p-8 rounded-2xl shadow-2xl flex flex-col items-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mb-4"></div>
+              <p className="text-lg font-semibold">Processing...</p>
+            </div>
+          </div>
+        )}
 
-      {/* Main Content */}
-      <div className="flex-1 p-6 md:p-8 z-0">
-        <div className="max-w-5xl mx-auto">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeTab}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.3 }}
-            >
-              {activeTab === 'welcome' && <WelcomeMessage />}
-              {activeTab === 'kyc' && <CustomerKYCForm />}
-              {activeTab === 'order' && <OrderForm />}
-            </motion.div>
-          </AnimatePresence>
-        </div>
-      </div>
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded-lg shadow"
+          >
+            <div className="flex justify-between items-start">
+              <p>{error}</p>
+              <button 
+                onClick={() => setError(null)} 
+                className="ml-4 text-red-600 hover:text-red-800"
+              >
+                <FiX />
+              </button>
+            </div>
+          </motion.div>
+        )}
 
-      {/* Luxury footer */}
-      <motion.div 
-        className="absolute bottom-4 left-0 right-0 text-center text-xs tracking-widest font-light z-20"
-        style={{ color: `${colors.gold}50` }}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 1, duration: 1.5 }}
-      >
-        SONALIKA JEWELLERY ® | CONFIDENTIAL
-      </motion.div>
+        {/* Dashboard Tab */}
+        {activeTab === 'dashboard' && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
+          >
+            <div className="flex justify-between items-center mb-8">
+              <h2 className="text-3xl font-bold text-gray-800">Dashboard Overview</h2>
+              <div className="relative">
+                <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search..."
+                  className="pl-10 pr-4 py-2 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              {[
+                { 
+                  title: "Total Clients", 
+                  value: clients.length,
+                  icon: <FiUser className="text-2xl text-indigo-600" />,
+                  bg: "bg-indigo-50"
+                },
+                { 
+                  title: "Completed Orders", 
+                  value: getFilteredClients('completed').length,
+                  icon: <FiCheck className="text-2xl text-emerald-600" />,
+                  bg: "bg-emerald-50"
+                },
+                { 
+                  title: "Ongoing Orders", 
+                  value: getFilteredClients('ongoing').length,
+                  icon: <FiClock className="text-2xl text-amber-600" />,
+                  bg: "bg-amber-50"
+                },
+                { 
+                  title: "Total Revenue", 
+                  value: `₹${clients.reduce((sum, client) => 
+                    sum + calculateOrderTotal(client.orderItems), 0).toLocaleString()}`,
+                  icon: <FiDollarSign className="text-2xl text-blue-600" />,
+                  bg: "bg-blue-50"
+                }
+              ].map((stat, index) => (
+                <motion.div
+                  key={index}
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: index * 0.1 }}
+                  className={`${stat.bg} p-6 rounded-2xl shadow-sm hover:shadow-md transition-shadow`}
+                >
+                  <div className="flex justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-500">{stat.title}</p>
+                      <p className="text-2xl font-bold mt-2">{stat.value}</p>
+                    </div>
+                    <div className="p-3 rounded-full bg-white shadow-sm">
+                      {stat.icon}
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+
+            {/* Luxury Tables */}
+            <DashboardTables />
+
+            {/* Recent Activity */}
+            <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+              <div className="p-6 bg-gradient-to-r from-purple-600 to-blue-600 text-white">
+                <h3 className="text-lg font-semibold flex items-center">
+                  <FiClock className="mr-2" />
+                  Recent Activity
+                </h3>
+              </div>
+              <div className="p-6">
+                <div className="space-y-4">
+                  {[...clients]
+                    .sort((a, b) => new Date(b.orderDate || 0) - new Date(a.orderDate || 0))
+                    .slice(0, 5)
+                    .map((client, index) => (
+                      <div key={index} className="flex items-start pb-4 border-b border-gray-100 last:border-0">
+                        <div className={`p-2 rounded-full mr-4 ${
+                          client.order === 'completed' ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'
+                        }`}>
+                          {client.order === 'completed' ? <FiCheck /> : <FiClock />}
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-medium">
+                            {client.order === 'completed' ? 'Order Completed' : 'New Order Created'}
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            {client.name} ({client.uniqueId}) - {client.orderItems?.length || 0} items
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-medium">
+                            ₹{calculateOrderTotal(client.orderItems).toLocaleString()}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {client.orderDate ? new Date(client.orderDate).toLocaleDateString() : 'N/A'}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Client KYC Tab */}
+        {activeTab === 'kyc' && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
+          >
+            <h2 className="text-2xl font-bold mb-6">Client KYC Form</h2>
+            <div className="bg-white p-6 rounded-2xl shadow-lg">
+              <form onSubmit={handleKYCSubmit}>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Full Name*</label>
+                    <input
+                      type="text"
+                      className="w-full px-4 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                      value={kycForm.name}
+                      onChange={(e) => setKycForm({ ...kycForm, name: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number*</label>
+                    <input
+                      type="tel"
+                      className="w-full px-4 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                      value={kycForm.phone}
+                      onChange={(e) => setKycForm({ ...kycForm, phone: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Address*</label>
+                    <textarea
+                      className="w-full px-4 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                      rows="3"
+                      value={kycForm.address}
+                      onChange={(e) => setKycForm({ ...kycForm, address: e.target.value })}
+                      required
+                    ></textarea>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">GST Number*</label>
+                    <input
+                      type="text"
+                      className="w-full px-4 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                      value={kycForm.gstNo}
+                      onChange={(e) => setKycForm({ ...kycForm, gstNo: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Memo ID (Optional)</label>
+                    <input
+                      type="text"
+                      className="w-full px-4 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                      value={kycForm.memoId}
+                      onChange={(e) => setKycForm({ ...kycForm, memoId: e.target.value })}
+                    />
+                  </div>
+                </div>
+                <div className="mt-6">
+                  <button
+                    type="submit"
+                    className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+                  >
+                    Submit KYC
+                  </button>
+                </div>
+              </form>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Add Order Tab */}
+        {activeTab === 'order' && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
+          >
+            <h2 className="text-2xl font-bold mb-6">Add Order to Client</h2>
+            <div className="bg-white p-6 rounded-2xl shadow-lg">
+              <form onSubmit={handleAddOrderSubmit}>
+                <div className="grid grid-cols-1 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Client Unique ID*</label>
+                    <input
+                      type="text"
+                      className="w-full px-4 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                      value={orderForm.uniqueId}
+                      onChange={(e) => setOrderForm({ ...orderForm, uniqueId: e.target.value })}
+                      required
+                      placeholder="Sonalika0001"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Order Items*</label>
+                    <div className="space-y-4">
+                      {orderForm.orderItems.map((item, index) => (
+                        <div key={index} className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Product Name</label>
+                            <input
+                              type="text"
+                              className="w-full px-4 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                              value={item.product}
+                              onChange={(e) => updateOrderItem(index, 'product', e.target.value)}
+                              required
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
+                            <input
+                              type="number"
+                              min="1"
+                              className="w-full px-4 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                              value={item.quantity}
+                              onChange={(e) => updateOrderItem(index, 'quantity', parseInt(e.target.value))}
+                              required
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Price (₹)</label>
+                            <div className="flex">
+                              <input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                className="w-full px-4 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                                value={item.price}
+                                onChange={(e) => updateOrderItem(index, 'price', parseFloat(e.target.value))}
+                                required
+                              />
+                              {orderForm.orderItems.length > 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => removeOrderItem(index)}
+                                  className="ml-2 px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                                >
+                                  ×
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={addOrderItem}
+                      className="mt-2 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 text-sm transition-colors"
+                    >
+                      + Add Another Item
+                    </button>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Order Status</label>
+                      <select
+                        className="w-full px-4 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                        value={orderForm.orderStatus}
+                        onChange={(e) => setOrderForm({ ...orderForm, orderStatus: e.target.value })}
+                      >
+                        <option value="ongoing">Pending</option>
+                        <option value="processing">Processing</option>
+                        <option value="completed">Completed</option>
+                        <option value="cancelled">Cancelled</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Memo ID (Optional)</label>
+                      <input
+                        type="text"
+                        className="w-full px-4 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                        value={orderForm.memoId}
+                        onChange={(e) => setOrderForm({ ...orderForm, memoId: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-6">
+                  <button
+                    type="submit"
+                    className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+                  >
+                    Add Order
+                  </button>
+                </div>
+              </form>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Order History Tab */}
+        {activeTab === 'history' && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
+          >
+            <h2 className="text-2xl font-bold mb-6">Order History</h2>
+            <div className="bg-white p-6 rounded-2xl shadow-lg mb-6">
+              <form onSubmit={handleHistorySearch}>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Search by Unique ID</label>
+                    <input
+                      type="text"
+                      className="w-full px-4 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                      value={historySearch.uniqueId}
+                      onChange={(e) => setHistorySearch({ ...historySearch, uniqueId: e.target.value, clientId: '' })}
+                      placeholder="Sonalika0001"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">OR Search by Client ID</label>
+                    <input
+                      type="text"
+                      className="w-full px-4 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                      value={historySearch.clientId}
+                      onChange={(e) => setHistorySearch({ ...historySearch, clientId: e.target.value, uniqueId: '' })}
+                      placeholder="Client database ID"
+                    />
+                  </div>
+                </div>
+                <div className="mt-6">
+                  <button
+                    type="submit"
+                    className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+                  >
+                    Search Orders
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            {orderHistory && (
+              <div className="bg-white p-6 rounded-2xl shadow-lg">
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold mb-4">Client Information</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-gray-500">Name</p>
+                      <p className="font-medium">{orderHistory.name}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Unique ID</p>
+                      <p className="font-medium">{orderHistory.uniqueId}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Phone</p>
+                      <p className="font-medium">{orderHistory.phone}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Memo ID</p>
+                      <p className="font-medium">{orderHistory.memoId || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Order Status</p>
+                      <p className={`font-medium ${
+                        orderHistory.order === 'completed' ? 'text-emerald-600' : 'text-amber-600'
+                      }`}>
+                        {orderHistory.order}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Order Date</p>
+                      <p className="font-medium">
+                        {orderHistory.orderDate ? new Date(orderHistory.orderDate).toLocaleDateString() : 'N/A'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold mb-4">Order Items</h3>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {orderHistory.orderItems?.map((item, index) => (
+                          <tr key={index}>
+                            <td className="px-6 py-4 whitespace-nowrap">{item.product}</td>
+                            <td className="px-6 py-4 whitespace-nowrap">{item.quantity}</td>
+                            <td className="px-6 py-4 whitespace-nowrap">₹{item.price.toLocaleString()}</td>
+                            <td className="px-6 py-4 whitespace-nowrap font-medium">₹{(item.price * item.quantity).toLocaleString()}</td>
+                          </tr>
+                        ))}
+                        <tr className="bg-gray-50">
+                          <td colSpan="3" className="px-6 py-4 whitespace-nowrap text-right font-medium">Grand Total</td>
+                          <td className="px-6 py-4 whitespace-nowrap font-bold">
+                            ₹{calculateOrderTotal(orderHistory.orderItems).toLocaleString()}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
+          </motion.div>
+        )}
+      </div>
     </div>
   );
 };

@@ -48,7 +48,10 @@ const clientsSchema = new mongoose.Schema(
       enum: ["ongoing", "completed"],
       default: "ongoing",
     },
-      orderItems: [orderItemSchema],
+     orderItems: {
+  type: [orderItemSchema],
+  default: []
+},
 
   },
   {

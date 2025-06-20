@@ -1,4 +1,5 @@
 const Clients = require('../models/Clients');
+const Team = require('../models/Team');
 const teamService = require('../services/teamService');
 
 
@@ -91,7 +92,7 @@ exports.addOrderToClient = async (req, res) => {
       return res.status(400).json({ error: "Unique ID and order items are required" });
     }
 
-    const client = await Clients.findOne({ uniqueId });
+    const client = await Team.findOne({ uniqueId });
 
     if (!client) {
       return res.status(404).json({ error: "Client not found" });

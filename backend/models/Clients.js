@@ -33,7 +33,7 @@ const  clientsSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
-    order: {
+    orderStatus: {
       type: String,
       enum: ['ongoing', 'completed'],
       default: 'ongoing'

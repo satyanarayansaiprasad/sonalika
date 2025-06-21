@@ -19,10 +19,10 @@ const orderItemSchema = new mongoose.Schema({
 
 // One complete order (with memoId and multiple order items)
 const orderSchema = new mongoose.Schema({
-  memoId: {
-    type: String,
-    required: true  // ✅ Required ONLY when creating an order
-  },
+  // memoId: {
+  //   type: String,
+  //   required: true  // ✅ Required ONLY when creating an order
+  // },
   orderDate: {
     type: Date,
     default: Date.now,

@@ -311,7 +311,7 @@ const SalesTeamDashboard = () => {
               title="Active Orders" 
               value={
                 clients.reduce((count, client) => 
-                  count + (client.order ? Array.from(client.order.values()).filter(o => o.orderStatus === 'ongoing').length : 0), 0)
+                  count + (client.orders ? Array.from(client.orders.values()).filter(o => o.orderStatus === 'ongoing').length : 0), 0)
               } 
             />
           </Card>
@@ -322,7 +322,7 @@ const SalesTeamDashboard = () => {
               title="Completed Orders" 
               value={
                 clients.reduce((count, client) => 
-                  count + (client.order ? Array.from(client.order.values()).filter(o => o.orderStatus === 'completed').length : 0), 0)
+                  count + (client.orders ? Array.from(client.orders.values()).filter(o => o.orderStatus === 'completed').length : 0), 0)
               } 
             />
           </Card>
@@ -422,20 +422,21 @@ const SalesTeamDashboard = () => {
                 rules={[{ required: true, message: 'Please select a client' }]}
               >
                 <Select
-                  showSearch
-                  placeholder="Search by Unique ID"
-                  optionFilterProp="children"
-                  onChange={handleClientSelect}
-                  filterOption={(input, option) =>
-                    option.children.toLowerCase().includes(input.toLowerCase())
-                  }
-                >
-                  {clients.map(client => (
-                    <Option key={client.uniqueId} value={client.uniqueId}>
-                      {client.uniqueId} 
-                    </Option>
-                  ))}
-                </Select>
+  showSearch
+  placeholder="Search by Unique ID"
+  optionFilterProp="children"
+  onChange={handleClientSelect}
+  filterOption={(input, option) =>
+    option?.value?.toLowerCase().includes(input.toLowerCase())
+  }
+>
+  {clients.map(client => (
+    <Option key={client.uniqueId} value={client.uniqueId}>
+      {client.uniqueId}
+    </Option>
+  ))}
+</Select>
+
               </Form.Item>
             </Col>
             <Col span={12}>

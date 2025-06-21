@@ -33,7 +33,7 @@ const generateUniqueId = async () => {
       ? parseInt(lastClient.uniqueId.replace("sonalika", "")) || 0
       : 0;
     const nextNumber = lastNumber + 1;
-    return `sonalika${String(nextNumber).padStart(4, "0")}`;
+return `sonalika${String(nextNumber).padStart(4, "0")}`.toLowerCase();
   } catch (error) {
     console.error("Error generating unique ID:", error);
     throw new Error("Failed to generate unique ID");
@@ -113,7 +113,9 @@ exports.createClientKYC = async (req, res) => {
       orderCounter: 0    // Initialize order counter
     });
 
-    await client.save();
+   console.log('Before save:', uniqueId); // Should be "sonalika0001"
+await client.save();
+console.log('After save:', client.uniqueId); // Check if changed
 
     res.status(201).json({
       success: true,

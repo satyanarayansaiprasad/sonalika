@@ -62,7 +62,8 @@ const clientsSchema = new mongoose.Schema(
       trim: true,
       default: null,
     },
-    orders: [orderSchema],  // embedded orders
+    orders: [orderSchema], 
+     default: []// embedded orders
   },
   {
     timestamps: true,

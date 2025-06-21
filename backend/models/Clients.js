@@ -20,7 +20,7 @@ const orderSchema = new mongoose.Schema({
   memoId: {
     type: String,
     required: true,
-    unique: true  // Ensure each order has a unique memoId
+    // Ensure each order has a unique memoId
   },
   orderDate: { 
     type: Date, 

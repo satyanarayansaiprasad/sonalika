@@ -38,7 +38,7 @@ const SalesTeamDashboard = () => {
   const handleKYCSubmit = async (values) => {
     try {
       setLoading(true);
-      const res = await axios.post(`${import.meta.env.VITE_BASE_URL}/api/team/client-kyc`, values);
+      const res = await axios.post(`${import.meta.env.VITE_BASE_URL}/api/team/clients-kyc`, values);
 
       const newClient = res.data.data.client;
 

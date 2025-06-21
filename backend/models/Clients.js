@@ -1,5 +1,27 @@
 const mongoose = require("mongoose");
 
+const orderSchema = new mongoose.Schema({
+  srNo: Number,
+  styleNo: String,
+  clarity: String,
+  grossWeight: Number,  // GR WT
+  netWeight: Number,    // NT WT
+  diaWeight: Number,    // DIA WT
+  pcs: Number,          // PCS
+  amount: Number,
+  description: String,
+  orderStatus: {
+    type: String,
+    enum: ["received", "ongoing", "completed"],
+    default: "received"
+  },
+  orderDate: {
+    type: Date,
+    default: Date.now
+  }
+}, { _id: false });  // _id: false if you don't want each order item to get its own ObjectId
+
+
 const clientsSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -30,43 +52,13 @@ const clientsSchema = new mongoose.Schema({
     type: String,
     trim: true,
   },
-  orderStatus: {
-    type: String,
-    enum: ["ongoing", "completed"],
-    default: "ongoing",
-  },
-
-  // Order fields
-  srNo: {
-    type: Number
-  },
-  styleNo: {
-    type: String
-  },
-  clarity: {
-    type: String
-  },
-  grossWeight: {  // GR WT
-    type: Number
-  },
-  netWeight: {    // NT WT
-    type: Number
-  },
-  diaWeight: {    // DIA WT
-    type: Number
-  },
-  pcs: {          // PCS
-    type: Number
-  },
-  amount: {
-    type: Number
-  },
-  description: {
-    type: String
+  orders: {
+    type: [orderSchema],
+    default: []
   }
-
 }, {
   timestamps: true,
 });
+
 
 module.exports = mongoose.model("Clients", clientsSchema);

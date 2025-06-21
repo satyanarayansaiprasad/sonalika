@@ -42,137 +42,150 @@ exports.loginSalesteam = async (req, res) => {
 //   }
 // // };
 
-// exports.createClientKYC = async (req, res) => {
-//   try {
-//     const { name, phone, address, gstNo, memoId } = req.body;
+exports.createClientKYC = async (req, res) => {
+  try {
+    const { name, phone, address, gstNo, memoId } = req.body;
 
-//     // Validate required fields
-//     const requiredFields = { name, phone, address, gstNo };
-//     const missingFields = Object.entries(requiredFields)
-//       .filter(([_, value]) => !value?.trim())
-//       .map(([key]) => key);
+    // Validate required fields
+    if (!name || !phone || !address) {
+      return res.status(400).json({
+        success: false,
+        message: "Name, phone, and address are required fields",
+        missingFields: {
+          name: !name,
+          phone: !phone,
+          address: !address
+        }
+      });
+    }
 
-//     if (missingFields.length > 0) {
-//       return res.status(400).json({
-//         error: "Missing required fields",
-//         message: `The following fields are required: ${missingFields.join(", ")}`,
-//         missingFields: {
-//           name: !name,
-//           phone: !phone,
-//           address: !address,
-//           gstNo: !gstNo
-//         }
-//       });
-//     }
+    // Trim all input fields
+    const trimmedName = name.trim();
+    const trimmedPhone = phone.trim();
+    const trimmedAddress = address.trim();
+    const trimmedGstNo = gstNo?.trim();
+    const trimmedMemoId = memoId?.trim();
 
-//     // Validate phone format (10 digits)
-//     if (!/^\d{10}$/.test(phone.trim())) {
-//       return res.status(400).json({
-//         error: "Invalid phone number",
-//         message: "Phone number must be 10 digits"
-//       });
-//     }
+    // Validate phone format (10 digits)
+    if (!/^\d{10}$/.test(trimmedPhone)) {
+      return res.status(400).json({
+        success: false,
+        message: "Phone number must be 10 digits"
+      });
+    }
 
-//     // // Validate GST number format
-//     if (!/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(gstNo.trim())) {
-//       return res.status(400).json({
-//         error: "Invalid GST number",
-//         message: "Please enter a valid GST number (e.g., 22AAAAA0000A1Z5)"
-//       });
-//     }
+    // Validate GST number format if provided
+    if (trimmedGstNo && !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/i.test(trimmedGstNo)) {
+      return res.status(400).json({
+        success: false,
+        message: "Please enter a valid GST number (e.g., 22AAAAA0000A1Z5)"
+      });
+    }
 
-//     // Check for existing client with same phone or GST
-//     const existingClient = await Clients.findOne({
-//       $or: [
-//         { phone: phone.trim() },
-//         { gstNo: gstNo.trim() }
-//       ]
-//     });
+    // Check for existing client with same phone
+    const existingClient = await Clients.findOne({
+      $or: [
+        { phone: trimmedPhone },
+        ...(trimmedGstNo ? [{ gstNo: trimmedGstNo }] : []),
+        ...(trimmedMemoId ? [{ memoId: trimmedMemoId }] : [])
+      ]
+    });
 
-//     if (existingClient) {
-//       const conflictField = existingClient.phone === phone.trim() ? 'phone' : 'GST number';
-//       return res.status(409).json({
-//         error: "Client exists",
-//         message: `Client with this ${conflictField} already exists`,
-//         clientId: existingClient._id,
-//         uniqueId: existingClient.uniqueId,
-//         conflictField
-//       });
-//     }
+    if (existingClient) {
+      let conflictField = 'phone';
+      if (existingClient.gstNo === trimmedGstNo) conflictField = 'GST number';
+      if (existingClient.memoId === trimmedMemoId) conflictField = 'memo ID';
 
-//     // Generate sequential unique ID in lowercase
-//     const lastClient = await Clients.findOne().sort({ _id: -1 });
-//     let nextNumber = 1; // Start with 001 if no clients exist
+      return res.status(409).json({
+        success: false,
+        message: `Client with this ${conflictField} already exists`,
+        data: {
+          clientId: existingClient._id,
+          uniqueId: existingClient.uniqueId,
+          conflictField
+        }
+      });
+    }
 
-//     if (lastClient && lastClient.uniqueId) {
-//       // Extract number from existing ID (works with any case)
-//       const matches = lastClient.uniqueId.toLowerCase().match(/sonalika(\d+)$/);
-//       if (matches && matches[1]) {
-//         nextNumber = parseInt(matches[1]) + 1;
-//       }
-//     }
+    // Generate sequential unique ID (format: sonalikaXXXX)
+    const lastClient = await Clients.findOne(
+      { uniqueId: /^sonalika\d{4}$/i },
+      {},
+      { sort: { uniqueId: -1 } }
+    );
 
-//     // Create lowercase ID with 3-digit number
-//     const uniqueId = `sonalika${String(nextNumber).padStart(3, '0')}`.toLowerCase();
+    let nextNumber = 1; // Start with 0001 if no clients exist
+    if (lastClient && lastClient.uniqueId) {
+      const matches = lastClient.uniqueId.toLowerCase().match(/sonalika(\d+)$/);
+      if (matches && matches[1]) {
+        nextNumber = parseInt(matches[1]) + 1;
+      }
+    }
 
-//     // Create new client with the lowercase ID
-//     const client = new Clients({
-//       name: name.trim(),
-//       phone: phone.trim(),
-//       address: address.trim(),
-//       gstNo: gstNo.trim(),
-//       memoId: memoId?.trim(),
-//       uniqueId: uniqueId, // Will be stored exactly as "sonalika001"
-//       order: new Map(),
-//       orderCounter: 0
-//     });
+    const uniqueId = `sonalika${String(nextNumber).padStart(4, '0')}`.toLowerCase();
 
-//     await client.save();
+    // Create new client
+    const newClient = await Clients.create({
+      name: trimmedName,
+      phone: trimmedPhone,
+      address: trimmedAddress,
+      gstNo: trimmedGstNo,
+      memoId: trimmedMemoId,
+      uniqueId,
+      orders: [] // Initialize with empty array of orders
+    });
 
-//     res.status(201).json({
-//       success: true,
-//       message: "Client KYC created successfully",
-//       client: {
-//         id: client._id,
-//         uniqueId: client.uniqueId, // Will be lowercase
-//         name: client.name,
-//         phone: client.phone,
-//         gstNo: client.gstNo,
-//         address: client.address,
-//         memoId: client.memoId,
-//         orderCounter: 0,
-//         createdAt: client.createdAt
-//       }
-//     });
+    return res.status(201).json({
+      success: true,
+      message: "Client KYC created successfully",
+      data: {
+        client: {
+          id: newClient._id,
+          uniqueId: newClient.uniqueId,
+          name: newClient.name,
+          phone: newClient.phone,
+          address: newClient.address,
+          gstNo: newClient.gstNo,
+          memoId: newClient.memoId,
+          orders: newClient.orders,
+          createdAt: newClient.createdAt,
+          updatedAt: newClient.updatedAt
+        }
+      }
+    });
 
-//   } catch (error) {
-//     console.error("Error creating client KYC:", error);
+  } catch (error) {
+    console.error("Error creating client KYC:", error);
 
-//     if (error.name === "ValidationError") {
-//       const errors = Object.values(error.errors).map(err => ({
-//         field: err.path,
-//         message: err.message
-//       }));
-//       return res.status(400).json({
-//         error: "Validation failed",
-//         details: errors
-//       });
-//     }
+    // Handle duplicate uniqueId error
+    if (error.code === 11000 && error.keyPattern?.uniqueId) {
+      return res.status(409).json({
+        success: false,
+        message: "Generated unique ID already exists. Please try again."
+      });
+    }
 
-//     if (error.code === 11000) { // MongoDB duplicate key error
-//       return res.status(409).json({
-//         error: "Duplicate uniqueId",
-//         message: "This unique ID already exists"
-//       });
-//     }
+    // Handle validation errors
+    if (error.name === "ValidationError") {
+      const errors = Object.values(error.errors).map(err => ({
+        field: err.path,
+        message: err.message
+      }));
+      return res.status(400).json({
+        success: false,
+        message: "Validation failed",
+        errors
+      });
+    }
 
-//     res.status(500).json({
-//       error: "Internal server error",
-//       message: "Failed to create client KYC",
-//       details: process.env.NODE_ENV === "development" ? error.message : undefined
-//     });
-//   }
-// };
+    // Generic error handler
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined
+    });
+  }
+};
 
 // Migration script for existing data (run once)
 // exports.migrateToLowercaseIds = async () => {
@@ -481,64 +494,64 @@ exports.loginSalesteam = async (req, res) => {
 
  
 
-exports.createClientKYC = async (req, res) => {
-  try {
-    const { name, address, gstNo, phone } = req.body;
+// exports.createClientKYC = async (req, res) => {
+//   try {
+//     const { name, address, gstNo, phone } = req.body;
 
-    // Validate mandatory fields
-    if (!name || !address || !gstNo || !phone) {
-      return res.status(400).json({
-        success: false,
-        message: "Name, address, GST number, and phone are required fields",
-      });
-    }
+//     // Validate mandatory fields
+//     if (!name || !address || !gstNo || !phone) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Name, address, GST number, and phone are required fields",
+//       });
+//     }
 
-    // Generate next uniqueId
-    const lastClient = await Clients.findOne(
-      { uniqueId: /^sonalika\d{4}$/i },
-      {},
-      { sort: { uniqueId: -1 } }
-    );
+//     // Generate next uniqueId
+//     const lastClient = await Clients.findOne(
+//       { uniqueId: /^sonalika\d{4}$/i },
+//       {},
+//       { sort: { uniqueId: -1 } }
+//     );
 
-    let nextNumber = 1;
-    if (lastClient) {
-      const lastNumber = parseInt(
-        lastClient.uniqueId.replace("sonalika", ""),
-        10
-      );
-      nextNumber = lastNumber + 1;
-    }
+//     let nextNumber = 1;
+//     if (lastClient) {
+//       const lastNumber = parseInt(
+//         lastClient.uniqueId.replace("sonalika", ""),
+//         10
+//       );
+//       nextNumber = lastNumber + 1;
+//     }
 
-    const uniqueId = `sonalika${nextNumber.toString().padStart(4, "0")}`;
+//     const uniqueId = `sonalika${nextNumber.toString().padStart(4, "0")}`;
 
-    // Create client with empty orders object
-    const newClient = await Clients.create({
-      name,
-      address,
-      gstNo,
-      phone,
-      uniqueId,
-      orders: [],          // Now using empty object instead of array
-      orderCounter: 0,
-    });
+//     // Create client with empty orders object
+//     const newClient = await Clients.create({
+//       name,
+//       address,
+//       gstNo,
+//       phone,
+//       uniqueId,
+//       orders: [],          // Now using empty object instead of array
+//       orderCounter: 0,
+//     });
 
-    return res.status(201).json({
-      success: true,
-      message: "Client KYC created successfully",
-      data: {
-        client: newClient,
-        uniqueId: newClient.uniqueId,
-      },
-    });
-  } catch (error) {
-    console.error("Error creating client KYC:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Internal server error",
-      error: error.message,
-    });
-  }
-};
+//     return res.status(201).json({
+//       success: true,
+//       message: "Client KYC created successfully",
+//       data: {
+//         client: newClient,
+//         uniqueId: newClient.uniqueId,
+//       },
+//     });
+//   } catch (error) {
+//     console.error("Error creating client KYC:", error);
+//     return res.status(500).json({
+//       success: false,
+//       message: "Internal server error",
+//       error: error.message,
+//     });
+//   }
+// };
 
 // Example of how to add an order to a client
 

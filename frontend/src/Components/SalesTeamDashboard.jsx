@@ -66,7 +66,7 @@ const SalesTeamDashboard = () => {
         memoId: values.memoId
       };
       
-      await axios.post(`${API_BASE_URL}/api/team/add-order`, payload);
+      await axios.post(`${API_BASE_URL}/api/team/addClientOrder`, payload);
       message.success('Order submitted successfully');
       orderForm.resetFields();
       setOrderItems([{}]);

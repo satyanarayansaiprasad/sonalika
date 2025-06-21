@@ -37,45 +37,105 @@ exports.createClientKYC = async (req, res) => {
   try {
     const { name, phone, address, gstNo } = req.body;
 
-    // Validate required fields
-    if (!name || !phone || !address || !gstNo) {
-      return res.status(400).json({ error: "All fields are required: name, phone, address, gstNo" });
+    // Validate required fields with better error messages
+    const missingFields = [];
+    if (!name) missingFields.push('name');
+    if (!phone) missingFields.push('phone');
+    if (!address) missingFields.push('address');
+    if (!gstNo) missingFields.push('gstNo');
+    
+    if (missingFields.length > 0) {
+      return res.status(400).json({ 
+        error: "Missing required fields",
+        missingFields,
+        message: `Please provide: ${missingFields.join(', ')}`
+      });
     }
 
-    // Get total count of clients to generate uniqueId
-    const clientCount = await Clients.countDocuments();
-
-    // Generate uniqueId like "sonalika0001"
-    const nextSerial = clientCount + 1;
-    const paddedSerial = String(nextSerial).padStart(4, "0");
-    const uniqueId = `sonalika${paddedSerial}`;
-
-    // Ensure uniqueId is actually unique (edge case safeguard)
-    const existing = await Clients.findOne({ uniqueId });
-    if (existing) {
-      return res.status(409).json({ error: "Unique ID conflict. Please try again." });
+    // Validate phone number format
+    const phoneRegex = /^[0-9]{10,15}$/;
+    if (!phoneRegex.test(phone)) {
+      return res.status(400).json({ 
+        error: "Invalid phone number",
+        message: "Phone number should be 10-15 digits"
+      });
     }
 
-    // Create and save new client (without any orders yet)
+    // Generate unique ID safely
+    let uniqueId;
+    let attempts = 0;
+    const maxAttempts = 5;
+    
+    do {
+      // Get count of clients (better than countDocuments for performance)
+      const lastClient = await Clients.findOne().sort({ _id: -1 }).limit(1);
+      const lastSerial = lastClient ? parseInt(lastClient.uniqueId.replace('sonalika', '')) || 0 : 0;
+      
+      const nextSerial = lastSerial + 1;
+      const paddedSerial = String(nextSerial).padStart(4, "0");
+      uniqueId = `sonalika${paddedSerial}`;
+      
+      attempts++;
+      if (attempts >= maxAttempts) {
+        return res.status(500).json({ 
+          error: "Unique ID generation failed",
+          message: "Please try again later"
+        });
+      }
+    } while (await Clients.exists({ uniqueId }));
+
+    // Create new client
     const newClient = new Clients({
-      name,
-      phone,
-      address,
-      gstNo,
+      name: name.trim(),
+      phone: phone.trim(),
+      address: address.trim(),
+      gstNo: gstNo.trim().toUpperCase(),
       uniqueId,
-      orders: [] // No order at KYC stage
+      orders: []
     });
 
+    // Validate before save (to catch schema validation errors)
+    await newClient.validate();
+
+    // Save to database
     await newClient.save();
 
     return res.status(201).json({
+      success: true,
       message: "KYC submitted successfully",
-      clientId: newClient._id,
-      uniqueId: newClient.uniqueId,
+      data: {
+        clientId: newClient._id,
+        uniqueId: newClient.uniqueId,
+        name: newClient.name,
+        phone: newClient.phone
+      }
     });
+
   } catch (error) {
     console.error("Error submitting KYC:", error);
-    return res.status(500).json({ error: "Internal Server Error" });
+    
+    // Handle duplicate key errors (if unique constraint fails)
+    if (error.code === 11000) {
+      return res.status(409).json({
+        error: "Duplicate entry",
+        message: "Client with similar details already exists"
+      });
+    }
+    
+    // Handle validation errors
+    if (error.name === 'ValidationError') {
+      const errors = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({
+        error: "Validation failed",
+        messages: errors
+      });
+    }
+    
+    // Generic server error
+    return res.status(500).json({
+      error: "Internal Server Error",
+      message: "Could not process KYC request"
+    });
   }
 };
 
@@ -99,37 +159,125 @@ exports.getClients = async (req, res) => {
 
 
 // Add order items to existing client by uniqueId or _id
-exports.addOrderToClient = async (req, res) => {
+exports.addClientOrder = async (req, res) => {
   try {
-    const { uniqueId, orderItems, orderStatus, memoId } = req.body;
+    const { clientId, memoId, orderItems } = req.body;
 
-    if (!uniqueId || !orderItems || !Array.isArray(orderItems)) {
-      return res.status(400).json({ error: "Unique ID and valid order items are required" });
+    // Validate required fields
+    if (!clientId || !memoId || !orderItems || !Array.isArray(orderItems) || orderItems.length === 0) {
+      return res.status(400).json({
+        error: "Validation Error",
+        message: "clientId, memoId, and at least one order item are required",
+        details: {
+          clientId: !clientId ? "Missing clientId" : "Valid",
+          memoId: !memoId ? "Missing memoId" : "Valid",
+          orderItems: !orderItems ? "Missing order items" 
+                   : !Array.isArray(orderItems) ? "orderItems must be an array" 
+                   : orderItems.length === 0 ? "At least one order item required" 
+                   : "Valid"
+        }
+      });
     }
 
-    const client = await Clients.findOne({ uniqueId });
+    // Validate each order item
+    const invalidItems = [];
+    orderItems.forEach((item, index) => {
+      const errors = [];
+      if (!item.styleNo) errors.push("styleNo is required");
+      if (!item.pcs || isNaN(item.pcs) || item.pcs < 1) errors.push("valid pcs (≥1) is required");
+      if (!item.amount || isNaN(item.amount)) errors.push("valid amount is required");
+      if (errors.length > 0) {
+        invalidItems.push({ itemIndex: index, errors });
+      }
+    });
 
+    if (invalidItems.length > 0) {
+      return res.status(400).json({
+        error: "Invalid Order Items",
+        message: "Some order items failed validation",
+        invalidItems
+      });
+    }
+
+    // Find client and verify existence
+    const client = await Clients.findById(clientId);
     if (!client) {
-      return res.status(404).json({ error: "Client not found" });
+      return res.status(404).json({
+        error: "Not Found",
+        message: "Client not found with the provided ID"
+      });
     }
 
-    // Push order items into existing client record
-    client.orderItems.push(...orderItems);
+    // Check for duplicate memoId in client's orders
+    const memoExists = client.orders.some(order => order.memoId === memoId);
+    if (memoExists) {
+      return res.status(409).json({
+        error: "Duplicate Memo",
+        message: "An order with this memoId already exists for this client"
+      });
+    }
 
-    // Optional: update order status and memoId
-    if (orderStatus) client.orders = orderStatus;
-    if (memoId) client.memoId = memoId;
+    // Prepare new order group
+    const newOrderGroup = {
+      memoId: memoId.trim(),
+      orderItems: orderItems.map(item => ({
+        styleNo: item.styleNo.trim(),
+        clarity: item.clarity?.trim() || "",
+        grossWeight: item.grossWeight || 0,
+        netWeight: item.netWeight || 0,
+        diaWeight: item.diaWeight || 0,
+        pcs: item.pcs,
+        amount: item.amount,
+        description: item.description?.trim() || "",
+        orderStatus: "received" // default status
+      }))
+    };
 
+    // Add order to client and increment counter
+    client.orders.push(newOrderGroup);
+    client.orderCounter += 1;
+
+    // Save the updated client document
     await client.save();
 
-    res.status(200).json({ message: "Order added to client successfully", client });
+    // Prepare response with the newly added order
+    const addedOrder = client.orders[client.orders.length - 1];
+
+    return res.status(201).json({
+      success: true,
+      message: "Order added successfully",
+      data: {
+        orderId: addedOrder._id, // MongoDB automatically adds _id even with _id: false in schema
+        memoId: addedOrder.memoId,
+        orderDate: addedOrder.orderDate,
+        itemCount: addedOrder.orderItems.length,
+        clientDetails: {
+          clientId: client._id,
+          name: client.name,
+          orderCounter: client.orderCounter
+        }
+      }
+    });
 
   } catch (error) {
-    console.error("Error adding order:", error);
-    res.status(500).json({ error: "Internal Server Error" });
+    console.error("Error adding client order:", error);
+
+    // Handle specific error types
+    if (error.name === 'CastError') {
+      return res.status(400).json({
+        error: "Invalid ID Format",
+        message: "The provided clientId is not valid"
+      });
+    }
+
+    // Handle other potential errors
+    return res.status(500).json({
+      error: "Internal Server Error",
+      message: "Failed to process the order",
+      systemMessage: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 };
-
 
 
 

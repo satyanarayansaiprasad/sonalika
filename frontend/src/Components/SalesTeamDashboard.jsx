@@ -120,21 +120,22 @@ const SalesTeamDashboard = () => {
         throw new Error('All order items must have Style No, Gross Weight > 0, and at least 1 piece');
       }
 
-      const payload = {
-        uniqueId: selectedClient.uniqueId,
-        memoId: values.memoId || undefined, // Send undefined instead of empty string
-        orderItems: filteredOrderItems.map(item => ({
-          styleNo: item.styleNo,
-          clarity: item.clarity || undefined,
-          grossWeight: Number(item.grossWeight),
-          netWeight: Number(item.netWeight) || undefined,
-          diaWeight: Number(item.diaWeight) || undefined,
-          pcs: Number(item.pcs),
-          amount: Number(item.amount) || undefined,
-          description: item.description || undefined,
-          orderStatus: item.orderStatus || 'ongoing'
-        }))
-      };
+     const payload = {
+  uniqueId: selectedClient.uniqueId, // ✅ Case-sensitive and correct
+  memoId: values.memoId?.trim() || undefined, // Optional, trimmed
+  orderItems: filteredOrderItems.map(item => ({
+    styleNo: item.styleNo.trim(),
+    clarity: item.clarity?.trim() || undefined,
+    grossWeight: Number(item.grossWeight) || 0, // fallback to 0 if empty/NaN
+    netWeight: Number(item.netWeight) || 0,
+    diaWeight: Number(item.diaWeight) || 0,
+    pcs: Number(item.pcs) || 1, // fallback to at least 1
+    amount: Number(item.amount) || 0,
+    description: item.description?.trim() || undefined,
+    orderStatus: item.orderStatus || 'ongoing'
+  }))
+};
+
 
       console.log('Order submission payload:', JSON.stringify(payload, null, 2));
 

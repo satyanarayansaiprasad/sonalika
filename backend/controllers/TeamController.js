@@ -25,15 +25,17 @@ exports.loginSalesteam = async (req, res) => {
 //Client Kyc
 
 // Step 1: Create client KYC with auto-generated uniqueId
-// Auto-generate a unique ID (e.g., C001, C002...)
 const generateUniqueId = async () => {
   try {
     const lastClient = await Clients.findOne().sort({ createdAt: -1 });
+    
+    // Extract number from last client or start from 0
     const lastNumber = lastClient
-      ? parseInt(lastClient.uniqueId.replace(/^sonalika/i, "")) || 0
+      ? parseInt(lastClient.uniqueId.replace(/^[a-z]+/i, "")) || 0
       : 0;
+    
     const nextNumber = lastNumber + 1;
-    return `sonalika${String(nextNumber).padStart(4, "0")}`.toLowerCase();
+    return `sonalika${String(nextNumber).padStart(4, "0")}`.toLowerCase(); // ✅ FORCE lowercase
   } catch (error) {
     console.error("Error generating unique ID:", error);
     throw new Error("Failed to generate unique ID");
@@ -99,7 +101,9 @@ exports.createClientKYC = async (req, res) => {
     }
 
     // Generate unique ID
-    const uniqueId = generateUniqueId(); // Implement your ID generation logic
+ // Generate unique ID (will be lowercase)
+    const uniqueId = await generateUniqueId();
+    console.log("Generated Unique ID:", uniqueId); // Should be "sonalika0001" (lowercase)
 
     // Create new client with empty orders Map
     const client = new Clients({

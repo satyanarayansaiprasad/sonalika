@@ -479,6 +479,8 @@ exports.loginSalesteam = async (req, res) => {
 
 
 
+ 
+
 exports.createClientKYC = async (req, res) => {
   try {
     const { name, address, gstNo, phone } = req.body;
@@ -487,37 +489,40 @@ exports.createClientKYC = async (req, res) => {
     if (!name || !address || !gstNo || !phone) {
       return res.status(400).json({
         success: false,
-        message: "Name, address, GST number, and phone are required fields"
+        message: "Name, address, GST number, and phone are required fields",
       });
     }
 
-    // Find last client to generate next uniqueId
+    // Generate next uniqueId
     const lastClient = await Clients.findOne(
-      { uniqueId: /^sonalika\d{4}$/i }, // Match sonalika0001, sonalika0002, ...
+      { uniqueId: /^sonalika\d{4}$/i },
       {},
       { sort: { uniqueId: -1 } }
     );
 
     let nextNumber = 1;
     if (lastClient) {
-      const lastNumber = parseInt(lastClient.uniqueId.replace("sonalika", ""), 10);
+      const lastNumber = parseInt(
+        lastClient.uniqueId.replace("sonalika", ""),
+        10
+      );
       nextNumber = lastNumber + 1;
     }
 
     const uniqueId = `sonalika${nextNumber.toString().padStart(4, "0")}`;
 
-    // Create new client
+    // ✅ Create client with no orders yet
     const newClient = await Clients.create({
       name,
       address,
       gstNo,
       phone,
       uniqueId,
-      orders: [],
+      orders: [],          // ✅ ensure no memoId exists yet
       orderCounter: 0,
     });
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       message: "Client KYC created successfully",
       data: {
@@ -527,13 +532,14 @@ exports.createClientKYC = async (req, res) => {
     });
   } catch (error) {
     console.error("Error creating client KYC:", error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Internal server error",
       error: error.message,
     });
   }
 };
+
 
 
 exports.getClients = async (req, res) => {

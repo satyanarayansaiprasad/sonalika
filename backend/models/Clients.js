@@ -11,8 +11,8 @@ const orderItemSchema = new mongoose.Schema({
   description: String,
   orderStatus: {
     type: String,
-    enum: ['received', 'ongoing', 'completed'],
-    default: 'received'
+    enum: [ 'ongoing', 'completed'],
+    default: 'ongoing'
   }
 });
 

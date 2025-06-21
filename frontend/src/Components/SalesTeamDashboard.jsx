@@ -46,7 +46,7 @@ const SalesTeamDashboard = () => {
     pcs: 1,
     amount: 0,
     description: '',
-    orderStatus: 'received'
+    orderStatus: 'ongoing'
   }]);
   const [orderHistory, setOrderHistory] = useState(null);
   const [selectedClient, setSelectedClient] = useState(null);
@@ -132,7 +132,7 @@ const SalesTeamDashboard = () => {
           pcs: Number(item.pcs),
           amount: Number(item.amount) || undefined,
           description: item.description || undefined,
-          orderStatus: item.orderStatus || 'received'
+          orderStatus: item.orderStatus || 'ongoing'
         }))
       };
 
@@ -163,7 +163,7 @@ const SalesTeamDashboard = () => {
         pcs: 1,
         amount: 0,
         description: '',
-        orderStatus: 'received'
+        orderStatus: 'ongoing'
       }]);
       setSelectedClient(null);
       fetchClients();
@@ -227,7 +227,7 @@ const SalesTeamDashboard = () => {
       pcs: 1,
       amount: 0,
       description: '',
-      orderStatus: 'received'
+      orderStatus: 'ongoing'
     }]);
   };
 
@@ -560,7 +560,7 @@ const SalesTeamDashboard = () => {
                     style={{ width: "100%" }}
                     placeholder="Status"
                   >
-                    <Option value="received">Received</Option>
+                   
                     <Option value="ongoing">Ongoing</Option>
                     <Option value="completed">Completed</Option>
                   </Select>

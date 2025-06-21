@@ -27,9 +27,10 @@ const clientSchema = new mongoose.Schema({
   phone: String,
   address: String,
   gstNo: String,
-  uniqueId:{
-    type:String,
-    lowercase: true,
+   uniqueId: {
+    type: String,
+    lowercase: true, // This ensures the value is always saved in lowercase
+    required: true
   },
   order: [orderSchema], // ✅ One client can have multiple orders
   orderCounter: {

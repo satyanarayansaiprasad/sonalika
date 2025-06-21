@@ -30,10 +30,10 @@ const generateUniqueId = async () => {
   try {
     const lastClient = await Clients.findOne().sort({ createdAt: -1 });
     const lastNumber = lastClient
-      ? parseInt(lastClient.uniqueId.replace("sonalika", "")) || 0
+      ? parseInt(lastClient.uniqueId.replace(/^sonalika/i, "")) || 0
       : 0;
     const nextNumber = lastNumber + 1;
-return `sonalika${String(nextNumber).padStart(4, "0")}`.toLowerCase();
+    return `sonalika${String(nextNumber).padStart(4, "0")}`.toLowerCase();
   } catch (error) {
     console.error("Error generating unique ID:", error);
     throw new Error("Failed to generate unique ID");

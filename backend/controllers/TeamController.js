@@ -146,91 +146,53 @@ exports.getClients = async (req, res) => {
 
 
 // Add order items to existing client by uniqueId or _id
-exports.createOrder = async (req, res) => {
+// Add/Update order details for a client
+exports.addOrUpdateOrder = async (req, res) => {
   try {
-    const { clientId, orderItems } = req.body;
+    const { clientId } = req.params;
+    const {
+      srNo,
+      styleNo,
+      clarity,
+      grossWeight,
+      netWeight,
+      diaWeight,
+      pcs,
+      amount,
+      description,
+      orderStatus,
+    } = req.body;
 
-    // Validate input
-    if (!clientId) {
-      return res.status(400).json({ error: 'Client ID is required' });
+    const updateData = {
+      srNo,
+      styleNo,
+      clarity,
+      grossWeight,
+      netWeight,
+      diaWeight,
+      pcs,
+      amount,
+      description,
+    };
+
+    // Only update orderStatus if provided
+    if (orderStatus) {
+      updateData.orderStatus = orderStatus;
     }
 
-    if (!orderItems || !Array.isArray(orderItems) || orderItems.length === 0) {
-      return res.status(400).json({ error: 'At least one valid order item is required' });
-    }
-
-    // Validate each order item
-    const invalidItems = orderItems.filter(item => 
-      !item.styleNo || 
-      typeof item.grossWeight !== 'number' ||
-      typeof item.pcs !== 'number' ||
-      typeof item.amount !== 'number'
+    const client = await Client.findByIdAndUpdate(
+      clientId,
+      { $set: updateData },
+      { new: true, runValidators: true }
     );
 
-    if (invalidItems.length > 0) {
-      return res.status(400).json({ 
-        error: 'Invalid order items', 
-        details: invalidItems 
-      });
-    }
-
-    // Find client
-    const client = await Clients.findById(clientId);
     if (!client) {
-      return res.status(404).json({ error: 'Client not found' });
+      return res.status(404).json({ error: "Client not found" });
     }
 
-    // Generate sequential SR numbers if not provided
-    let lastSrNo = client.orderItems.length > 0 
-      ? Math.max(...client.orderItems.map(item => item.srNo || 0)) 
-      : 0;
-
-    const processedItems = orderItems.map(item => {
-      if (!item.srNo) {
-        lastSrNo += 1;
-        item.srNo = lastSrNo;
-      }
-      return {
-        srNo: item.srNo,
-        styleNo: item.styleNo,
-        clarity: item.clarity || '',
-        grossWeight: item.grossWeight,
-        netWeight: item.netWeight || item.grossWeight,
-        diaWeight: item.diaWeight || 0,
-        pcs: item.pcs,
-        amount: item.amount,
-        description: item.description || ''
-      };
-    });
-
-    // Add new order items
-// Add new order items
-if (!Array.isArray(client.orderItems)) {
-  client.orderItems = [];
-}
-
-client.orderItems.push(...processedItems);
-client.orderStatus = 'ongoing';
-
-
-    await client.save();
-
-    res.status(201).json({
-      message: 'Order created successfully',
-      order: {
-        clientId: client._id,
-        clientName: client.name,
-        itemsAdded: processedItems.length,
-        totalAmount: processedItems.reduce((sum, item) => sum + item.amount, 0)
-      }
-    });
-
+    res.status(200).json(client);
   } catch (error) {
-    console.error('Error creating order:', error);
-    res.status(500).json({ 
-      error: 'Internal server error',
-      details: error.message 
-    });
+    res.status(400).json({ error: error.message });
   }
 };
 

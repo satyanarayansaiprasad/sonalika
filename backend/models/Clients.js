@@ -36,22 +36,33 @@ const clientsSchema = new mongoose.Schema({
     default: "ongoing",
   },
 
-  // ⬇️ Inline orderItems schema
-  orderItems: {
-    type: [
-      {
-        srNo: Number,
-        styleNo: String,
-        clarity: String,
-        grossWeight: Number,  // GR WT
-        netWeight: Number,    // NT WT
-        diaWeight: Number,    // DIA WT
-        pcs: Number,          // PCS
-        amount: Number,
-        description: String,
-      }
-    ],
-    default: []
+  // Order fields
+  srNo: {
+    type: Number
+  },
+  styleNo: {
+    type: String
+  },
+  clarity: {
+    type: String
+  },
+  grossWeight: {  // GR WT
+    type: Number
+  },
+  netWeight: {    // NT WT
+    type: Number
+  },
+  diaWeight: {    // DIA WT
+    type: Number
+  },
+  pcs: {          // PCS
+    type: Number
+  },
+  amount: {
+    type: Number
+  },
+  description: {
+    type: String
   }
 
 }, {

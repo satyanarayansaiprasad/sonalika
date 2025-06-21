@@ -544,21 +544,21 @@ exports.createClientKYC = async (req, res) => {
 
 
 
-// exports.getClients = async (req, res) => {
-//   try {
-//     const clients = await Clients.find().sort({ createdAt: -1 });
+exports.getClients = async (req, res) => {
+  try {
+    const clients = await Clients.find().sort({ createdAt: -1 });
 
-//     res.status(200).json({
-//       success: true,
-//       message: "Clients fetched successfully",
-//       clients,
-//     });
-//   } catch (error) {
-//     console.error("Error fetching clients:", error);
-//     res.status(500).json({
-//       success: false,
-//       message: "Internal server error",
-//       error: error.message,
-//     });
-//   }
-// };
+    res.status(200).json({
+      success: true,
+      message: "Clients fetched successfully",
+      clients,
+    });
+  } catch (error) {
+    console.error("Error fetching clients:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+};

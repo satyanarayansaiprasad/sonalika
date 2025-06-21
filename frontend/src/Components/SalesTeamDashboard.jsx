@@ -142,7 +142,7 @@ const SalesTeamDashboard = () => {
           <Card>
             <Statistic 
               title="Ongoing Orders" 
-              value={clients.filter(c => c.order === 'pending').length} 
+              value={clients.filter(c => c.orders === 'ongoing').length} 
             />
           </Card>
         </Col>
@@ -150,7 +150,7 @@ const SalesTeamDashboard = () => {
           <Card>
             <Statistic 
               title="Completed Orders" 
-              value={clients.filter(c => c.order === 'completed').length} 
+              value={clients.filter(c => c.orders === 'completed').length} 
             />
           </Card>
         </Col>
@@ -170,7 +170,7 @@ const SalesTeamDashboard = () => {
         <Col span={12}>
           <Card title="Ongoing Orders">
             <Table 
-              dataSource={clients.filter(c => c.order === 'pending')} 
+              dataSource={clients.filter(c => c.orders === 'ongoing')} 
               columns={clientColumns} 
               rowKey="_id" 
               loading={loading}
@@ -181,7 +181,7 @@ const SalesTeamDashboard = () => {
         <Col span={12}>
           <Card title="Completed Orders">
             <Table 
-              dataSource={clients.filter(c => c.order === 'completed')} 
+              dataSource={clients.filter(c => c.orders === 'completed')} 
               columns={clientColumns} 
               rowKey="_id" 
               loading={loading}

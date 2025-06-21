@@ -48,6 +48,8 @@ const generateUniqueId = async () => {
   }
 };
 
+ // your own function
+
 exports.createClientKYC = async (req, res) => {
   try {
     const { name, phone, address, gstNo, memoId } = req.body;
@@ -55,7 +57,7 @@ exports.createClientKYC = async (req, res) => {
     // Validate required fields
     const requiredFields = { name, phone, address };
     const missingFields = Object.entries(requiredFields)
-      .filter(([_, value]) => !value)
+      .filter(([_, value]) => !value?.trim())
       .map(([key]) => key);
 
     if (missingFields.length > 0) {
@@ -68,14 +70,14 @@ exports.createClientKYC = async (req, res) => {
 
     // Validate GST number format if provided
     if (gstNo && !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(gstNo)) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: 'Invalid GST number format',
         message: 'Please provide a valid GST number (e.g., 22AAAAA0000A1Z5)'
       });
     }
 
-    // Check for existing client with same phone number
-    const existingClient = await Clients.findOne({ phone });
+    // Check if a client already exists with this phone
+    const existingClient = await Clients.findOne({ phone: phone.trim() });
     if (existingClient) {
       return res.status(409).json({
         error: 'Client already exists',
@@ -84,17 +86,17 @@ exports.createClientKYC = async (req, res) => {
       });
     }
 
+    // Generate unique ID for the client
     const uniqueId = await generateUniqueId();
 
+    // Create new client
     const newClient = new Clients({
       name: name.trim(),
       phone: phone.trim(),
       address: address.trim(),
-      gstNo: gstNo ? gstNo.trim() : undefined,
-      memoId: memoId ? memoId.trim() : undefined,
-      uniqueId,
-      orderStatus: 'ongoing',
-      orderItems: [] // Explicitly initialize
+      gstNo: gstNo?.trim(),
+      memoId: memoId?.trim(),
+      uniqueId
     });
 
     await newClient.save();
@@ -112,7 +114,7 @@ exports.createClientKYC = async (req, res) => {
 
   } catch (error) {
     console.error('Error in createClientKYC:', error);
-    
+
     if (error.name === 'ValidationError') {
       const errors = Object.values(error.errors).map(err => err.message);
       return res.status(400).json({
@@ -128,6 +130,7 @@ exports.createClientKYC = async (req, res) => {
     });
   }
 };
+
 
 
 exports.getClients = async (req, res) => {

@@ -40,7 +40,7 @@ const SalesTeamDashboard = () => {
       setLoading(true);
       const res = await axios.post(`${import.meta.env.VITE_BASE_URL}/api/team/clients-kyc`, values);
 
-      const newClient = res.data.data.client;
+      const newClient = res.data.data.clients;
 
       setClients(prev => [...prev, newClient]);
       message.success('Client KYC created successfully!');

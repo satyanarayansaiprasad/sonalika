@@ -74,7 +74,7 @@ exports.createClientKYC = async (req, res) => {
       });
     }
 
-    // Validate GST number format
+    // // Validate GST number format
     if (!/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(gstNo.trim())) {
       return res.status(400).json({
         error: "Invalid GST number",
@@ -141,7 +141,7 @@ exports.createClientKYC = async (req, res) => {
         gstNo: client.gstNo,
         address: client.address,
         memoId: client.memoId,
-        ordersCount: 0,
+        orderCounter: 0,
         createdAt: client.createdAt
       }
     });
@@ -283,8 +283,8 @@ exports.addClientOrder = async (req, res) => {
     };
 
     // 6. Update client record
-    client.orders.push(newOrder);
-    client.orderCount = (client.orderCount || 0) + 1;
+    client.order.push(newOrder);
+    client.orderCounter = (client.orderCount || 0) + 1;
     client.updatedAt = new Date();
 
     await client.save();
@@ -297,7 +297,7 @@ exports.addClientOrder = async (req, res) => {
         orderId: newOrder.orderId,
         clientId: client._id,
         clientUniqueId: client.uniqueId, // Maintains "SonalikaXXXX" format
-        orderNumber: client.orderCount,
+        orderNumber: client.orderCounter,
         itemCount: newOrder.items.length,
         totalAmount: newOrder.items.reduce((sum, item) => sum + (item.price * item.quantity), 0),
         createdAt: newOrder.createdAt

@@ -32,7 +32,6 @@ exports.loginSalesteam = async (req, res) => {
 
 
 // Step 1: Create client KYC with auto-generated uniqueId
-
 exports.createClientKYC = async (req, res) => {
   try {
     const { name, phone, address, gstNo } = req.body;
@@ -107,7 +106,8 @@ exports.createClientKYC = async (req, res) => {
         clientId: newClient._id,
         uniqueId: newClient.uniqueId,
         name: newClient.name,
-        phone: newClient.phone
+        phone: newClient.phone,
+        orders:newClient.orders
       }
     });
 

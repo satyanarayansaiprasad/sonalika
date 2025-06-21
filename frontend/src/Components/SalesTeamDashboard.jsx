@@ -62,7 +62,7 @@ const SalesTeamDashboard = () => {
       const payload = {
         uniqueId: values.uniqueId,
         orderItems: orderItems.filter(item => item.styleNo), // filter out empty items
-        orderStatus: 'pending',
+        orderStatus: 'ongoing',
         memoId: values.memoId
       };
       

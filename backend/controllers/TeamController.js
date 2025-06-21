@@ -30,7 +30,7 @@ const generateUniqueId = async () => {
   try {
     const lastClient = await Clients.findOne().sort({ createdAt: -1 });
     const lastNumber = lastClient
-      ? parseInt(lastClient.uniqueId.replace("Sonalika", "")) || 0
+      ? parseInt(lastClient.uniqueId.replace("sonalika", "")) || 0
       : 0;
     const nextNumber = lastNumber + 1;
     return `sonalika${String(nextNumber).padStart(4, "0")}`;
@@ -178,65 +178,36 @@ exports.getClients = async (req, res) => {
 // Add order items to existing client by uniqueId or _id
 // Add/Update order details for a client
 //
-exports.addOrderToClient = async (req, res) => {
+exports.addClientOrder = async (req, res) => {
   try {
-    const { uniqueId, orderItems } = req.body;
+    const { uniqueId, memoId, orderItems } = req.body;
 
-    // Validate
     if (!uniqueId) {
-      return res.status(400).json({ error: "Client uniqueId is required" });
+      return res.status(400).json({ error: "Unique ID is required" });
     }
 
-    if (!orderItems || typeof orderItems !== 'object') {
-      return res.status(400).json({ error: "Order items must be an object" });
-    }
-
-    // Find client
     const client = await Clients.findOne({ uniqueId });
-    if (!client) {
-      return res.status(404).json({ error: "Client not found" });
-    }
+    if (!client) return res.status(404).json({ error: "Client not found" });
 
-    // Initialize orders if not exists
-    if (!client.orders) {
-      client.orders = new Map();
-    }
+    const newOrder = {
+      memoId,
+      orderItems: Array.isArray(orderItems) ? orderItems : [],
+      orderDate: new Date(),
+    };
 
-    // Process each order item
-    Object.entries(orderItems).forEach(([key, item]) => {
-      client.orderCounter += 1;
-      const orderKey = `order_${client.orderCounter}`;
-      
-      client.orders.set(orderKey, {
-        styleNo: item.styleNo?.trim(),
-        clarity: item.clarity?.trim() || "",
-        grossWeight: item.grossWeight || 0,
-        netWeight: item.netWeight || 0,
-        diaWeight: item.diaWeight || 0,
-        pcs: item.pcs || 0,
-        amount: item.amount || 0,
-        description: item.description?.trim() || "",
-        orderStatus: item.orderStatus || "received",
-        orderDate: item.orderDate || new Date()
-      });
-    });
+    client.orders.push(newOrder);
+    client.orderCounter += 1;
 
     await client.save();
 
-    res.status(200).json({
-      success: true,
-      message: "Orders added successfully",
-      totalOrders: client.orders.size
-    });
-
-  } catch (error) {
-    console.error("Error adding orders:", error);
-    res.status(500).json({
-      error: "Server error",
-      message: "Failed to add orders"
-    });
+    res.status(200).json({ message: "Order added successfully", client });
+  } catch (err) {
+    console.error("Add order error:", err);
+    res.status(500).json({ error: "Server error" });
   }
 };
+
+
 
 exports.getClientOrders = async (req, res) => {
   try {

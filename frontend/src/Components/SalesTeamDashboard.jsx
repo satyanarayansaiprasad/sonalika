@@ -59,6 +59,7 @@ const SalesTeamDashboard = () => {
   }, []);
 
   const handleKYCSubmit = async (values) => {
+    
     try {
       setLoading(true);
       const res = await axios.post(`${API_BASE_URL}/api/team/client-kyc`, values);
@@ -74,74 +75,59 @@ const SalesTeamDashboard = () => {
     }
   };
 
-  const handleOrderSubmit = async (values) => {
-    try {
-      setLoading(true);
-      
-      // Prepare order items in object format
-      const orderItemsObj = {};
-      orderItems.forEach((item, index) => {
-        if (item.styleNo && item.grossWeight && item.pcs) {
-          orderItemsObj[`item_${index}`] = {
-            styleNo: item.styleNo,
-            clarity: item.clarity,
-            grossWeight: item.grossWeight,
-            netWeight: item.netWeight,
-            diaWeight: item.diaWeight,
-            pcs: item.pcs,
-            amount: item.amount,
-            description: item.description,
-            orderStatus: item.orderStatus
-          };
-        }
-      });
+const handleOrderSubmit = async (values) => {
+  try {
+    setLoading(true);
 
-      if (Object.keys(orderItemsObj).length === 0) {
-        throw new Error('At least one valid order item is required');
-      }
+    const filteredOrderItems = orderItems.filter(
+      item => item.styleNo && item.grossWeight && item.pcs
+    );
 
-      const payload = {
-        uniqueId: selectedClient.uniqueId,
-        orderItems: orderItemsObj,
-        memoId: values.memoId
-      };
-
-      const response = await axios.post(
-        `${API_BASE_URL}/api/team/clients-order`, 
-        payload,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-          }
-        }
-      );
-
-      message.success(response.data.message || 'Order submitted successfully');
-      orderForm.resetFields();
-      setOrderItems([{
-        key: 1,
-        styleNo: '',
-        clarity: '',
-        grossWeight: 0,
-        netWeight: 0,
-        diaWeight: 0,
-        pcs: 1,
-        amount: 0,
-        description: '',
-        orderStatus: 'received'
-      }]);
-      setSelectedClient(null);
-      fetchClients();
-    } catch (err) {
-      console.error('Order submission error:', err);
-      const errorMsg = err.response?.data?.message || 
-                      err.message || 
-                      'Order submission failed';
-      message.error(errorMsg);
-    } finally {
-      setLoading(false);
+    if (filteredOrderItems.length === 0) {
+      throw new Error('At least one valid order item is required');
     }
-  };
+
+    const payload = {
+      uniqueId: selectedClient.uniqueId,
+      memoId: values.memoId,             // optional
+      orderItems: filteredOrderItems     // ✅ send as array
+    };
+
+    const response = await axios.post(
+      `${API_BASE_URL}/api/team/clients-order`,
+      payload,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      }
+    );
+
+    message.success(response.data.message || 'Order submitted successfully');
+    orderForm.resetFields();
+    setOrderItems([{
+      key: 1,
+      styleNo: '',
+      clarity: '',
+      grossWeight: 0,
+      netWeight: 0,
+      diaWeight: 0,
+      pcs: 1,
+      amount: 0,
+      description: '',
+      orderStatus: 'received'
+    }]);
+    setSelectedClient(null);
+    fetchClients();
+  } catch (err) {
+    console.error('Order submission error:', err);
+    const errorMsg = err.response?.data?.message || err.message || 'Order submission failed';
+    message.error(errorMsg);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const handleFetchOrderHistory = async (values) => {
     try {
@@ -377,7 +363,7 @@ const SalesTeamDashboard = () => {
                 >
                   {clients.map(client => (
                     <Option key={client.uniqueId} value={client.uniqueId}>
-                      {client.uniqueId} - {client.name}
+                      {client.uniqueId} 
                     </Option>
                   ))}
                 </Select>

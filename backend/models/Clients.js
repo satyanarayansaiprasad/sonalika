@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 
+// Single item inside an order
 const orderItemSchema = new mongoose.Schema({
   styleNo: String,
   clarity: String,
@@ -14,21 +15,25 @@ const orderItemSchema = new mongoose.Schema({
     enum: ["ongoing", "completed"],
     default: "ongoing",
   },
-}, { _id: true });  // Explicitly including _id for order items
+}, { _id: true });
 
+// One complete order (with memoId and multiple order items)
 const orderSchema = new mongoose.Schema({
   memoId: {
     type: String,
- 
-    // Ensure each order has a unique memoId
+    required: true  // ✅ Required ONLY when creating an order
   },
-  orderDate: { 
-    type: Date, 
-    default: Date.now 
+  orderDate: {
+    type: Date,
+    default: Date.now,
   },
-  orderItems: [orderItemSchema],
-}, { timestamps: true });  // Adds createdAt and updatedAt fields
+  orderItems: {
+    type: [orderItemSchema],
+    default: []
+  }
+}, { _id: true, timestamps: true });  // ✅ keep timestamps
 
+// Main client schema
 const clientSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -42,19 +47,20 @@ const clientSchema = new mongoose.Schema({
   gstNo: String,
   uniqueId: {
     type: String,
+    required: true,
     unique: true,
-    // lowercase: true,  // Automatically convert to lowercase
-    trim: true       // Remove whitespace
+    trim: true,
+    lowercase: true
   },
-  orders: {  // Changed from 'order' to 'orders' (more semantic for an array)
+  orders: {
     type: [orderSchema],
-    default: []
+    default: []  // ✅ No order/memoId is added at KYC time
   },
   orderCounter: {
     type: Number,
-    default: 0,
-  },
+    default: 0
+  }
 }, { timestamps: true });
 
 const Clients = mongoose.model("Client", clientSchema);
-module.exports=Clients;  // Singular "Client" is more conventional
+module.exports = Clients;

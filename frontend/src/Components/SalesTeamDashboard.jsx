@@ -29,7 +29,7 @@ const SalesTeamDashboard = () => {
       setError(null);
       try {
         // Fetch clients
-        const clientsRes = await axios.get('/api/clients');
+        const clientsRes = await axios.get(`${import.meta.env.VITE_BASE_URL}/api/team/get-clients`);
         const clientsData = Array.isArray(clientsRes?.data) ? clientsRes.data : [];
         setClients(clientsData);
         

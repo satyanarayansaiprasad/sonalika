@@ -11,33 +11,50 @@ const orderItemSchema = new mongoose.Schema({
   description: String,
   orderStatus: {
     type: String,
-    enum: [ 'ongoing', 'completed'],
-    default: 'ongoing'
-  }
-});
+    enum: ["ongoing", "completed"],
+    default: "ongoing",
+  },
+}, { _id: true });  // Explicitly including _id for order items
 
 const orderSchema = new mongoose.Schema({
-  memoId: String,
-  orderDate: { type: Date, default: Date.now },
-  orderItems: [orderItemSchema]
-});
+  memoId: {
+    type: String,
+    required: true,
+    unique: true  // Ensure each order has a unique memoId
+  },
+  orderDate: { 
+    type: Date, 
+    default: Date.now 
+  },
+  orderItems: [orderItemSchema],
+}, { timestamps: true });  // Adds createdAt and updatedAt fields
 
 const clientSchema = new mongoose.Schema({
-  name: String,
-  phone: String,
+  name: {
+    type: String,
+    required: true
+  },
+  phone: {
+    type: String,
+    required: true
+  },
   address: String,
   gstNo: String,
-   uniqueId: {
-  type: String,
-  lowercase: true, // Mongoose will convert to lowercase before saving
-  unique: true
-},
-
-  order: [orderSchema], // ✅ One client can have multiple orders
+  uniqueId: {
+    type: String,
+    unique: true,
+    // lowercase: true,  // Automatically convert to lowercase
+    trim: true       // Remove whitespace
+  },
+  orders: {  // Changed from 'order' to 'orders' (more semantic for an array)
+    type: [orderSchema],
+    default: []
+  },
   orderCounter: {
     type: Number,
-    default: 0
-  }
-});
+    default: 0,
+  },
+}, { timestamps: true });
 
-module.exports = mongoose.model("Clients", clientSchema);
+const Clients = mongoose.model("Client", clientSchema);
+module.exports=Clients;  // Singular "Client" is more conventional

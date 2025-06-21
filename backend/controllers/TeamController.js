@@ -24,23 +24,23 @@ exports.loginSalesteam = async (req, res) => {
 
 //Client Kyc
 
-// Step 1: Create client KYC with auto-generated uniqueId
-const generateUniqueId = async () => {
-  try {
-    const lastClient = await Clients.findOne().sort({ createdAt: -1 });
+// // Step 1: Create client KYC with auto-generated uniqueId
+// const generateUniqueId = async () => {
+//   try {
+//     const lastClient = await Clients.findOne().sort({ createdAt: -1 });
     
-    // Extract number from last client or start from 0
-    const lastNumber = lastClient
-      ? parseInt(lastClient.uniqueId.replace(/^[a-z]+/i, "")) || 0
-      : 0;
+//     // Extract number from last client or start from 0
+//     const lastNumber = lastClient
+//       ? parseInt(lastClient.uniqueId.replace(/^[a-z]+/i, "")) || 0
+//       : 0;
     
-    const nextNumber = lastNumber + 1;
-    return `sonalika${String(nextNumber).padStart(4, "0")}`.toLowerCase(); // ✅ FORCE lowercase
-  } catch (error) {
-    console.error("Error generating unique ID:", error);
-    throw new Error("Failed to generate unique ID");
-  }
-};
+//     const nextNumber = lastNumber + 1;
+//     return `sonalika${String(nextNumber).padStart(4, "0")}`.toLowerCase(); // ✅ FORCE lowercase
+//   } catch (error) {
+//     console.error("Error generating unique ID:", error);
+//     throw new Error("Failed to generate unique ID");
+//   }
+// };
 
 exports.createClientKYC = async (req, res) => {
   try {
@@ -100,10 +100,10 @@ exports.createClientKYC = async (req, res) => {
       });
     }
 
-    // Generate unique ID
- // Generate unique ID (will be lowercase)
-    const uniqueId = await generateUniqueId();
-    console.log("Generated Unique ID:", uniqueId); // Should be "sonalika0001" (lowercase)
+    // Generate unique ID - Get the count of existing clients
+    const count = await Clients.countDocuments();
+    const newNumber = String(count + 1).padStart(3, '0'); // 001, 002, ...
+    const uniqueId = `sonalika${newNumber}`.toLowerCase(); // Ensure lowercase
 
     // Create new client with empty orders Map
     const client = new Clients({
@@ -117,9 +117,9 @@ exports.createClientKYC = async (req, res) => {
       orderCounter: 0    // Initialize order counter
     });
 
-   console.log('Before save:', uniqueId); // Should be "sonalika0001"
-await client.save();
-console.log('After save:', client.uniqueId); // Check if changed
+    console.log('Before save:', uniqueId); // Should be "sonalika001"
+    await client.save();
+    console.log('After save:', client.uniqueId); // Verify it's still lowercase
 
     res.status(201).json({
       success: true,
@@ -165,7 +165,6 @@ console.log('After save:', client.uniqueId); // Check if changed
     });
   }
 };
-
 
 
 // Helper function to generate unique ID

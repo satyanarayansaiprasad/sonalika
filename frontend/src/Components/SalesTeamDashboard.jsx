@@ -120,24 +120,21 @@ const SalesTeamDashboard = () => {
         throw new Error('All order items must have Style No, Gross Weight > 0, and at least 1 piece');
       }
 
-     const payload = {
-  uniqueId: selectedClient.uniqueId, // ✅ Case-sensitive and correct
-  memoId: values.memoId?.trim() || undefined, // Optional, trimmed
-  orderItems: filteredOrderItems.map(item => ({
-    styleNo: item.styleNo.trim(),
-    clarity: item.clarity?.trim() || undefined,
-    grossWeight: Number(item.grossWeight) || 0, // fallback to 0 if empty/NaN
-    netWeight: Number(item.netWeight) || 0,
-    diaWeight: Number(item.diaWeight) || 0,
-    pcs: Number(item.pcs) || 1, // fallback to at least 1
-    amount: Number(item.amount) || 0,
-    description: item.description?.trim() || undefined,
-    orderStatus: item.orderStatus || 'ongoing'
-  }))
-};
-
-
-      console.log('Order submission payload:', JSON.stringify(payload, null, 2));
+      const payload = {
+        uniqueId: selectedClient.uniqueId,
+        memoId: values.memoId?.trim() || undefined,
+        orderItems: filteredOrderItems.map(item => ({
+          styleNo: item.styleNo.trim(),
+          clarity: item.clarity?.trim() || undefined,
+          grossWeight: Number(item.grossWeight) || 0,
+          netWeight: Number(item.netWeight) || 0,
+          diaWeight: Number(item.diaWeight) || 0,
+          pcs: Number(item.pcs) || 1,
+          amount: Number(item.amount) || 0,
+          description: item.description?.trim() || undefined,
+          orderStatus: item.orderStatus || 'ongoing'
+        }))
+      };
 
       const response = await axios.post(
         `${API_BASE_URL}/api/team/clients-order`,
@@ -146,11 +143,9 @@ const SalesTeamDashboard = () => {
           headers: {
             'Content-Type': 'application/json',
           },
-          timeout: 10000 // 10 seconds timeout
+          timeout: 10000
         }
       );
-
-      console.log('Order submission response:', response.data);
 
       message.success(response.data.message || 'Order submitted successfully');
       orderForm.resetFields();
@@ -253,7 +248,12 @@ const SalesTeamDashboard = () => {
   };
 
   const clientColumns = [
-    { title: 'Unique ID', dataIndex: 'uniqueId', key: 'uniqueId' },
+    { 
+      title: 'Unique ID', 
+      dataIndex: 'uniqueId', 
+      key: 'uniqueId',
+      render: (id) => <Text>{id.toLowerCase()}</Text>
+    },
     { title: 'Name', dataIndex: 'name', key: 'name' },
     { title: 'Phone', dataIndex: 'phone', key: 'phone' },
     { title: 'Address', dataIndex: 'address', key: 'address', ellipsis: true },
@@ -423,21 +423,20 @@ const SalesTeamDashboard = () => {
                 rules={[{ required: true, message: 'Please select a client' }]}
               >
                 <Select
-  showSearch
-  placeholder="Search by Unique ID"
-  optionFilterProp="children"
-  onChange={handleClientSelect}
-  filterOption={(input, option) =>
-    option?.value?.toLowerCase().includes(input.toLowerCase())
-  }
->
-  {clients.map(client => (
-    <Option key={client.uniqueId} value={client.uniqueId}>
-      {client.uniqueId}
-    </Option>
-  ))}
-</Select>
-
+                  showSearch
+                  placeholder="Search by Unique ID"
+                  optionFilterProp="children"
+                  onChange={handleClientSelect}
+                  filterOption={(input, option) =>
+                    option?.value?.toLowerCase().includes(input.toLowerCase())
+                  }
+                >
+                  {clients.map(client => (
+                    <Option key={client.uniqueId} value={client.uniqueId}>
+                      {client.uniqueId.toLowerCase()}
+                    </Option>
+                  ))}
+                </Select>
               </Form.Item>
             </Col>
             <Col span={12}>
@@ -464,6 +463,12 @@ const SalesTeamDashboard = () => {
                 </Col>
               </Row>
               <Row style={{ marginTop: 8 }}>
+                <Col span={24}>
+                  <Text strong>Unique ID: </Text>
+                  <Text>{selectedClient.uniqueId.toLowerCase()}</Text>
+                </Col>
+              </Row>
+              <Row>
                 <Col span={24}>
                   <Text strong>Address: </Text>
                   <Text>{selectedClient.address}</Text>
@@ -562,7 +567,6 @@ const SalesTeamDashboard = () => {
                     style={{ width: "100%" }}
                     placeholder="Status"
                   >
-                   
                     <Option value="ongoing">Ongoing</Option>
                     <Option value="completed">Completed</Option>
                   </Select>
@@ -624,7 +628,7 @@ const SalesTeamDashboard = () => {
             >
               {clients.map(client => (
                 <Option key={client.uniqueId} value={client.uniqueId}>
-                  {client.name} ({client.uniqueId})
+                  {client.name} ({client.uniqueId.toLowerCase()})
                 </Option>
               ))}
             </Select>
@@ -644,7 +648,7 @@ const SalesTeamDashboard = () => {
                 </Col>
                 <Col span={8}>
                   <Text strong>Unique ID: </Text>
-                  <Text>{orderHistory.client.uniqueId}</Text>
+                  <Text>{orderHistory.client.uniqueId.toLowerCase()}</Text>
                 </Col>
                 <Col span={8}>
                   <Text strong>Phone: </Text>

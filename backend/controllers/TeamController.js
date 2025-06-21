@@ -195,7 +195,7 @@ exports.addClientOrder = async (req, res) => {
       orderDate: new Date(),
     };
 
-    client.orders.push(newOrder);
+    client.order.push(newOrder);
     client.orderCounter += 1;
 
     await client.save();

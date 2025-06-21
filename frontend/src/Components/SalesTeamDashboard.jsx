@@ -259,9 +259,9 @@ const SalesTeamDashboard = () => {
     { title: 'GST No', dataIndex: 'gstNo', key: 'gstNo' },
     { 
       title: 'Orders', 
-      key: 'orders', 
+      key: 'order', 
       render: (_, record) => (
-        <Text>{record.orders?.size || 0} orders</Text>
+        <Text>{record.order?.size || 0} order</Text>
       ) 
     },
   ];
@@ -311,7 +311,7 @@ const SalesTeamDashboard = () => {
               title="Active Orders" 
               value={
                 clients.reduce((count, client) => 
-                  count + (client.orders ? Array.from(client.orders.values()).filter(o => o.orderStatus === 'ongoing').length : 0), 0)
+                  count + (client.order ? Array.from(client.order.values()).filter(o => o.orderStatus === 'ongoing').length : 0), 0)
               } 
             />
           </Card>
@@ -322,7 +322,7 @@ const SalesTeamDashboard = () => {
               title="Completed Orders" 
               value={
                 clients.reduce((count, client) => 
-                  count + (client.orders ? Array.from(client.orders.values()).filter(o => o.orderStatus === 'completed').length : 0), 0)
+                  count + (client.order ? Array.from(client.order.values()).filter(o => o.orderStatus === 'completed').length : 0), 0)
               } 
             />
           </Card>
@@ -663,7 +663,7 @@ const SalesTeamDashboard = () => {
             
             <Table
               columns={orderHistoryColumns}
-              dataSource={orderHistory.orders ? Array.from(orderHistory.orders.values()) : []}
+              dataSource={orderHistory.order ? Array.from(orderHistory.order.values()) : []}
               rowKey="styleNo"
               bordered
               pagination={{ pageSize: 10 }}

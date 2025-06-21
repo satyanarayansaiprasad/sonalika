@@ -116,7 +116,7 @@ exports.addOrderToClient = async (req, res) => {
     client.orderItems.push(...orderItems);
 
     // Optional: update order status and memoId
-    if (orderStatus) client.order = orderStatus;
+    if (orderStatus) client.orders = orderStatus;
     if (memoId) client.memoId = memoId;
 
     await client.save();
@@ -159,7 +159,7 @@ exports.getOrderHistory = async (req, res) => {
       uniqueId: client.uniqueId,
       memoId: client.memoId,
       phone: client.phone,
-      orderStatus: client.order,
+      orderStatus: client.orders,
       orderDate: client.orderDate,
       orderItems: client.orderItems,
     });

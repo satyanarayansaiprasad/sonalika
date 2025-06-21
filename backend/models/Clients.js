@@ -1,60 +1,64 @@
 const mongoose = require("mongoose");
 
-// Single item inside an order
-const orderItemSchema = new mongoose.Schema({
+const orderSchema = new mongoose.Schema({
+  srNo: Number,
   styleNo: String,
   clarity: String,
-  grossWeight: Number,
-  netWeight: Number,
-  diaWeight: Number,
-  pcs: Number,
+  grossWeight: Number,  // GR WT
+  netWeight: Number,    // NT WT
+  diaWeight: Number,    // DIA WT
+  pcs: Number,          // PCS
   amount: Number,
   description: String,
   orderStatus: {
     type: String,
     enum: ["ongoing", "completed"],
-    default: "ongoing",
+    default: "ongoing"
   },
-}, { _id: true });
+  orderDate: {
+    type: Date,
+    default: Date.now
+  }
+}, { _id: false });  // _id: false if you don't want each order item to get its own ObjectId
 
-// Main client schema
-const clientSchema = new mongoose.Schema({
+
+const clientsSchema = new mongoose.Schema({
   name: {
     type: String,
-    required: true
+    required: true,
+    trim: true,
   },
-  phone: {
-    type: String,
-    required: true
-  },
-  address: String,
-  gstNo: String,
   uniqueId: {
     type: String,
     required: true,
     unique: true,
     trim: true,
-    lowercase: true
+  },
+  phone: {
+    type: String,
+    required: true,
+    trim: true,
+  },
+  address: {
+    type: String,
+    required: true,
+    trim: true,
+  },
+  gstNo: {
+    type: String,
+    trim: true,
+  },
+  memoId: {
+    type: String,
+    trim: true,
   },
   orders: {
-    type: Map,  // Changed from Array to Map
-    of: {       // Each order will be stored with orderNumber as key
-      orderDate: {
-        type: Date,
-        default: Date.now,
-      },
-      orderItems: {
-        type: [orderItemSchema],
-        default: []
-      }
-    },
-    default: {}  // Default empty object instead of array
-  },
-  orderCounter: {
-    type: Number,
-    default: 0
+    type: [orderSchema],
+    default: []
   }
-}, { timestamps: true });
+}, {
+  timestamps: true,
+});
 
-const Clients = mongoose.model("Client", clientSchema);
-module.exports = Clients;
+
+module.exports = mongoose.model("Clients", clientsSchema);

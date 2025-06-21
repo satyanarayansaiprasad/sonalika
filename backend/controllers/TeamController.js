@@ -33,7 +33,7 @@ const generateUniqueId = async () => {
       ? parseInt(lastClient.uniqueId.replace("Sonalika", "")) || 0
       : 0;
     const nextNumber = lastNumber + 1;
-    return `Sonalika${String(nextNumber).padStart(4, "0")}`;
+    return `sonalika${String(nextNumber).padStart(4, "0")}`;
   } catch (error) {
     console.error("Error generating unique ID:", error);
     throw new Error("Failed to generate unique ID");
@@ -45,7 +45,7 @@ exports.createClientKYC = async (req, res) => {
     const { name, phone, address, gstNo, memoId } = req.body;
 
     // Validate required fields
-    const requiredFields = { name, phone, address };
+    const requiredFields = { name, phone, address, gstNo };
     const missingFields = Object.entries(requiredFields)
       .filter(([_, value]) => !value?.trim())
       .map(([key]) => key);
@@ -53,79 +53,117 @@ exports.createClientKYC = async (req, res) => {
     if (missingFields.length > 0) {
       return res.status(400).json({
         error: "Missing required fields",
-        missingFields,
-        message: `The following fields are required: ${missingFields.join(
-          ", "
-        )}`,
+        message: `The following fields are required: ${missingFields.join(", ")}`,
+        missingFields: {
+          name: !name,
+          phone: !phone,
+          address: !address,
+          gstNo: !gstNo
+        }
       });
     }
 
-    // Validate GST number format if provided
-    if (
-      gstNo &&
-      !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(gstNo)
-    ) {
+    // Validate phone format (10 digits)
+    if (!/^\d{10}$/.test(phone.trim())) {
       return res.status(400).json({
-        error: "Invalid GST number format",
-        message: "Please provide a valid GST number (e.g., 22AAAAA0000A1Z5)",
+        error: "Invalid phone number",
+        message: "Phone number must be 10 digits"
       });
     }
 
-    // Check if a client already exists with this phone
-    const existingClient = await Clients.findOne({ phone: phone.trim() });
+    // Validate GST number format
+    if (!/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(gstNo.trim())) {
+      return res.status(400).json({
+        error: "Invalid GST number",
+        message: "Please enter a valid GST number (e.g., 22AAAAA0000A1Z5)"
+      });
+    }
+
+    // Check for existing client with same phone or GST
+    const existingClient = await Clients.findOne({ 
+      $or: [
+        { phone: phone.trim() },
+        { gstNo: gstNo.trim() }
+      ]
+    });
+
     if (existingClient) {
+      const conflictField = existingClient.phone === phone.trim() ? 'phone' : 'GST number';
       return res.status(409).json({
-        error: "Client already exists",
-        message: "A client with this phone number already exists",
+        error: "Client exists",
+        message: `Client with this ${conflictField} already exists`,
         clientId: existingClient._id,
+        uniqueId: existingClient.uniqueId,
+        conflictField
       });
     }
 
     // Generate unique ID
-    const uniqueId = await generateUniqueId();
+    const uniqueId = generateUniqueId(); // Implement your ID generation logic
 
-    // Create client without any orders initially
-    const newClient = new Clients({
+    // Create new client with empty orders Map
+    const client = new Clients({
       name: name.trim(),
       phone: phone.trim(),
       address: address.trim(),
-      gstNo: gstNo?.trim(),
-      memoId: memoId?.trim(),
+      gstNo: gstNo.trim(),
+      memoId: memoId?.trim(), // Optional field
       uniqueId,
-      orders: [], // explicit for clarity (can be omitted since default is empty)
+      orders: new Map(), // Initialize empty Map for orders
+      orderCounter: 0    // Initialize order counter
     });
 
-    await newClient.save();
+    await client.save();
 
     res.status(201).json({
       success: true,
       message: "Client KYC created successfully",
       client: {
-        id: newClient._id,
-        name: newClient.name,
-        uniqueId: newClient.uniqueId,
-        phone: newClient.phone,
-      },
+        id: client._id,
+        uniqueId: client.uniqueId,
+        name: client.name,
+        phone: client.phone,
+        gstNo: client.gstNo,
+        address: client.address,
+        memoId: client.memoId,
+        ordersCount: 0, // Explicitly showing no orders yet
+        createdAt: client.createdAt
+      }
     });
-  } catch (error) {
-    console.error("Error in createClientKYC:", error);
 
+  } catch (error) {
+    console.error("Error creating client KYC:", error);
+    
     if (error.name === "ValidationError") {
-      const errors = Object.values(error.errors).map((err) => err.message);
+      const errors = Object.values(error.errors).map(err => ({
+        field: err.path,
+        message: err.message
+      }));
       return res.status(400).json({
         error: "Validation failed",
-        details: errors,
+        details: errors
+      });
+    }
+
+    if (error.code === 11000) { // MongoDB duplicate key error
+      return res.status(409).json({
+        error: "Duplicate uniqueId",
+        message: "This unique ID already exists"
       });
     }
 
     res.status(500).json({
       error: "Internal server error",
-      message: "Could not create client KYC",
-      details:
-        process.env.NODE_ENV === "development" ? error.message : undefined,
+      message: "Failed to create client KYC",
+      details: process.env.NODE_ENV === "development" ? error.message : undefined
     });
   }
 };
+
+
+
+// Helper function to generate unique ID
+
 
 exports.getClients = async (req, res) => {
   try {
@@ -142,95 +180,60 @@ exports.getClients = async (req, res) => {
 //
 exports.addOrderToClient = async (req, res) => {
   try {
-    const { uniqueId, orders, memoId } = req.body;
+    const { uniqueId, orderItems } = req.body;
 
-    // Validate required fields
+    // Validate
     if (!uniqueId) {
-      return res.status(400).json({ 
-        error: "Unique ID is required",
-        message: "Please provide the client's unique ID"
-      });
+      return res.status(400).json({ error: "Client uniqueId is required" });
     }
 
-    if (!Array.isArray(orders) || orders.length === 0) {
-      return res.status(400).json({ 
-        error: "Invalid order data",
-        message: "At least one order item is required"
-      });
+    if (!orderItems || typeof orderItems !== 'object') {
+      return res.status(400).json({ error: "Order items must be an object" });
     }
 
-    // Validate each order item
-    for (const order of orders) {
-      if (!order.styleNo || !order.grossWeight || !order.pcs) {
-        return res.status(400).json({
-          error: "Missing required fields in order items",
-          message: "Each order item must have styleNo, grossWeight, and pcs"
-        });
-      }
-    }
-
-    // Find client by uniqueId
+    // Find client
     const client = await Clients.findOne({ uniqueId });
-
     if (!client) {
-      return res.status(404).json({ 
-        error: "Client not found",
-        message: "No client found with the provided unique ID"
+      return res.status(404).json({ error: "Client not found" });
+    }
+
+    // Initialize orders if not exists
+    if (!client.orders) {
+      client.orders = new Map();
+    }
+
+    // Process each order item
+    Object.entries(orderItems).forEach(([key, item]) => {
+      client.orderCounter += 1;
+      const orderKey = `order_${client.orderCounter}`;
+      
+      client.orders.set(orderKey, {
+        styleNo: item.styleNo?.trim(),
+        clarity: item.clarity?.trim() || "",
+        grossWeight: item.grossWeight || 0,
+        netWeight: item.netWeight || 0,
+        diaWeight: item.diaWeight || 0,
+        pcs: item.pcs || 0,
+        amount: item.amount || 0,
+        description: item.description?.trim() || "",
+        orderStatus: item.orderStatus || "received",
+        orderDate: item.orderDate || new Date()
       });
-    }
-
-    // Generate sequential srNo for new orders
-    let lastSrNo = client.orders.length > 0 
-      ? Math.max(...client.orders.map(o => o.srNo)) 
-      : 0;
-
-    const newOrders = orders.map(order => ({
-      ...order,
-      srNo: ++lastSrNo,
-      orderDate: new Date(),
-      // Set default values if not provided
-      clarity: order.clarity || "",
-      netWeight: order.netWeight || 0,
-      diaWeight: order.diaWeight || 0,
-      amount: order.amount || 0,
-      description: order.description || "",
-      orderStatus: order.orderStatus || "received"
-    }));
-
-    // Add new orders to client
-    client.orders.push(...newOrders);
-    
-    // Update memoId if provided
-    if (memoId) {
-      client.memoId = memoId.trim();
-    }
+    });
 
     await client.save();
 
     res.status(200).json({
       success: true,
       message: "Orders added successfully",
-      clientId: client._id,
-      uniqueId: client.uniqueId,
-      addedOrdersCount: newOrders.length,
-      totalOrdersCount: client.orders.length
+      totalOrders: client.orders.size
     });
 
   } catch (error) {
-    console.error("Error in addOrderToClient:", error);
-
-    if (error.name === "ValidationError") {
-      const errors = Object.values(error.errors).map(err => err.message);
-      return res.status(400).json({
-        error: "Validation failed",
-        details: errors
-      });
-    }
-
+    console.error("Error adding orders:", error);
     res.status(500).json({
-      error: "Internal server error",
-      message: "Could not add orders to client",
-      details: process.env.NODE_ENV === "development" ? error.message : undefined
+      error: "Server error",
+      message: "Failed to add orders"
     });
   }
 };

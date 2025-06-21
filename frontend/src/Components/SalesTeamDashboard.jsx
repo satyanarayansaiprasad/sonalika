@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import {
   Layout, Menu, Card, Table, Form, Input, Button, message, Space, 
-  Typography, Spin, Row, Col, Statistic, Divider, InputNumber, Select
+  Typography, Spin, Row, Col, Statistic, Divider, InputNumber, Select, Tag
 } from 'antd';
 import {
   DashboardOutlined, UserAddOutlined, ShoppingCartOutlined, 
-  HistoryOutlined, PlusOutlined, MinusOutlined
+  HistoryOutlined, PlusOutlined, MinusOutlined, DeleteOutlined
 } from '@ant-design/icons';
 import axios from 'axios';
 
@@ -23,17 +23,23 @@ const SalesTeamDashboard = () => {
   const [kycForm] = Form.useForm();
   const [orderForm] = Form.useForm();
   const [orderItems, setOrderItems] = useState([{
-    srNo: 1,
+    key: 1,
     styleNo: '',
     clarity: '',
     grossWeight: 0,
     netWeight: 0,
     diaWeight: 0,
-    pcs: 0,
+    pcs: 1,
     amount: 0,
-    description: ''
+    description: '',
+    orderStatus: 'received'
   }]);
   const [orderHistory, setOrderHistory] = useState(null);
+  const [selectedClient, setSelectedClient] = useState(null);
+
+  const columnHeaders = [
+    'SR NO', 'STYLE NO', 'CLARITY', 'GR WT', 'NT WT', 'DIA WT', 'PCS', 'AMOUNT', 'DESCRIPTION', 'STATUS', 'ACTION'
+  ];
 
   const fetchClients = async () => {
     setLoading(true);
@@ -72,46 +78,60 @@ const SalesTeamDashboard = () => {
     try {
       setLoading(true);
       
-      // Filter out empty items and validate required fields
-      const validOrderItems = orderItems.filter(item => 
-        item.styleNo && item.grossWeight && item.pcs
-      );
-      
-      if (validOrderItems.length === 0) {
+      // Prepare order items in object format
+      const orderItemsObj = {};
+      orderItems.forEach((item, index) => {
+        if (item.styleNo && item.grossWeight && item.pcs) {
+          orderItemsObj[`item_${index}`] = {
+            styleNo: item.styleNo,
+            clarity: item.clarity,
+            grossWeight: item.grossWeight,
+            netWeight: item.netWeight,
+            diaWeight: item.diaWeight,
+            pcs: item.pcs,
+            amount: item.amount,
+            description: item.description,
+            orderStatus: item.orderStatus
+          };
+        }
+      });
+
+      if (Object.keys(orderItemsObj).length === 0) {
         throw new Error('At least one valid order item is required');
       }
 
       const payload = {
-        uniqueId: values.uniqueId,
-        orders: validOrderItems,
-        // memoId: values.memoId
+        uniqueId: selectedClient.uniqueId,
+        orderItems: orderItemsObj,
+        memoId: values.memoId
       };
-      
-     const response = await axios.post(
-  `${API_BASE_URL}/api/team/clients-order`, 
-  payload,
-  {
-    headers: {
-      'Content-Type': 'application/json',
-      // Add authorization if needed
-      // 'Authorization': `Bearer ${token}`
-    }
-  }
-);
+
+      const response = await axios.post(
+        `${API_BASE_URL}/api/team/clients-order`, 
+        payload,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        }
+      );
+
       message.success(response.data.message || 'Order submitted successfully');
       orderForm.resetFields();
       setOrderItems([{
-        srNo: 1,
+        key: 1,
         styleNo: '',
         clarity: '',
         grossWeight: 0,
         netWeight: 0,
         diaWeight: 0,
-        pcs: 0,
+        pcs: 1,
         amount: 0,
-        description: ''
+        description: '',
+        orderStatus: 'received'
       }]);
-      fetchClients(); // Refresh client list
+      setSelectedClient(null);
+      fetchClients();
     } catch (err) {
       console.error('Order submission error:', err);
       const errorMsg = err.response?.data?.message || 
@@ -139,37 +159,41 @@ const SalesTeamDashboard = () => {
   };
 
   const addOrderItem = () => {
-    const newSrNo = orderItems.length > 0 ? 
-      Math.max(...orderItems.map(item => item.srNo)) + 1 : 1;
+    const newKey = orderItems.length > 0 ? 
+      Math.max(...orderItems.map(item => item.key)) + 1 : 1;
     
     setOrderItems([...orderItems, {
-      srNo: newSrNo,
+      key: newKey,
       styleNo: '',
       clarity: '',
       grossWeight: 0,
       netWeight: 0,
       diaWeight: 0,
-      pcs: 0,
+      pcs: 1,
       amount: 0,
-      description: ''
+      description: '',
+      orderStatus: 'received'
     }]);
   };
 
-  const removeOrderItem = (index) => {
+  const removeOrderItem = (key) => {
     if (orderItems.length <= 1) {
       message.warning('At least one order item is required');
       return;
     }
     
-    const newItems = [...orderItems];
-    newItems.splice(index, 1);
-    setOrderItems(newItems);
+    setOrderItems(orderItems.filter(item => item.key !== key));
   };
 
-  const updateOrderItem = (index, field, value) => {
-    const newItems = [...orderItems];
-    newItems[index] = { ...newItems[index], [field]: value };
-    setOrderItems(newItems);
+  const updateOrderItem = (key, field, value) => {
+    setOrderItems(orderItems.map(item => 
+      item.key === key ? { ...item, [field]: value } : item
+    ));
+  };
+
+  const handleClientSelect = (value) => {
+    const client = clients.find(c => c.uniqueId === value);
+    setSelectedClient(client);
   };
 
   const clientColumns = [
@@ -182,7 +206,7 @@ const SalesTeamDashboard = () => {
       title: 'Orders', 
       key: 'orders', 
       render: (_, record) => (
-        <Text>{record.orders?.length || 0} orders</Text>
+        <Text>{record.orders?.size || 0} orders</Text>
       ) 
     },
   ];
@@ -196,7 +220,8 @@ const SalesTeamDashboard = () => {
     { title: 'DIA WT', dataIndex: 'diaWeight', key: 'diaWeight' },
     { title: 'PCS', dataIndex: 'pcs', key: 'pcs' },
     { title: 'Amount', dataIndex: 'amount', key: 'amount' },
-    { title: 'Status', 
+    { 
+      title: 'Status', 
       dataIndex: 'orderStatus', 
       key: 'orderStatus',
       render: (status) => (
@@ -208,7 +233,8 @@ const SalesTeamDashboard = () => {
         </Tag>
       )
     },
-    { title: 'Date', 
+    { 
+      title: 'Date', 
       dataIndex: 'orderDate', 
       key: 'orderDate',
       render: (date) => new Date(date).toLocaleDateString()
@@ -230,7 +256,7 @@ const SalesTeamDashboard = () => {
               title="Active Orders" 
               value={
                 clients.reduce((count, client) => 
-                  count + (client.orders?.filter(o => o.orderStatus === 'ongoing').length || 0), 0)
+                  count + (client.orders ? Array.from(client.orders.values()).filter(o => o.orderStatus === 'ongoing').length : 0), 0)
               } 
             />
           </Card>
@@ -241,7 +267,7 @@ const SalesTeamDashboard = () => {
               title="Completed Orders" 
               value={
                 clients.reduce((count, client) => 
-                  count + (client.orders?.filter(o => o.orderStatus === 'completed').length || 0), 0)
+                  count + (client.orders ? Array.from(client.orders.values()).filter(o => o.orderStatus === 'completed').length : 0), 0)
               } 
             />
           </Card>
@@ -301,8 +327,9 @@ const SalesTeamDashboard = () => {
             <Col span={12}>
               <Form.Item 
                 name="gstNo" 
-                label="GST Number (optional)"
+                label="GST Number"
                 rules={[
+                  { required: true, message: 'Please enter GST number' },
                   {
                     pattern: /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/,
                     message: 'Invalid GST format'
@@ -334,26 +361,27 @@ const SalesTeamDashboard = () => {
         <Form layout="vertical" form={orderForm} onFinish={handleOrderSubmit}>
           <Row gutter={16}>
             <Col span={12}>
-            <Form.Item 
-  name="uniqueId" 
-  label="Select Client" 
-  rules={[{ required: true, message: 'Please select a client' }]}
->
-  <Select
-    showSearch
-    placeholder="Search by Unique ID"
-    optionFilterProp="children"
-    filterOption={(input, option) =>
-      option.value.toLowerCase().includes(input.toLowerCase()) // Case-insensitive search
-    }
-  >
-    {clients.map(client => (
-      <Option key={client.uniqueId} value={client.uniqueId}>
-        {client.uniqueId} {/* Display exact case from database */}
-      </Option>
-    ))}
-  </Select>
-</Form.Item>
+              <Form.Item 
+                name="uniqueId" 
+                label="Select Client" 
+                rules={[{ required: true, message: 'Please select a client' }]}
+              >
+                <Select
+                  showSearch
+                  placeholder="Search by Unique ID"
+                  optionFilterProp="children"
+                  onChange={handleClientSelect}
+                  filterOption={(input, option) =>
+                    option.children.toLowerCase().includes(input.toLowerCase())
+                  }
+                >
+                  {clients.map(client => (
+                    <Option key={client.uniqueId} value={client.uniqueId}>
+                      {client.uniqueId} - {client.name}
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
             </Col>
             <Col span={12}>
               <Form.Item name="memoId" label="Memo ID (optional)">
@@ -361,144 +389,155 @@ const SalesTeamDashboard = () => {
               </Form.Item>
             </Col>
           </Row>
-          
+
+          {selectedClient && (
+            <Card type="inner" title="Client Details" style={{ marginBottom: 16 }}>
+              <Row gutter={16}>
+                <Col span={8}>
+                  <Text strong>Name: </Text>
+                  <Text>{selectedClient.name}</Text>
+                </Col>
+                <Col span={8}>
+                  <Text strong>Phone: </Text>
+                  <Text>{selectedClient.phone}</Text>
+                </Col>
+                <Col span={8}>
+                  <Text strong>GST No: </Text>
+                  <Text>{selectedClient.gstNo || 'N/A'}</Text>
+                </Col>
+              </Row>
+              <Row style={{ marginTop: 8 }}>
+                <Col span={24}>
+                  <Text strong>Address: </Text>
+                  <Text>{selectedClient.address}</Text>
+                </Col>
+              </Row>
+            </Card>
+          )}
+
           <Divider orientation="left">Order Items</Divider>
           
-          {orderItems.map((item, index) => (
-            <Card 
-              key={index} 
-              size="small" 
-              style={{ marginBottom: 16 }}
-              title={`Item ${index + 1}`}
-              extra={
-                <Button 
-                  danger 
-                  icon={<MinusOutlined />} 
-                  onClick={() => removeOrderItem(index)}
-                  disabled={orderItems.length <= 1}
-                />
-              }
-            >
-              <Row gutter={16}>
-                <Col span={6}>
-                  <Form.Item label="Style No" required>
-                    <Input 
-                      value={item.styleNo} 
-                      onChange={(e) => updateOrderItem(index, 'styleNo', e.target.value)} 
-                      placeholder="Required"
-                    />
-                  </Form.Item>
+          <div style={{ overflowX: "auto" }}>
+            <Row style={{ background: "#f0f2f5", padding: "10px", fontWeight: "bold", borderBottom: "1px solid #d9d9d9" }}>
+              {columnHeaders.map((col, i) => (
+                <Col key={i} span={col === "DESCRIPTION" ? 6 : 2} style={{ textAlign: "center" }}>{col}</Col>
+              ))}
+            </Row>
+
+            {orderItems.map((item, index) => (
+              <Row key={item.key} gutter={8} style={{ padding: "10px 0", borderBottom: "1px solid #f0f0f0", background: index % 2 === 0 ? "#fff" : "#fcfcfc" }}>
+                <Col span={2} style={{ textAlign: "center" }}>
+                  <Text>{index + 1}</Text>
+                </Col>
+                <Col span={2}>
+                  <Input 
+                    placeholder="Style No" 
+                    value={item.styleNo} 
+                    onChange={e => updateOrderItem(item.key, "styleNo", e.target.value)} 
+                  />
+                </Col>
+                <Col span={2}>
+                  <Input 
+                    placeholder="Clarity" 
+                    value={item.clarity} 
+                    onChange={e => updateOrderItem(item.key, "clarity", e.target.value)} 
+                  />
+                </Col>
+                <Col span={2}>
+                  <InputNumber 
+                    min={0} 
+                    step={0.01} 
+                    placeholder="GR WT" 
+                    value={item.grossWeight} 
+                    onChange={val => updateOrderItem(item.key, "grossWeight", val)} 
+                    style={{ width: "100%" }} 
+                  />
+                </Col>
+                <Col span={2}>
+                  <InputNumber 
+                    min={0} 
+                    step={0.01} 
+                    placeholder="NT WT" 
+                    value={item.netWeight} 
+                    onChange={val => updateOrderItem(item.key, "netWeight", val)} 
+                    style={{ width: "100%" }} 
+                  />
+                </Col>
+                <Col span={2}>
+                  <InputNumber 
+                    min={0} 
+                    step={0.01} 
+                    placeholder="DIA WT" 
+                    value={item.diaWeight} 
+                    onChange={val => updateOrderItem(item.key, "diaWeight", val)} 
+                    style={{ width: "100%" }} 
+                  />
+                </Col>
+                <Col span={2}>
+                  <InputNumber 
+                    min={1} 
+                    placeholder="PCS" 
+                    value={item.pcs} 
+                    onChange={val => updateOrderItem(item.key, "pcs", val)} 
+                    style={{ width: "100%" }} 
+                  />
+                </Col>
+                <Col span={2}>
+                  <InputNumber 
+                    min={0} 
+                    placeholder="Amount ₹" 
+                    value={item.amount} 
+                    onChange={val => updateOrderItem(item.key, "amount", val)} 
+                    style={{ width: "100%" }} 
+                  />
                 </Col>
                 <Col span={6}>
-                  <Form.Item label="Clarity">
-                    <Input 
-                      value={item.clarity} 
-                      onChange={(e) => updateOrderItem(index, 'clarity', e.target.value)} 
-                      placeholder="Diamond clarity"
-                    />
-                  </Form.Item>
+                  <Input 
+                    placeholder="Description" 
+                    value={item.description} 
+                    onChange={e => updateOrderItem(item.key, "description", e.target.value)} 
+                  />
                 </Col>
-                <Col span={6}>
-                  <Form.Item label="GR WT (grams)" required>
-                    <InputNumber 
-                      value={item.grossWeight} 
-                      onChange={(value) => updateOrderItem(index, 'grossWeight', value)} 
-                      style={{ width: '100%' }}
-                      min={0}
-                      step={0.01}
-                      precision={2}
-                    />
-                  </Form.Item>
+                <Col span={2}>
+                  <Select
+                    value={item.orderStatus}
+                    onChange={val => updateOrderItem(item.key, "orderStatus", val)}
+                    style={{ width: "100%" }}
+                    placeholder="Status"
+                  >
+                    <Option value="received">Received</Option>
+                    <Option value="ongoing">Ongoing</Option>
+                    <Option value="completed">Completed</Option>
+                  </Select>
                 </Col>
-                <Col span={6}>
-                  <Form.Item label="NT WT (grams)">
-                    <InputNumber 
-                      value={item.netWeight} 
-                      onChange={(value) => updateOrderItem(index, 'netWeight', value)} 
-                      style={{ width: '100%' }}
-                      min={0}
-                      step={0.01}
-                      precision={2}
-                    />
-                  </Form.Item>
-                </Col>
-              </Row>
-              
-              <Row gutter={16}>
-                <Col span={6}>
-                  <Form.Item label="DIA WT (carats)">
-                    <InputNumber 
-                      value={item.diaWeight} 
-                      onChange={(value) => updateOrderItem(index, 'diaWeight', value)} 
-                      style={{ width: '100%' }}
-                      min={0}
-                      step={0.01}
-                      precision={2}
-                    />
-                  </Form.Item>
-                </Col>
-                <Col span={6}>
-                  <Form.Item label="Pieces" required>
-                    <InputNumber 
-                      value={item.pcs} 
-                      onChange={(value) => updateOrderItem(index, 'pcs', value)} 
-                      style={{ width: '100%' }}
-                      min={1}
-                    />
-                  </Form.Item>
-                </Col>
-                <Col span={6}>
-                  <Form.Item label="Amount (₹)">
-                    <InputNumber 
-                      value={item.amount} 
-                      onChange={(value) => updateOrderItem(index, 'amount', value)} 
-                      style={{ width: '100%' }}
-                      min={0}
-                      precision={2}
-                    />
-                  </Form.Item>
-                </Col>
-                <Col span={6}>
-                  <Form.Item label="Status">
-                    <Select
-                      value={item.orderStatus || 'received'}
-                      onChange={(value) => updateOrderItem(index, 'orderStatus', value)}
-                      style={{ width: '100%' }}
-                    >
-                      <Option value="received">Received</Option>
-                      <Option value="ongoing">Ongoing</Option>
-                      <Option value="completed">Completed</Option>
-                    </Select>
-                  </Form.Item>
+                <Col span={2} style={{ textAlign: "center" }}>
+                  <Button 
+                    danger 
+                    icon={<DeleteOutlined />} 
+                    onClick={() => removeOrderItem(item.key)} 
+                    disabled={orderItems.length === 1} 
+                  />
                 </Col>
               </Row>
-              
-              <Form.Item label="Description">
-                <Input.TextArea 
-                  value={item.description} 
-                  onChange={(e) => updateOrderItem(index, 'description', e.target.value)} 
-                  rows={2}
-                  placeholder="Additional details about this item"
-                />
-              </Form.Item>
-            </Card>
-          ))}
-          
-          <Button 
-            type="dashed" 
-            onClick={addOrderItem} 
+            ))}
+          </div>
+
+          <Button
+            type="dashed"
+            onClick={addOrderItem}
             icon={<PlusOutlined />}
-            style={{ width: '100%', marginBottom: 16 }}
+            style={{ marginTop: 16, width: "100%" }}
           >
             Add Another Item
           </Button>
-          
+
           <Button 
             type="primary" 
             htmlType="submit" 
             loading={loading} 
             size="large"
-            style={{ width: '100%' }}
+            style={{ width: '100%', marginTop: 16 }}
+            disabled={!selectedClient}
           >
             Submit Order
           </Button>
@@ -569,8 +608,8 @@ const SalesTeamDashboard = () => {
             
             <Table
               columns={orderHistoryColumns}
-              dataSource={orderHistory.orders}
-              rowKey="srNo"
+              dataSource={orderHistory.orders ? Array.from(orderHistory.orders.values()) : []}
+              rowKey="styleNo"
               bordered
               pagination={{ pageSize: 10 }}
               summary={pageData => {

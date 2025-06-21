@@ -1,13 +1,12 @@
 const mongoose = require("mongoose");
 
-const orderSchema = new mongoose.Schema({
-  srNo: Number,
+const orderItemSchema = new mongoose.Schema({
   styleNo: String,
   clarity: String,
-  grossWeight: Number,  // GR WT
-  netWeight: Number,    // NT WT
-  diaWeight: Number,    // DIA WT
-  pcs: Number,          // PCS
+  grossWeight: Number,
+  netWeight: Number,
+  diaWeight: Number,
+  pcs: Number,
   amount: Number,
   description: String,
   orderStatus: {
@@ -19,8 +18,7 @@ const orderSchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   }
-}, { _id: false });  // _id: false if you don't want each order item to get its own ObjectId
-
+}, { _id: false });
 
 const clientsSchema = new mongoose.Schema({
   name: {
@@ -53,13 +51,16 @@ const clientsSchema = new mongoose.Schema({
     trim: true,
   },
   orders: {
-    type: orderSchema,  // Now this will be a single object, not an array
-    default: {}       // You can also use {} if you prefer an empty object
+    type: Map,  // Using Map for object storage
+    of: orderItemSchema,
+    default: {}  // Default empty object
+  },
+  orderCounter: {
+    type: Number,
+    default: 0
   }
-
 }, {
   timestamps: true,
 });
-
 
 module.exports = mongoose.model("Clients", clientsSchema);

@@ -15,6 +15,20 @@ const { Option } = Select;
 
 const API_BASE_URL = import.meta.env.VITE_BASE_URL;
 
+// Axios response interceptor for better error handling
+axios.interceptors.response.use(
+  response => response,
+  error => {
+    console.error('Axios Error Interceptor:', {
+      message: error.message,
+      config: error.config,
+      response: error.response?.data,
+      status: error.response?.status
+    });
+    return Promise.reject(error);
+  }
+);
+
 const SalesTeamDashboard = () => {
   const [collapsed, setCollapsed] = useState(false);
   const [selectedMenu, setSelectedMenu] = useState('dashboard');
@@ -47,7 +61,11 @@ const SalesTeamDashboard = () => {
       const res = await axios.get(`${API_BASE_URL}/api/team/get-clients`);
       setClients(res.data.clients || []);
     } catch (err) {
-      console.error('Fetch error:', err);
+      console.error('Fetch clients error:', {
+        status: err.response?.status,
+        data: err.response?.data,
+        message: err.message
+      });
       message.error('Failed to fetch clients');
     } finally {
       setLoading(false);
@@ -59,7 +77,6 @@ const SalesTeamDashboard = () => {
   }, []);
 
   const handleKYCSubmit = async (values) => {
-    
     try {
       setLoading(true);
       const res = await axios.post(`${API_BASE_URL}/api/team/client-kyc`, values);
@@ -67,7 +84,11 @@ const SalesTeamDashboard = () => {
       message.success('Client KYC created successfully');
       kycForm.resetFields();
     } catch (err) {
-      console.error('KYC Error:', err);
+      console.error('KYC submission error:', {
+        status: err.response?.status,
+        data: err.response?.data,
+        message: err.message
+      });
       const errorMsg = err.response?.data?.message || 'Client KYC submission failed';
       message.error(errorMsg);
     } finally {
@@ -75,69 +96,117 @@ const SalesTeamDashboard = () => {
     }
   };
 
-const handleOrderSubmit = async (values) => {
-  try {
-    setLoading(true);
+  const validateOrderItems = (items) => {
+    return items.every(item => {
+      return item.styleNo && 
+             Number(item.grossWeight) > 0 && 
+             Number(item.pcs) > 0;
+    });
+  };
 
-    const filteredOrderItems = orderItems.filter(
-      item => item.styleNo && item.grossWeight && item.pcs
-    );
+  const handleOrderSubmit = async (values) => {
+    try {
+      setLoading(true);
 
-    if (filteredOrderItems.length === 0) {
-      throw new Error('At least one valid order item is required');
-    }
+      const filteredOrderItems = orderItems.filter(
+        item => item.styleNo && item.grossWeight && item.pcs
+      );
 
-    const payload = {
-      uniqueId: selectedClient.uniqueId,
-      memoId: values.memoId,             // optional
-      orderItems: filteredOrderItems     // ✅ send as array
-    };
-
-    const response = await axios.post(
-      `${API_BASE_URL}/api/team/clients-order`,
-      payload,
-      {
-        headers: {
-          'Content-Type': 'application/json',
-        }
+      if (filteredOrderItems.length === 0) {
+        throw new Error('At least one valid order item is required');
       }
-    );
 
-    message.success(response.data.message || 'Order submitted successfully');
-    orderForm.resetFields();
-    setOrderItems([{
-      key: 1,
-      styleNo: '',
-      clarity: '',
-      grossWeight: 0,
-      netWeight: 0,
-      diaWeight: 0,
-      pcs: 1,
-      amount: 0,
-      description: '',
-      orderStatus: 'received'
-    }]);
-    setSelectedClient(null);
-    fetchClients();
-  } catch (err) {
-    console.error('Order submission error:', err);
-    const errorMsg = err.response?.data?.message || err.message || 'Order submission failed';
-    message.error(errorMsg);
-  } finally {
-    setLoading(false);
-  }
-};
+      if (!validateOrderItems(filteredOrderItems)) {
+        throw new Error('All order items must have Style No, Gross Weight > 0, and at least 1 piece');
+      }
 
+      const payload = {
+        uniqueId: selectedClient.uniqueId,
+        memoId: values.memoId || undefined, // Send undefined instead of empty string
+        orderItems: filteredOrderItems.map(item => ({
+          styleNo: item.styleNo,
+          clarity: item.clarity || undefined,
+          grossWeight: Number(item.grossWeight),
+          netWeight: Number(item.netWeight) || undefined,
+          diaWeight: Number(item.diaWeight) || undefined,
+          pcs: Number(item.pcs),
+          amount: Number(item.amount) || undefined,
+          description: item.description || undefined,
+          orderStatus: item.orderStatus || 'received'
+        }))
+      };
+
+      console.log('Order submission payload:', JSON.stringify(payload, null, 2));
+
+      const response = await axios.post(
+        `${API_BASE_URL}/api/team/clients-order`,
+        payload,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          timeout: 10000 // 10 seconds timeout
+        }
+      );
+
+      console.log('Order submission response:', response.data);
+
+      message.success(response.data.message || 'Order submitted successfully');
+      orderForm.resetFields();
+      setOrderItems([{
+        key: 1,
+        styleNo: '',
+        clarity: '',
+        grossWeight: 0,
+        netWeight: 0,
+        diaWeight: 0,
+        pcs: 1,
+        amount: 0,
+        description: '',
+        orderStatus: 'received'
+      }]);
+      setSelectedClient(null);
+      fetchClients();
+    } catch (err) {
+      console.error('Order submission error details:', {
+        message: err.message,
+        config: err.config,
+        response: err.response?.data,
+        status: err.response?.status,
+        stack: err.stack
+      });
+
+      let errorMsg = 'Order submission failed';
+      if (err.response) {
+        errorMsg = err.response.data?.message || 
+                  err.response.data?.error || 
+                  `Server error: ${err.response.status}`;
+      } else if (err.request) {
+        errorMsg = 'No response received from server';
+      } else {
+        errorMsg = err.message;
+      }
+
+      message.error(errorMsg);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleFetchOrderHistory = async (values) => {
     try {
       setLoading(true);
       const res = await axios.get(`${API_BASE_URL}/api/team/order-history`, {
-        params: { uniqueId: values.uniqueId }
+        params: { uniqueId: values.uniqueId },
+        timeout: 10000
       });
       setOrderHistory(res.data);
     } catch (err) {
-      console.error('History Error:', err);
+      console.error('Order history error:', {
+        status: err.response?.status,
+        data: err.response?.data,
+        message: err.message
+      });
       message.error(err.response?.data?.message || 'Failed to fetch order history');
     } finally {
       setLoading(false);

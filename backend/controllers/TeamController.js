@@ -37,36 +37,95 @@ exports.loginSalesteam = async (req, res) => {
 
 // Auto-generate a unique ID (e.g., C001, C002...)
 const generateUniqueId = async () => {
-  const count = await Clients.countDocuments();
-  const nextNumber = count + 1;
-  return `Sonalika${String(nextNumber).padStart(3, '0')}`;
+  try {
+    const lastClient = await Clients.findOne().sort({ uniqueId: -1 }).limit(1);
+    const lastNumber = lastClient ? parseInt(lastClient.uniqueId.replace('Sonalika', '')) || 0 : 0;
+    const nextNumber = lastNumber + 1;
+    return `Sonalika${String(nextNumber).padStart(3, '0')}`;
+  } catch (error) {
+    console.error('Error generating unique ID:', error);
+    throw new Error('Failed to generate unique ID');
+  }
 };
 
 exports.createClientKYC = async (req, res) => {
   try {
     const { name, phone, address, gstNo, memoId } = req.body;
 
-    if (!name || !phone || !address || !gstNo) {
-      return res.status(400).json({ error: 'All fields are required: name, phone, address, gstNo' });
+    // Validate required fields
+    const requiredFields = { name, phone, address };
+    const missingFields = Object.entries(requiredFields)
+      .filter(([_, value]) => !value)
+      .map(([key]) => key);
+
+    if (missingFields.length > 0) {
+      return res.status(400).json({
+        error: 'Missing required fields',
+        missingFields,
+        message: `The following fields are required: ${missingFields.join(', ')}`
+      });
+    }
+
+    // Validate GST number format if provided
+    if (gstNo && !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(gstNo)) {
+      return res.status(400).json({ 
+        error: 'Invalid GST number format',
+        message: 'Please provide a valid GST number (e.g., 22AAAAA0000A1Z5)'
+      });
+    }
+
+    // Check for existing client with same phone number
+    const existingClient = await Clients.findOne({ phone });
+    if (existingClient) {
+      return res.status(409).json({
+        error: 'Client already exists',
+        message: 'A client with this phone number already exists',
+        clientId: existingClient._id
+      });
     }
 
     const uniqueId = await generateUniqueId();
 
-    const client = new Clients({
-      name,
-      phone,
-      address,
-      gstNo,
-      memoId,
-      uniqueId
+    const newClient = new Clients({
+      name: name.trim(),
+      phone: phone.trim(),
+      address: address.trim(),
+      gstNo: gstNo ? gstNo.trim() : undefined,
+      memoId: memoId ? memoId.trim() : undefined,
+      uniqueId,
+      orderStatus: 'ongoing',
+      orderItems: [] // Explicitly initialize
     });
 
-    await client.save();
+    await newClient.save();
 
-    res.status(201).json({ message: 'Client KYC created', client });
+    res.status(201).json({
+      success: true,
+      message: 'Client KYC created successfully',
+      client: {
+        id: newClient._id,
+        name: newClient.name,
+        uniqueId: newClient.uniqueId,
+        phone: newClient.phone
+      }
+    });
+
   } catch (error) {
     console.error('Error in createClientKYC:', error);
-    res.status(500).json({ error: 'Server error' });
+    
+    if (error.name === 'ValidationError') {
+      const errors = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({
+        error: 'Validation failed',
+        details: errors
+      });
+    }
+
+    res.status(500).json({
+      error: 'Internal server error',
+      message: 'Could not create client KYC',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 };
 

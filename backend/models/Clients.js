@@ -62,8 +62,16 @@ const clientsSchema = new mongoose.Schema(
       trim: true,
       default: null,
     },
-    orders: [orderSchema], 
-     default: []// embedded orders
+  orders: {
+  type: [orderSchema],
+  default: [],
+  validate: {
+    validator: function(v) {
+      return Array.isArray(v);
+    },
+    message: props => `${props.value} is not a valid array!`
+  }
+},
   },
   {
     timestamps: true,

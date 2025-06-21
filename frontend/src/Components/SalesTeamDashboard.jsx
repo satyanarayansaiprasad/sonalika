@@ -325,26 +325,26 @@ const SalesTeamDashboard = () => {
         <Form layout="vertical" form={orderForm} onFinish={handleOrderSubmit}>
           <Row gutter={16}>
             <Col span={12}>
-              <Form.Item 
-                name="uniqueId" 
-                label="Select Client" 
-                rules={[{ required: true, message: 'Please select a client' }]}
-              >
-                <Select
-                  showSearch
-                  placeholder="Search client by name or ID"
-                  optionFilterProp="children"
-                  filterOption={(input, option) =>
-                    option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
-                  }
-                >
-                  {clients.map(client => (
-                    <Option key={client.uniqueId} value={client.uniqueId}>
-                      {client.name} ({client.uniqueId})
-                    </Option>
-                  ))}
-                </Select>
-              </Form.Item>
+            <Form.Item 
+  name="uniqueId" 
+  label="Select Client" 
+  rules={[{ required: true, message: 'Please select a client' }]}
+>
+  <Select
+    showSearch
+    placeholder="Search by Unique ID"
+    optionFilterProp="children"
+    filterOption={(input, option) =>
+      option.value.toLowerCase().includes(input.toLowerCase()) // Case-insensitive search
+    }
+  >
+    {clients.map(client => (
+      <Option key={client.uniqueId} value={client.uniqueId}>
+        {client.uniqueId} {/* Display exact case from database */}
+      </Option>
+    ))}
+  </Select>
+</Form.Item>
             </Col>
             <Col span={12}>
               <Form.Item name="memoId" label="Memo ID (optional)">

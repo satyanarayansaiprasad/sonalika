@@ -1,20 +1,52 @@
 const mongoose = require("mongoose");
 
-const  clientsSchema = new mongoose.Schema(
+// Order Item Sub-schema
+const orderItemSchema = new mongoose.Schema({
+  srNo: Number,
+  styleNo: String,
+  clarity: String,
+  grossWeight: Number,  // GR WT
+  netWeight: Number,    // NT WT
+  diaWeight: Number,    // DIA WT
+  pcs: Number,
+  amount: Number,
+  description: String,
+}, { _id: false });
+
+// Order Sub-schema (embedded in Client)
+const orderSchema = new mongoose.Schema({
+  memoId: {
+    type: String,
+    trim: true,
+    default: null,
+    sparse: true, 
+  },
+  orderDate: {
+    type: Date,
+    default: Date.now,
+  },
+  status: {
+    type: String,
+    enum: ["ongoing", "completed"],
+    default: "ongoing",
+  },
+  orderItems: [orderItemSchema],
+}, { _id: false });
+
+// Main Client Schema
+const clientsSchema = new mongoose.Schema(
   {
-    
     name: {
       type: String,
       required: true,
       trim: true,
     },
     uniqueId: {
-  type: String,
-  required: true,
-  unique: true,
-  trim: true,
-},
-
+      type: String,
+      required: true,
+      unique: true, // like sonalika0001
+      trim: true,
+    },
     phone: {
       type: String,
       required: true,
@@ -28,16 +60,9 @@ const  clientsSchema = new mongoose.Schema(
     gstNo: {
       type: String,
       trim: true,
+      default: null,
     },
-    memoId: {
-      type: String,
-      trim: true,
-    },
-    orders: {
-      type: String,
-      enum: ['ongoing', 'completed'],
-      default: 'ongoing'
-    }
+    orders: [orderSchema],  // embedded orders
   },
   {
     timestamps: true,

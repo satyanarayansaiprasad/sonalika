@@ -62,7 +62,7 @@ const SalesTeamDashboard = () => {
       const payload = {
         uniqueId: values.uniqueId,
         orderItems: orderItems.filter(item => item.styleNo), // filter out empty items
-        orderStatus: 'ongoing',
+        orders: 'ongoing',
         memoId: values.memoId
       };
       
@@ -114,7 +114,7 @@ const SalesTeamDashboard = () => {
     { title: 'Name', dataIndex: 'name', key: 'name' },
     { title: 'Phone', dataIndex: 'phone', key: 'phone' },
     { title: 'GST No', dataIndex: 'gstNo', key: 'gstNo' },
-    { title: 'Status', dataIndex: 'order', key: 'order' },
+    { title: 'Status', dataIndex: 'orders', key: 'orders' },
   ];
 
   const orderHistoryColumns = [
@@ -405,7 +405,7 @@ const SalesTeamDashboard = () => {
                 </Col>
                 <Col span={8}>
                   <Text strong>Status: </Text>
-                  <Text>{orderHistory.orderStatus}</Text>
+                  <Text>{orderHistory.orders}</Text>
                 </Col>
                 <Col span={8}>
                   <Text strong>Order Date: </Text>

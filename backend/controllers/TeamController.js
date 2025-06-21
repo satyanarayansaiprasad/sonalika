@@ -32,52 +32,53 @@ exports.loginSalesteam = async (req, res) => {
 
 
 // Step 1: Create client KYC with auto-generated uniqueId
+
 exports.createClientKYC = async (req, res) => {
   try {
-    const { name, phone, address, gstNo, memoId } = req.body;
+    const { name, phone, address, gstNo } = req.body;
 
     // Validate required fields
     if (!name || !phone || !address || !gstNo) {
       return res.status(400).json({ error: "All fields are required: name, phone, address, gstNo" });
     }
 
-    // Get total clients to determine next serial number
+    // Get total count of clients to generate uniqueId
     const clientCount = await Clients.countDocuments();
 
-    // Generate next uniqueId like "Sonalika0001", "Sonalika0002"
+    // Generate uniqueId like "sonalika0001"
     const nextSerial = clientCount + 1;
     const paddedSerial = String(nextSerial).padStart(4, "0");
     const uniqueId = `sonalika${paddedSerial}`;
 
-    // Double check if uniqueId exists (edge case)
-    const existingClient = await Clients.findOne({ uniqueId });
-    if (existingClient) {
-      return res.status(409).json({ error: "Client with this Unique ID already exists" });
+    // Ensure uniqueId is actually unique (edge case safeguard)
+    const existing = await Clients.findOne({ uniqueId });
+    if (existing) {
+      return res.status(409).json({ error: "Unique ID conflict. Please try again." });
     }
 
-    // Save new client
+    // Create and save new client (without any orders yet)
     const newClient = new Clients({
       name,
       phone,
       address,
       gstNo,
-      memoId,
       uniqueId,
+      orders: [] // No order at KYC stage
     });
 
     await newClient.save();
 
-    res.status(201).json({
+    return res.status(201).json({
       message: "KYC submitted successfully",
       clientId: newClient._id,
       uniqueId: newClient.uniqueId,
     });
-
   } catch (error) {
     console.error("Error submitting KYC:", error);
-    res.status(500).json({ error: "Internal Server Error" });
+    return res.status(500).json({ error: "Internal Server Error" });
   }
 };
+
 
 
 exports.getClients = async (req, res) => {

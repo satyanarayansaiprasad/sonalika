@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Layout, Menu, Card, Form, Input, Button, message, 
-  Typography, Spin, Row, Col, Table, Tag 
+import {
+  Layout, Menu, Card, Form, Input, Button, message,
+  Typography, Spin, Row, Col, Table, Tag
 } from 'antd';
-import { DashboardOutlined, UserAddOutlined } from '@ant-design/icons';
+import {
+  DashboardOutlined, UserAddOutlined
+} from '@ant-design/icons';
 import axios from 'axios';
 
 const { Sider, Content } = Layout;
@@ -11,12 +13,11 @@ const { Title, Text } = Typography;
 
 const SalesTeamDashboard = () => {
   const [collapsed, setCollapsed] = useState(false);
-  const [selectedMenu, setSelectedMenu] = useState('kyc'); // Default to KYC
+  const [selectedMenu, setSelectedMenu] = useState('kyc');
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(false);
   const [form] = Form.useForm();
 
-  // Fetch clients on component mount
   useEffect(() => {
     fetchClients();
   }, []);
@@ -38,13 +39,13 @@ const SalesTeamDashboard = () => {
     try {
       setLoading(true);
       const res = await axios.post(`${import.meta.env.VITE_BASE_URL}/api/team/client-kyc`, values);
-      
-      setClients(prev => [...prev, res.data.client]);
+
+      const newClient = res.data.data.client;
+
+      setClients(prev => [...prev, newClient]);
       message.success('Client KYC created successfully!');
+      message.info(`Generated Client ID: ${newClient.uniqueId}`);
       form.resetFields();
-      
-      // Show the generated ID
-      message.info(`Client ID: ${res.data.client.uniqueId}`);
     } catch (err) {
       console.error('KYC submission error:', err);
       message.error(err.response?.data?.message || 'Failed to create client');
@@ -53,25 +54,24 @@ const SalesTeamDashboard = () => {
     }
   };
 
-  // Client table columns
   const clientColumns = [
-    { 
-      title: 'Client ID', 
-      dataIndex: 'uniqueId', 
+    {
+      title: 'Client ID',
+      dataIndex: 'uniqueId',
       key: 'uniqueId',
       render: (id) => <Tag color="blue">{id}</Tag>
     },
     { title: 'Name', dataIndex: 'name', key: 'name' },
     { title: 'Phone', dataIndex: 'phone', key: 'phone' },
-    { 
-      title: 'Address', 
-      dataIndex: 'address', 
+    {
+      title: 'Address',
+      dataIndex: 'address',
       key: 'address',
-      ellipsis: true 
+      ellipsis: true
     },
     { title: 'GST No', dataIndex: 'gstNo', key: 'gstNo' },
-    { 
-      title: 'Status', 
+    {
+      title: 'Status',
       key: 'status',
       render: () => <Tag color="green">Active</Tag>
     },
@@ -80,19 +80,19 @@ const SalesTeamDashboard = () => {
   return (
     <Layout style={{ minHeight: '100vh' }}>
       <Sider collapsible collapsed={collapsed} onCollapse={setCollapsed}>
-        <div className="logo" style={{ 
-          height: 64, 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center', 
+        <div className="logo" style={{
+          height: 64,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
           color: 'white',
           background: '#001529'
         }}>
           {collapsed ? 'JWL' : 'Jewelry CRM'}
         </div>
-        <Menu 
-          theme="dark" 
-          selectedKeys={[selectedMenu]} 
+        <Menu
+          theme="dark"
+          selectedKeys={[selectedMenu]}
           onClick={({ key }) => setSelectedMenu(key)}
         >
           <Menu.Item key="dashboard" icon={<DashboardOutlined />}>
@@ -112,7 +112,7 @@ const SalesTeamDashboard = () => {
                 <Title level={3} style={{ marginBottom: 24 }}>
                   Client KYC Registration
                 </Title>
-                
+
                 <Card>
                   <Form
                     form={form}
@@ -156,22 +156,16 @@ const SalesTeamDashboard = () => {
                         <Form.Item
                           name="gstNo"
                           label="GST Number"
-                          rules={[
-                            { required: true, message: 'GST number is required' },
-                            // { 
-                            //   pattern: /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/,
-                            //   message: 'Invalid GST format' 
-                            // }
-                          ]}
+                          rules={[{ required: true, message: 'GST number is required' }]}
                         >
                           <Input placeholder="22ABCDE1234F1Z5" />
                         </Form.Item>
                       </Col>
                     </Row>
 
-                    <Button 
-                      type="primary" 
-                      htmlType="submit" 
+                    <Button
+                      type="primary"
+                      htmlType="submit"
                       loading={loading}
                       size="large"
                     >
@@ -180,13 +174,13 @@ const SalesTeamDashboard = () => {
                   </Form>
                 </Card>
 
-                <Card title="Recent Clients" style={{ marginTop: 24 }}>
+                <Card title="All Clients" style={{ marginTop: 24 }}>
                   <Table
                     columns={clientColumns}
-                    dataSource={clients.slice(0, 5)}
+                    dataSource={clients}
                     rowKey="_id"
                     loading={loading}
-                    pagination={false}
+                    pagination={{ pageSize: 10 }}
                   />
                 </Card>
               </>
@@ -204,7 +198,6 @@ const SalesTeamDashboard = () => {
 };
 
 export default SalesTeamDashboard;
-
 
 
 

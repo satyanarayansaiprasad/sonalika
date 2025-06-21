@@ -479,10 +479,6 @@ exports.loginSalesteam = async (req, res) => {
 
 
 
-
-
-
-
 exports.createClientKYC = async (req, res) => {
   try {
     const { name, address, gstNo, phone } = req.body;
@@ -495,23 +491,22 @@ exports.createClientKYC = async (req, res) => {
       });
     }
 
-    // Find the highest existing uniqueId with pattern CUSTXXXX
+    // Find last client to generate next uniqueId
     const lastClient = await Clients.findOne(
-      { uniqueId: /^CUST\d{4}$/i },
-      { uniqueId: 1 },
+      { uniqueId: /^sonalika\d{4}$/i }, // Match sonalika0001, sonalika0002, ...
+      {},
       { sort: { uniqueId: -1 } }
     );
 
-    // Generate next sequential ID
     let nextNumber = 1;
     if (lastClient) {
-      const lastNumber = parseInt(lastClient.uniqueId.replace('SONALIKA', ''), 10);
+      const lastNumber = parseInt(lastClient.uniqueId.replace("sonalika", ""), 10);
       nextNumber = lastNumber + 1;
     }
 
-    const uniqueId = `SONALIKA${nextNumber.toString().padStart(4, '0')}`;
+    const uniqueId = `sonalika${nextNumber.toString().padStart(4, "0")}`;
 
-    // Create client
+    // Create new client
     const newClient = await Clients.create({
       name,
       address,
@@ -519,7 +514,7 @@ exports.createClientKYC = async (req, res) => {
       phone,
       uniqueId,
       orders: [],
-      orderCounter: 0
+      orderCounter: 0,
     });
 
     res.status(201).json({
@@ -527,17 +522,35 @@ exports.createClientKYC = async (req, res) => {
       message: "Client KYC created successfully",
       data: {
         client: newClient,
-        uniqueId: newClient.uniqueId
-      }
+        uniqueId: newClient.uniqueId,
+      },
     });
-
   } catch (error) {
     console.error("Error creating client KYC:", error);
     res.status(500).json({
       success: false,
       message: "Internal server error",
-      error: error.message
+      error: error.message,
     });
   }
 };
 
+
+exports.getClients = async (req, res) => {
+  try {
+    const clients = await Clients.find().sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      message: "Clients fetched successfully",
+      clients,
+    });
+  } catch (error) {
+    console.error("Error fetching clients:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+};

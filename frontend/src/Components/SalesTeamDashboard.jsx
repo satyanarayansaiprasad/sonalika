@@ -84,11 +84,20 @@ const SalesTeamDashboard = () => {
       const payload = {
         uniqueId: values.uniqueId,
         orders: validOrderItems,
-        memoId: values.memoId
+        // memoId: values.memoId
       };
       
-      const response = await axios.post(`${API_BASE_URL}/api/team/clients-order`, payload);
-      
+     const response = await axios.post(
+  `${API_BASE_URL}/api/team/clients-order`, 
+  payload,
+  {
+    headers: {
+      'Content-Type': 'application/json',
+      // Add authorization if needed
+      // 'Authorization': `Bearer ${token}`
+    }
+  }
+);
       message.success(response.data.message || 'Order submitted successfully');
       orderForm.resetFields();
       setOrderItems([{

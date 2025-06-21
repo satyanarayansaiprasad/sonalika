@@ -511,14 +511,14 @@ exports.createClientKYC = async (req, res) => {
 
     const uniqueId = `sonalika${nextNumber.toString().padStart(4, "0")}`;
 
-    // ✅ Create client with no orders yet
+    // Create client with empty orders object
     const newClient = await Clients.create({
       name,
       address,
       gstNo,
       phone,
       uniqueId,
-      orders: [],          // ✅ ensure no memoId exists yet
+      orders: {},          // Now using empty object instead of array
       orderCounter: 0,
     });
 
@@ -539,6 +539,8 @@ exports.createClientKYC = async (req, res) => {
     });
   }
 };
+
+// Example of how to add an order to a client
 
 
 

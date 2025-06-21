@@ -17,22 +17,6 @@ const orderItemSchema = new mongoose.Schema({
   },
 }, { _id: true });
 
-// One complete order (with memoId and multiple order items)
-const orderSchema = new mongoose.Schema({
-  // memoId: {
-  //   type: String,
-  //   required: true  // ✅ Required ONLY when creating an order
-  // },
-  orderDate: {
-    type: Date,
-    default: Date.now,
-  },
-  orderItems: {
-    type: [orderItemSchema],
-    default: []
-  }
-}, { _id: true, timestamps: true });  // ✅ keep timestamps
-
 // Main client schema
 const clientSchema = new mongoose.Schema({
   name: {
@@ -53,8 +37,18 @@ const clientSchema = new mongoose.Schema({
     lowercase: true
   },
   orders: {
-    type: [orderSchema],
-    default: []  // ✅ No order/memoId is added at KYC time
+    type: Map,  // Changed from Array to Map
+    of: {       // Each order will be stored with orderNumber as key
+      orderDate: {
+        type: Date,
+        default: Date.now,
+      },
+      orderItems: {
+        type: [orderItemSchema],
+        default: []
+      }
+    },
+    default: {}  // Default empty object instead of array
   },
   orderCounter: {
     type: Number,

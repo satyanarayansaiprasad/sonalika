@@ -53,9 +53,10 @@ const clientsSchema = new mongoose.Schema({
     trim: true,
   },
   orders: {
-    type: [orderSchema],
-    default: []
+    type: orderSchema,  // Now this will be a single object, not an array
+    default: {}       // You can also use {} if you prefer an empty object
   }
+
 }, {
   timestamps: true,
 });

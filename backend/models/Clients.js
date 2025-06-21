@@ -29,7 +29,7 @@ const clientSchema = new mongoose.Schema({
   gstNo: String,
    uniqueId: {
     type: String,
-    lowercase: true, // This ensures the value is always saved in lowercase
+     // This ensures the value is always saved in lowercase
     required: true
   },
   order: [orderSchema], // ✅ One client can have multiple orders

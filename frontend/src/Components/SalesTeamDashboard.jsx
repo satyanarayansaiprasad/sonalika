@@ -1,207 +1,407 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Layout, Menu, Card, Form, Input, Button, message,
-  Typography, Spin, Row, Col, Table, Tag
-} from 'antd';
-import {
-  DashboardOutlined, UserAddOutlined
-} from '@ant-design/icons';
+import { motion } from 'framer-motion';
+import { FiMenu, FiX, FiHome, FiUsers, FiShoppingBag, FiArchive } from 'react-icons/fi';
 import axios from 'axios';
 
-const { Sider, Content } = Layout;
-const { Title, Text } = Typography;
-
 const SalesTeamDashboard = () => {
-  const [collapsed, setCollapsed] = useState(false);
-  const [selectedMenu, setSelectedMenu] = useState('kyc');
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    phone: '',
+    gstNo: '',
+    address: ''
+  });
   const [clients, setClients] = useState([]);
+  const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [form] = Form.useForm();
+  const [error, setError] = useState(null);
+  const [stats, setStats] = useState({
+    totalClients: 0,
+    ongoingOrders: 0,
+    completedOrders: 0
+  });
 
+  // Fetch live data
   useEffect(() => {
-    fetchClients();
+    const fetchData = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        // Fetch clients
+        const clientsRes = await axios.get('/api/clients');
+        const clientsData = Array.isArray(clientsRes?.data) ? clientsRes.data : [];
+        setClients(clientsData);
+        
+        // Fetch orders
+        const ordersRes = await axios.get('/api/orders');
+        const ordersData = Array.isArray(ordersRes?.data) ? ordersRes.data : [];
+        setOrders(ordersData);
+        
+        // Calculate stats
+        setStats({
+          totalClients: clientsData.length,
+          ongoingOrders: ordersData.filter(o => o.orderStatus === 'ongoing').length,
+          completedOrders: ordersData.filter(o => o.orderStatus === 'completed').length
+        });
+      } catch (err) {
+        console.error('Error fetching data:', err);
+        setError('Failed to fetch data. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchData();
   }, []);
 
-  const fetchClients = async () => {
-    setLoading(true);
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     try {
-      const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/api/team/get-clients`);
-      setClients(res.data.clients || []);
-    } catch (err) {
-      console.error('Fetch clients error:', err);
-      message.error('Failed to fetch clients');
-    } finally {
-      setLoading(false);
+      const response = await axios.post(`${import.meta.env.VITE_BASE_URL}/api/team/clients-kyc`, formData);
+      const newClient = response?.data;
+      if (newClient) {
+        setClients(prev => [...prev, newClient]);
+        setStats(prev => ({...prev, totalClients: prev.totalClients + 1}));
+        setFormData({
+          name: '',
+          phone: '',
+          gstNo: '',
+          address: ''
+        });
+        alert('Client KYC created successfully!');
+      }
+    } catch (error) {
+      console.error('Error creating client:', error);
+      alert('Failed to create client KYC');
     }
   };
 
-  const handleKYCSubmit = async (values) => {
-    try {
-      setLoading(true);
-      const res = await axios.post(`${import.meta.env.VITE_BASE_URL}/api/team/clients-kyc`, values);
-
-      const newClient = res.data.data.clients;
-
-      setClients(prev => [...prev, newClient]);
-      message.success('Client KYC created successfully!');
-      message.info(`Generated Client ID: ${newClient.uniqueId}`);
-      form.resetFields();
-    } catch (err) {
-      console.error('KYC submission error:', err);
-      message.error(err.response?.data?.message || 'Failed to create client');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const clientColumns = [
-    {
-      title: 'Client ID',
-      dataIndex: 'uniqueId',
-      key: 'uniqueId',
-      render: (id) => <Tag color="blue">{id}</Tag>
-    },
-    { title: 'Name', dataIndex: 'name', key: 'name' },
-    { title: 'Phone', dataIndex: 'phone', key: 'phone' },
-    {
-      title: 'Address',
-      dataIndex: 'address',
-      key: 'address',
-      ellipsis: true
-    },
-    { title: 'GST No', dataIndex: 'gstNo', key: 'gstNo' },
-    {
-      title: 'Status',
-      key: 'status',
-      render: () => <Tag color="green">Active</Tag>
-    },
+  const sidebarItems = [
+    { id: 'dashboard', icon: <FiHome />, label: 'Dashboard' },
+    { id: 'clients', icon: <FiUsers />, label: 'Clients KYC' },
+    { id: 'order', icon: <FiShoppingBag />, label: 'New Order' },
+    { id: 'history', icon: <FiArchive />, label: 'Order History' }
   ];
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
-      <Sider collapsible collapsed={collapsed} onCollapse={setCollapsed}>
-        <div className="logo" style={{
-          height: 64,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: 'white',
-          background: '#001529'
-        }}>
-          {collapsed ? 'JWL' : 'Jewelry CRM'}
+    <div className="flex h-screen bg-gray-100">
+      {/* Mobile menu button */}
+      <button
+        className="md:hidden fixed top-4 left-4 z-50 p-2 rounded-md bg-blue-600 text-white"
+        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+      >
+        {mobileMenuOpen ? <FiX size={24} /> : <FiMenu size={24} />}
+      </button>
+
+      {/* Sidebar - Always visible on desktop */}
+      <div className="hidden md:block w-64 h-full bg-white shadow-lg">
+        <div className="p-4 border-b border-gray-200">
+          <h1 className="text-xl font-bold text-blue-600">Sonalika Jewels</h1>
+          <p className="text-sm text-gray-500">Sales Team Dashboard</p>
         </div>
-        <Menu
-          theme="dark"
-          selectedKeys={[selectedMenu]}
-          onClick={({ key }) => setSelectedMenu(key)}
-        >
-          <Menu.Item key="dashboard" icon={<DashboardOutlined />}>
-            Dashboard
-          </Menu.Item>
-          <Menu.Item key="kyc" icon={<UserAddOutlined />}>
-            Client KYC
-          </Menu.Item>
-        </Menu>
-      </Sider>
+        <nav className="mt-6">
+          <ul>
+            {sidebarItems.map((item) => (
+              <li key={item.id} className="px-2 py-1">
+                <button
+                  onClick={() => {
+                    setActiveTab(item.id);
+                    setMobileMenuOpen(false);
+                  }}
+                  className={`flex items-center w-full px-4 py-3 rounded-lg transition-colors ${activeTab === item.id ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100'}`}
+                >
+                  <span className="mr-3">{item.icon}</span>
+                  <span>{item.label}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      </div>
 
-      <Layout>
-        <Content style={{ margin: '24px 16px 0' }}>
-          <div style={{ padding: 24, minHeight: '100vh', background: '#fff' }}>
-            {selectedMenu === 'kyc' ? (
-              <>
-                <Title level={3} style={{ marginBottom: 24 }}>
-                  Client KYC Registration
-                </Title>
+      {/* Mobile sidebar */}
+      <motion.div
+        initial={{ x: -300 }}
+        animate={{ x: mobileMenuOpen ? 0 : -300 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+        className={`fixed md:hidden z-40 w-64 h-full bg-white shadow-lg`}
+      >
+        <div className="p-4 border-b border-gray-200">
+          <h1 className="text-xl font-bold text-blue-600">Sonalika Jewels</h1>
+          <p className="text-sm text-gray-500">Sales Team Dashboard</p>
+        </div>
+        <nav className="mt-6">
+          <ul>
+            {sidebarItems.map((item) => (
+              <li key={item.id} className="px-2 py-1">
+                <button
+                  onClick={() => {
+                    setActiveTab(item.id);
+                    setMobileMenuOpen(false);
+                  }}
+                  className={`flex items-center w-full px-4 py-3 rounded-lg transition-colors ${activeTab === item.id ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100'}`}
+                >
+                  <span className="mr-3">{item.icon}</span>
+                  <span>{item.label}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      </motion.div>
 
-                <Card>
-                  <Form
-                    form={form}
-                    layout="vertical"
-                    onFinish={handleKYCSubmit}
-                  >
-                    <Row gutter={16}>
-                      <Col span={12}>
-                        <Form.Item
-                          name="name"
-                          label="Full Name"
-                          rules={[{ required: true, message: 'Please enter client name' }]}
-                        >
-                          <Input placeholder="Enter full name" />
-                        </Form.Item>
-                      </Col>
-                      <Col span={12}>
-                        <Form.Item
-                          name="phone"
-                          label="Phone Number"
-                          rules={[
-                            { required: true, message: 'Please enter phone number' },
-                            { pattern: /^[0-9]{10}$/, message: 'Invalid phone number' }
-                          ]}
-                        >
-                          <Input placeholder="10-digit mobile number" maxLength={10} />
-                        </Form.Item>
-                      </Col>
-                    </Row>
-
-                    <Form.Item
-                      name="address"
-                      label="Full Address"
-                      rules={[{ required: true, message: 'Please enter address' }]}
-                    >
-                      <Input.TextArea rows={3} placeholder="Complete address with city and PIN code" />
-                    </Form.Item>
-
-                    <Row gutter={16}>
-                      <Col span={12}>
-                        <Form.Item
-                          name="gstNo"
-                          label="GST Number"
-                          rules={[{ required: true, message: 'GST number is required' }]}
-                        >
-                          <Input placeholder="22ABCDE1234F1Z5" />
-                        </Form.Item>
-                      </Col>
-                    </Row>
-
-                    <Button
-                      type="primary"
-                      htmlType="submit"
-                      loading={loading}
-                      size="large"
-                    >
-                      Register Client
-                    </Button>
-                  </Form>
-                </Card>
-
-                <Card title="All Clients" style={{ marginTop: 24 }}>
-                  <Table
-                    columns={clientColumns}
-                    dataSource={clients}
-                    rowKey="_id"
-                    loading={loading}
-                    pagination={{ pageSize: 10 }}
-                  />
-                </Card>
-              </>
-            ) : (
-              <div style={{ textAlign: 'center', padding: 50 }}>
-                <Title level={3}>Sales Dashboard</Title>
-                <Text>Coming soon with order analytics</Text>
-              </div>
-            )}
+      {/* Main content */}
+      <div className="flex-1 overflow-auto p-6">
+        {error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            {error}
           </div>
-        </Content>
-      </Layout>
-    </Layout>
+        )}
+        
+        {loading ? (
+          <div className="flex justify-center items-center h-full">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+          </div>
+        ) : (
+          <>
+            {/* Dashboard */}
+            {activeTab === 'dashboard' && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.3 }}
+              >
+                <h2 className="text-2xl font-bold mb-6">Dashboard Overview</h2>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                  <div className="bg-white p-6 rounded-lg shadow">
+                    <h3 className="text-lg font-semibold text-gray-700">KYC Clients</h3>
+                    <p className="text-3xl font-bold mt-2">{stats.totalClients}</p>
+                    <p className="text-sm text-gray-500 mt-1">Total registered clients</p>
+                  </div>
+                  <div className="bg-white p-6 rounded-lg shadow">
+                    <h3 className="text-lg font-semibold text-gray-700">Ongoing Orders</h3>
+                    <p className="text-3xl font-bold mt-2">{stats.ongoingOrders}</p>
+                    <p className="text-sm text-gray-500 mt-1">Orders in progress</p>
+                  </div>
+                  <div className="bg-white p-6 rounded-lg shadow">
+                    <h3 className="text-lg font-semibold text-gray-700">Completed Orders</h3>
+                    <p className="text-3xl font-bold mt-2">{stats.completedOrders}</p>
+                    <p className="text-sm text-gray-500 mt-1">Orders delivered</p>
+                  </div>
+                </div>
+
+                <div className="bg-white p-6 rounded-lg shadow">
+                  <h3 className="text-lg font-semibold mb-4">Recent Clients</h3>
+                  {Array.isArray(clients) && clients.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">GST No</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client ID</th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {clients.slice(0, 5).map((client) => (
+                            <tr key={client._id || client.uniqueId}>
+                              <td className="px-6 py-4 whitespace-nowrap">{client.name}</td>
+                              <td className="px-6 py-4 whitespace-nowrap">{client.phone}</td>
+                              <td className="px-6 py-4 whitespace-nowrap">{client.gstNo}</td>
+                              <td className="px-6 py-4 whitespace-nowrap">{client.uniqueId}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <p className="text-gray-500">No clients found</p>
+                  )}
+                </div>
+              </motion.div>
+            )}
+
+            {/* Clients KYC */}
+            {activeTab === 'clients' && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.3 }}
+              >
+                <h2 className="text-2xl font-bold mb-6">Client KYC Form</h2>
+                <div className="bg-white p-6 rounded-lg shadow">
+                  <form onSubmit={handleSubmit}>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                        <input
+                          type="text"
+                          name="name"
+                          value={formData.name}
+                          onChange={handleInputChange}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                        <input
+                          type="tel"
+                          name="phone"
+                          value={formData.phone}
+                          onChange={handleInputChange}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">GST No</label>
+                        <input
+                          type="text"
+                          name="gstNo"
+                          value={formData.gstNo}
+                          onChange={handleInputChange}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                        <input
+                          type="text"
+                          name="address"
+                          value={formData.address}
+                          onChange={handleInputChange}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          required
+                        />
+                      </div>
+                    </div>
+                    <div className="mt-6">
+                      <button
+                        type="submit"
+                        className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                      >
+                        Create Client KYC
+                      </button>
+                    </div>
+                  </form>
+                </div>
+
+                <div className="bg-white p-6 rounded-lg shadow mt-8">
+                  <h3 className="text-lg font-semibold mb-4">Client List</h3>
+                  {Array.isArray(clients) && clients.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">GST No</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client ID</th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {clients.map((client) => (
+                            <tr key={client._id || client.uniqueId}>
+                              <td className="px-6 py-4 whitespace-nowrap">{client.name}</td>
+                              <td className="px-6 py-4 whitespace-nowrap">{client.phone}</td>
+                              <td className="px-6 py-4 whitespace-nowrap">{client.gstNo}</td>
+                              <td className="px-6 py-4 whitespace-nowrap">{client.uniqueId}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <p className="text-gray-500">No clients found</p>
+                  )}
+                </div>
+              </motion.div>
+            )}
+
+            {/* New Order */}
+            {activeTab === 'order' && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.3 }}
+              >
+                <h2 className="text-2xl font-bold mb-6">Create New Order</h2>
+                <div className="bg-white p-6 rounded-lg shadow">
+                  <p className="text-gray-600">Order form will connect to your backend API to create new orders.</p>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Order History */}
+            {activeTab === 'history' && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.3 }}
+              >
+                <h2 className="text-2xl font-bold mb-6">Order History</h2>
+                <div className="bg-white p-6 rounded-lg shadow">
+                  {Array.isArray(orders) && orders.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Memo ID</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Items</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {orders.map((order) => (
+                            <tr key={order._id || order.memoId}>
+                              <td className="px-6 py-4 whitespace-nowrap">{order.memoId || 'N/A'}</td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                {order.orderDate ? new Date(order.orderDate).toLocaleDateString() : 'N/A'}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                {Array.isArray(order.orderItems) ? order.orderItems.length : 0} items
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <span className={`px-2 py-1 rounded-full text-xs ${
+                                  order.orderStatus === 'completed' 
+                                    ? 'bg-green-100 text-green-800' 
+                                    : 'bg-yellow-100 text-yellow-800'
+                                }`}>
+                                  {order.orderStatus || 'unknown'}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <p className="text-gray-500">No orders found</p>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
   );
 };
 
 export default SalesTeamDashboard;
-
-
-
-
 
 
 

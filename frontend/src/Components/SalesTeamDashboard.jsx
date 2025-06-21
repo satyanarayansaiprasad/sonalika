@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   Layout, Menu, Card, Table, Form, Input, Button, message, Space, 
-  Typography, Spin, Row, Col, Statistic, Divider, InputNumber
+  Typography, Spin, Row, Col, Statistic, Divider, InputNumber, Select
 } from 'antd';
 import {
   DashboardOutlined, UserAddOutlined, ShoppingCartOutlined, 
@@ -11,6 +11,7 @@ import axios from 'axios';
 
 const { Sider, Header, Content } = Layout;
 const { Title, Text } = Typography;
+const { Option } = Select;
 
 const API_BASE_URL = import.meta.env.VITE_BASE_URL;
 
@@ -23,6 +24,7 @@ const SalesTeamDashboard = () => {
   const [orderForm] = Form.useForm();
   const [orderItems, setOrderItems] = useState([{}]);
   const [orderHistory, setOrderHistory] = useState(null);
+  const [selectedClient, setSelectedClient] = useState(null);
 
   const fetchClients = async () => {
     setLoading(true);
@@ -61,7 +63,7 @@ const SalesTeamDashboard = () => {
       setLoading(true);
       const payload = {
         uniqueId: values.uniqueId,
-        orderItems: orderItems.filter(item => item.styleNo), // filter out empty items
+        orderItems: orderItems.filter(item => item.styleNo),
         orders: 'ongoing',
         memoId: values.memoId
       };
@@ -70,6 +72,7 @@ const SalesTeamDashboard = () => {
       message.success('Order submitted successfully');
       orderForm.resetFields();
       setOrderItems([{}]);
+      setSelectedClient(null);
     } catch (err) {
       console.error('Order Error:', err);
       message.error(err.response?.data?.error || 'Order submission failed');
@@ -107,6 +110,12 @@ const SalesTeamDashboard = () => {
     const newItems = [...orderItems];
     newItems[index] = { ...newItems[index], [field]: value };
     setOrderItems(newItems);
+  };
+
+  const handleClientSelect = (uniqueId) => {
+    const client = clients.find(c => c.uniqueId === uniqueId);
+    setSelectedClient(client);
+    orderForm.setFieldsValue({ uniqueId });
   };
 
   const clientColumns = [
@@ -244,7 +253,22 @@ const SalesTeamDashboard = () => {
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item name="uniqueId" label="Client Unique ID" rules={[{ required: true }]}>
-                <Input placeholder="Client Unique ID (e.g., Sonalika001)" />
+                <Select
+                  showSearch
+                  placeholder="Select client"
+                  optionFilterProp="children"
+                  onChange={handleClientSelect}
+                  filterOption={(input, option) =>
+                    option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                  }
+                  loading={loading}
+                >
+                  {clients.map(client => (
+                    <Option key={client.uniqueId} value={client.uniqueId}>
+                      {client.uniqueId} 
+                    </Option>
+                  ))}
+                </Select>
               </Form.Item>
             </Col>
             <Col span={12}>
@@ -253,7 +277,32 @@ const SalesTeamDashboard = () => {
               </Form.Item>
             </Col>
           </Row>
-          
+
+          {selectedClient && (
+            <Card type="inner" style={{ marginBottom: 16 }}>
+              <Row gutter={16}>
+                <Col span={8}>
+                  <Text strong>Name: </Text>
+                  <Text>{selectedClient.name}</Text>
+                </Col>
+                <Col span={8}>
+                  <Text strong>Phone: </Text>
+                  <Text>{selectedClient.phone}</Text>
+                </Col>
+                <Col span={8}>
+                  <Text strong>GST No: </Text>
+                  <Text>{selectedClient.gstNo || 'N/A'}</Text>
+                </Col>
+              </Row>
+              <Row style={{ marginTop: 8 }}>
+                <Col span={24}>
+                  <Text strong>Address: </Text>
+                  <Text>{selectedClient.address}</Text>
+                </Col>
+              </Row>
+            </Card>
+          )}
+
           <Divider orientation="left">Order Items</Divider>
           
           {orderItems.map((item, index) => (

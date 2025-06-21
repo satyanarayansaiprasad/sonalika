@@ -42,6 +42,7 @@ exports.loginSalesteam = async (req, res) => {
 //   }
 // };
 
+
 exports.createClientKYC = async (req, res) => {
   try {
     const { name, phone, address, gstNo, memoId } = req.body;
@@ -100,39 +101,47 @@ exports.createClientKYC = async (req, res) => {
       });
     }
 
-    // Generate unique ID - Get the count of existing clients
-    const count = await Clients.countDocuments();
-    const newNumber = String(count + 1).padStart(3, '0'); // 001, 002, ...
-    const uniqueId = `sonalika${newNumber}`.toLowerCase(); // Ensure lowercase
+    // Generate sequential unique ID in lowercase
+    const lastClient = await Clients.findOne().sort({ _id: -1 });
+    let nextNumber = 1; // Start with 001 if no clients exist
+    
+    if (lastClient && lastClient.uniqueId) {
+      // Extract number from existing ID (works with any case)
+      const matches = lastClient.uniqueId.toLowerCase().match(/sonalika(\d+)$/);
+      if (matches && matches[1]) {
+        nextNumber = parseInt(matches[1]) + 1;
+      }
+    }
 
-    // Create new client with empty orders Map
+    // Create lowercase ID with 3-digit number
+    const uniqueId = `sonalika${String(nextNumber).padStart(3, '0')}`.toLowerCase();
+
+    // Create new client with the lowercase ID
     const client = new Clients({
       name: name.trim(),
       phone: phone.trim(),
       address: address.trim(),
       gstNo: gstNo.trim(),
-      memoId: memoId?.trim(), // Optional field
-      uniqueId,
-      orders: new Map(), // Initialize empty Map for orders
-      orderCounter: 0    // Initialize order counter
+      memoId: memoId?.trim(),
+      uniqueId: uniqueId, // Will be stored exactly as "sonalika001"
+      orders: new Map(),
+      orderCounter: 0
     });
 
-    console.log('Before save:', uniqueId); // Should be "sonalika001"
     await client.save();
-    console.log('After save:', client.uniqueId); // Verify it's still lowercase
 
     res.status(201).json({
       success: true,
       message: "Client KYC created successfully",
       client: {
         id: client._id,
-        uniqueId: client.uniqueId,
+        uniqueId: client.uniqueId, // Will be lowercase
         name: client.name,
         phone: client.phone,
         gstNo: client.gstNo,
         address: client.address,
         memoId: client.memoId,
-        ordersCount: 0, // Explicitly showing no orders yet
+        ordersCount: 0,
         createdAt: client.createdAt
       }
     });
@@ -166,6 +175,39 @@ exports.createClientKYC = async (req, res) => {
   }
 };
 
+// Migration script for existing data (run once)
+// exports.migrateToLowercaseIds = async () => {
+//   try {
+//     const clients = await Clients.find({
+//       uniqueId: { $regex: /sonalika/i } // Case-insensitive match
+//     });
+
+//     let updateCount = 0;
+    
+//     for (const client of clients) {
+//       const currentId = client.uniqueId;
+//       const lowercaseId = currentId.toLowerCase();
+      
+//       if (currentId !== lowercaseId) {
+//         client.uniqueId = lowercaseId;
+//         await client.save();
+//         updateCount++;
+//         console.log(`Updated ${currentId} → ${lowercaseId}`);
+//       }
+//     }
+
+//     return {
+//       totalClients: clients.length,
+//       updatedCount: updateCount,
+//       message: `Updated ${updateCount} client IDs to lowercase`
+//     };
+    
+//   } catch (error) {
+//     console.error("Migration error:", error);
+//     throw error;
+//   }
+// };
+
 
 // Helper function to generate unique ID
 
@@ -187,28 +229,99 @@ exports.addClientOrder = async (req, res) => {
   try {
     const { uniqueId, memoId, orderItems } = req.body;
 
+    // 1. Validate required fields
     if (!uniqueId) {
-      return res.status(400).json({ error: "Unique ID is required" });
+      return res.status(400).json({
+        error: "Unique ID is required",
+        example: "Sonalika0001"
+      });
     }
 
-    const client = await Clients.findOne({ uniqueId });
-    if (!client) return res.status(404).json({ error: "Client not found" });
+    // 2. Validate exact format (capital S, lowercase onalika, 4 digits)
+    if (!/^Sonalika\d{4}$/.test(uniqueId)) {
+      return res.status(400).json({
+        error: "Invalid ID format",
+        message: "Must be exactly 'Sonalika' followed by 4 digits (e.g. Sonalika0001)",
+        received: uniqueId,
+        expectedFormat: "SonalikaXXXX where XXXX are digits"
+      });
+    }
 
+    // 3. Find client with exact case match
+    const client = await Clients.findOne({ uniqueId });
+    if (!client) {
+      return res.status(404).json({
+        error: "Client not found",
+        details: {
+          searchedId: uniqueId,
+          suggestion: "Verify the client exists with this exact ID format"
+        }
+      });
+    }
+
+    // 4. Validate order items
+    if (!Array.isArray(orderItems) || orderItems.length === 0) {
+      return res.status(400).json({
+        error: "Invalid order items",
+        message: "At least one valid order item is required"
+      });
+    }
+
+    // 5. Create new order
     const newOrder = {
-      memoId,
-      orderItems: Array.isArray(orderItems) ? orderItems : [],
-      orderDate: new Date(),
+      orderId: new mongoose.Types.ObjectId(),
+      memoId: memoId?.trim() || null,
+      items: orderItems.map(item => ({
+        ...item,
+        price: Number(item.price) || 0,
+        quantity: Number(item.quantity) || 1,
+        addedAt: new Date()
+      })),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      status: "pending"
     };
 
-    client.order.push(newOrder);
-    client.orderCounter += 1;
+    // 6. Update client record
+    client.orders.push(newOrder);
+    client.orderCount = (client.orderCount || 0) + 1;
+    client.updatedAt = new Date();
 
     await client.save();
 
-    res.status(200).json({ message: "Order added successfully", client });
-  } catch (err) {
-    console.error("Add order error:", err);
-    res.status(500).json({ error: "Server error" });
+    // 7. Return success response
+    res.status(201).json({
+      success: true,
+      message: "Order created successfully",
+      order: {
+        orderId: newOrder.orderId,
+        clientId: client._id,
+        clientUniqueId: client.uniqueId, // Maintains "SonalikaXXXX" format
+        orderNumber: client.orderCount,
+        itemCount: newOrder.items.length,
+        totalAmount: newOrder.items.reduce((sum, item) => sum + (item.price * item.quantity), 0),
+        createdAt: newOrder.createdAt
+      }
+    });
+
+  } catch (error) {
+    console.error("Order creation failed:", error);
+    
+    // Handle duplicate order IDs
+    if (error.code === 11000) {
+      return res.status(409).json({
+        error: "Order ID conflict",
+        message: "This order ID already exists"
+      });
+    }
+
+    res.status(500).json({
+      error: "Order processing failed",
+      details: process.env.NODE_ENV === 'development' ? {
+        message: error.message,
+        stack: error.stack
+      } : undefined
+    });
   }
 };
 

@@ -62,11 +62,10 @@ const SalesTeamDashboard = () => {
     try {
       setLoading(true);
       const payload = {
-        uniqueId: values.uniqueId,
-        orderItems: orderItems.filter(item => item.styleNo),
-        orders: 'ongoing',
-        memoId: values.memoId
-      };
+      clientId: selectedClient._id,  // Use the selected client's ID
+      memoId: values.memoId,
+      orderItems: orderItems.filter(item => item.styleNo)
+    };
       
       await axios.post(`${API_BASE_URL}/api/team/addClientOrder`, payload);
       message.success('Order submitted successfully');
@@ -123,7 +122,7 @@ const SalesTeamDashboard = () => {
     { title: 'Name', dataIndex: 'name', key: 'name' },
     { title: 'Phone', dataIndex: 'phone', key: 'phone' },
     { title: 'GST No', dataIndex: 'gstNo', key: 'gstNo' },
-    { title: 'Status', dataIndex: 'orders', key: 'orders' },
+    { title: 'Status', dataIndex: 'status', key: 'status' },
   ];
 
   const orderHistoryColumns = [
@@ -151,7 +150,7 @@ const SalesTeamDashboard = () => {
           <Card>
             <Statistic 
               title="Ongoing Orders" 
-              value={clients.filter(c => c.orders === 'ongoing').length} 
+              value={clients.filter(c => c.status === 'ongoing').length} 
             />
           </Card>
         </Col>
@@ -159,7 +158,7 @@ const SalesTeamDashboard = () => {
           <Card>
             <Statistic 
               title="Completed Orders" 
-              value={clients.filter(c => c.orders === 'completed').length} 
+              value={clients.filter(c => c.status === 'completed').length} 
             />
           </Card>
         </Col>
@@ -179,7 +178,7 @@ const SalesTeamDashboard = () => {
         <Col span={12}>
           <Card title="Ongoing Orders">
             <Table 
-              dataSource={clients.filter(c => c.orders === 'ongoing')} 
+              dataSource={clients.filter(c => c.status === 'ongoing')} 
               columns={clientColumns} 
               rowKey="_id" 
               loading={loading}
@@ -190,7 +189,7 @@ const SalesTeamDashboard = () => {
         <Col span={12}>
           <Card title="Completed Orders">
             <Table 
-              dataSource={clients.filter(c => c.orders === 'completed')} 
+              dataSource={clients.filter(c => c.status === 'completed')} 
               columns={clientColumns} 
               rowKey="_id" 
               loading={loading}
@@ -454,7 +453,7 @@ const SalesTeamDashboard = () => {
                 </Col>
                 <Col span={8}>
                   <Text strong>Status: </Text>
-                  <Text>{orderHistory.orders}</Text>
+                  <Text>{orderHistory.status}</Text>
                 </Col>
                 <Col span={8}>
                   <Text strong>Order Date: </Text>

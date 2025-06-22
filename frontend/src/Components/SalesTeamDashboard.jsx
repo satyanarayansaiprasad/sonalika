@@ -39,24 +39,41 @@ const SalesDashboard = () => {
     setLoading(true);
     try {
       const res = await axios.get(`${API_BASE_URL}/api/team/get-clients`);
-      setClients(res.data || []);
-      calculateStats(res.data);
+      
+      // Ensure we're working with an array
+      const clientsData = Array.isArray(res.data) ? res.data : 
+                         (res.data.clients || res.data.data || []);
+      
+      setClients(clientsData);
+      calculateStats(clientsData);
     } catch (err) {
       console.error('Fetch error:', err);
       message.error('Failed to fetch clients');
+      setClients([]); // Reset to empty array on error
     } finally {
       setLoading(false);
     }
   };
 
   const calculateStats = (clientsData) => {
+    // Ensure we have an array to work with
+    if (!Array.isArray(clientsData)) {
+      console.error('Invalid clients data format:', clientsData);
+      clientsData = [];
+    }
+
     let totalOrders = 0;
     let revenue = 0;
     const activeClients = new Set();
 
     clientsData.forEach(client => {
-      if (client.orders && client.orders.size > 0) {
-        client.orders.forEach(order => {
+      if (client?.orders) {
+        // Handle both Map and array format for orders
+        const orders = client.orders instanceof Map ? 
+                     Array.from(client.orders.values()) : 
+                     (Array.isArray(client.orders) ? client.orders : []);
+        
+        orders.forEach(order => {
           totalOrders++;
           if (order.status === 'ongoing') {
             activeClients.add(client._id);
@@ -86,7 +103,13 @@ const SalesDashboard = () => {
     try {
       setLoading(true);
       const res = await axios.post(`${API_BASE_URL}/api/team/client-kyc`, values);
-      setClients(prev => [...prev, res.data]);
+      
+      // Ensure new client is added to array properly
+      const newClient = res.data?.client || res.data;
+      if (newClient) {
+        setClients(prev => Array.isArray(prev) ? [...prev, newClient] : [newClient]);
+      }
+      
       message.success('Client added successfully');
       kycForm.resetFields();
     } catch (err) {
@@ -101,9 +124,9 @@ const SalesDashboard = () => {
     try {
       setLoading(true);
       const payload = {
-        clientId: selectedClient._id,
+        clientId: selectedClient?._id,
         memoId: values.memoId,
-        orderItems: orderItems.filter(item => item.styleNo)
+        orderItems: orderItems.filter(item => item?.styleNo)
       };
       
       await axios.post(`${API_BASE_URL}/api/team/clients-order`, payload);
@@ -123,37 +146,51 @@ const SalesDashboard = () => {
   const fetchOrderHistory = async (clientId) => {
     try {
       setLoading(true);
-      const res = await axios.get(`${API_BASE_URL}/api/orders`, {
-        params: { clientId, from: dateRange[0].toISOString(), to: dateRange[1].toISOString() }
+      const res = await axios.get(`${API_BASE_URL}/api/team/order-history`, {
+        params: { 
+          clientId, 
+          from: dateRange[0]?.toISOString(), 
+          to: dateRange[1]?.toISOString() 
+        }
       });
-      setOrderHistory(res.data);
+      
+      // Ensure we have valid order history data
+      const historyData = res.data?.orders || res.data || [];
+      setOrderHistory(Array.isArray(historyData) ? historyData : [historyData]);
     } catch (err) {
       console.error('History Error:', err);
       message.error('Failed to fetch order history');
+      setOrderHistory(null);
     } finally {
       setLoading(false);
     }
   };
 
   const addOrderItem = () => {
-    setOrderItems([...orderItems, {}]);
+    setOrderItems(prev => Array.isArray(prev) ? [...prev, {}] : [{}]);
   };
 
   const removeOrderItem = (index) => {
-    const newItems = [...orderItems];
-    newItems.splice(index, 1);
-    setOrderItems(newItems);
+    setOrderItems(prev => {
+      if (!Array.isArray(prev)) return [];
+      const newItems = [...prev];
+      newItems.splice(index, 1);
+      return newItems;
+    });
   };
 
   const updateOrderItem = (index, field, value) => {
-    const newItems = [...orderItems];
-    newItems[index] = { ...newItems[index], [field]: value };
-    setOrderItems(newItems);
+    setOrderItems(prev => {
+      if (!Array.isArray(prev)) return [{}];
+      const newItems = [...prev];
+      newItems[index] = { ...newItems[index], [field]: value };
+      return newItems;
+    });
   };
 
   const handleClientSelect = (clientId) => {
-    const client = clients.find(c => c._id === clientId);
-    setSelectedClient(client);
+    const client = Array.isArray(clients) ? clients.find(c => c._id === clientId) : null;
+    setSelectedClient(client || null);
   };
 
   const clientColumns = [
@@ -165,12 +202,16 @@ const SalesDashboard = () => {
       title: 'Status', 
       key: 'status',
       render: (_, client) => {
-        if (!client.orders || client.orders.size === 0) return <Tag>No orders</Tag>;
+        if (!client?.orders) return <Tag>No orders</Tag>;
         
-        const statuses = Array.from(client.orders.values()).map(o => o.status);
+        const orders = client.orders instanceof Map ? 
+                     Array.from(client.orders.values()) : 
+                     (Array.isArray(client.orders) ? client.orders : []);
+        
+        const statuses = orders.map(o => o?.status).filter(Boolean);
         
         if (statuses.includes('ongoing')) return <Tag color="blue">Active</Tag>;
-        if (statuses.every(s => s === 'completed')) return <Tag color="green">Completed</Tag>;
+        if (statuses.length > 0 && statuses.every(s => s === 'completed')) return <Tag color="green">Completed</Tag>;
         return <Tag color="orange">Mixed</Tag>;
       }
     },
@@ -194,15 +235,37 @@ const SalesDashboard = () => {
 
   const orderColumns = [
     { title: 'Memo ID', dataIndex: 'memoId', key: 'memoId' },
-    { title: 'Date', dataIndex: 'orderDate', key: 'date', render: date => dayjs(date).format('DD/MM/YYYY') },
-    { title: 'Items', dataIndex: 'orderItems', key: 'items', render: items => items.length },
-    { title: 'Status', dataIndex: 'status', key: 'status', render: status => (
-      <Tag color={status === 'completed' ? 'green' : 'blue'}>{status.toUpperCase()}</Tag>
-    )},
-    { title: 'Amount', key: 'amount', render: (_, order) => (
-      order.orderItems.reduce((sum, item) => sum + (item.amount || 0), 0)
-    )}
-  
+    { 
+      title: 'Date', 
+      dataIndex: 'orderDate', 
+      key: 'date', 
+      render: date => date ? dayjs(date).format('DD/MM/YYYY') : 'N/A' 
+    },
+    { 
+      title: 'Items', 
+      dataIndex: 'orderItems", 
+      key: 'items', 
+      render: items => Array.isArray(items) ? items.length : 0 
+    },
+    { 
+      title: 'Status', 
+      dataIndex: 'status', 
+      key: 'status', 
+      render: status => (
+        <Tag color={status === 'completed' ? 'green' : 'blue'}>
+          {status ? status.toUpperCase() : 'UNKNOWN'}
+        </Tag>
+      )
+    },
+    { 
+      title: 'Amount', 
+      key: 'amount', 
+      render: (_, order) => (
+        Array.isArray(order.orderItems) ? 
+        order.orderItems.reduce((sum, item) => sum + (item.amount || 0), 0) :
+        0
+      )
+    }
   ];
 
   const orderItemColumns = [
@@ -245,7 +308,7 @@ const SalesDashboard = () => {
       
       <Card title="Recent Clients" style={{ marginBottom: 24 }}>
         <Table 
-          dataSource={clients.slice(0, 5)} 
+          dataSource={Array.isArray(clients) ? clients.slice(0, 5) : []} 
           columns={clientColumns} 
           rowKey="_id"
           loading={loading}
@@ -257,9 +320,17 @@ const SalesDashboard = () => {
         <Col span={12}>
           <Card title="Active Clients (with ongoing orders)">
             <Table 
-              dataSource={clients.filter(c => 
-                c.orders && Array.from(c.orders.values()).some(o => o.status === 'ongoing')
-              )}
+              dataSource={
+                Array.isArray(clients) ? 
+                clients.filter(c => {
+                  if (!c?.orders) return false;
+                  const orders = c.orders instanceof Map ? 
+                               Array.from(c.orders.values()) : 
+                               (Array.isArray(c.orders) ? c.orders : []);
+                  return orders.some(o => o?.status === 'ongoing');
+                }) : 
+                []
+              }
               columns={clientColumns}
               rowKey="_id"
               loading={loading}
@@ -270,12 +341,20 @@ const SalesDashboard = () => {
         <Col span={12}>
           <Card title="Recent Orders">
             <Table 
-              dataSource={clients.flatMap(client => 
-                client.orders ? Array.from(client.orders.values())
-                  .map(order => ({ ...order, clientName: client.name }))
-                  .sort((a, b) => new Date(b.orderDate) - new Date(a.orderDate))
-                  .slice(0, 5) : []
-              )}
+              dataSource={
+                Array.isArray(clients) ?
+                clients.flatMap(client => {
+                  if (!client?.orders) return [];
+                  const orders = client.orders instanceof Map ? 
+                                 Array.from(client.orders.values()) : 
+                                 (Array.isArray(client.orders) ? client.orders : []);
+                  return orders
+                    .map(order => ({ ...order, clientName: client.name }))
+                    .sort((a, b) => new Date(b?.orderDate || 0) - new Date(a?.orderDate || 0))
+                    .slice(0, 5);
+                }) :
+                []
+              }
               columns={[
                 { title: 'Client', dataIndex: 'clientName', key: 'clientName' },
                 ...orderColumns
@@ -350,7 +429,7 @@ const SalesDashboard = () => {
                     option.children.toLowerCase().includes(input.toLowerCase())
                   }
                 >
-                  {clients.map(client => (
+                  {Array.isArray(clients) && clients.map(client => (
                     <Option key={client._id} value={client._id}>
                       {client.uniqueId} - {client.name}
                     </Option>
@@ -392,7 +471,7 @@ const SalesDashboard = () => {
 
           <Divider orientation="left">Order Items</Divider>
           
-          {orderItems.map((item, index) => (
+          {Array.isArray(orderItems) && orderItems.map((item, index) => (
             <Card key={index} type="inner" style={{ marginBottom: 16 }}>
               <Row gutter={16}>
                 <Col span={2}>
@@ -439,6 +518,7 @@ const SalesDashboard = () => {
                   </Form.Item>
                 </Col>
                 <Col span={3}>
+                  
                   <Form.Item label="DIA WT">
                     <InputNumber
                       value={item.diaWeight}

@@ -25,7 +25,7 @@ const SalesDashboard = () => {
   const [kycForm] = Form.useForm();
   const [orderForm] = Form.useForm();
   const [orderItems, setOrderItems] = useState([{}]);
-  const [orderHistory, setOrderHistory] = useState(null);
+  const [orderHistory, setOrderHistory] = useState([]);
   const [selectedClient, setSelectedClient] = useState(null);
   const [dateRange, setDateRange] = useState([dayjs().subtract(30, 'days'), dayjs()]);
   const [stats, setStats] = useState({
@@ -35,12 +35,19 @@ const SalesDashboard = () => {
     revenue: 0
   });
 
+  // Convert orders Map to array for easier handling
+  const ordersToArray = (orders) => {
+    if (!orders) return [];
+    if (orders instanceof Map) return Array.from(orders.values());
+    if (Array.isArray(orders)) return orders;
+    return Object.values(orders);
+  };
+
   const fetchClients = async () => {
     setLoading(true);
     try {
       const res = await axios.get(`${API_BASE_URL}/api/team/get-clients`);
-      const clientsData = Array.isArray(res.data) ? res.data : 
-                         (res.data.clients || res.data.data || []);
+      const clientsData = res.data?.clients || res.data?.data || [];
       setClients(clientsData);
       calculateStats(clientsData);
     } catch (err) {
@@ -53,33 +60,24 @@ const SalesDashboard = () => {
   };
 
   const calculateStats = (clientsData) => {
-    if (!Array.isArray(clientsData)) {
-      console.error('Invalid clients data format:', clientsData);
-      clientsData = [];
-    }
-
     let totalOrders = 0;
     let revenue = 0;
     const activeClients = new Set();
 
     clientsData.forEach(client => {
-      if (client?.orders) {
-        const orders = client.orders instanceof Map ? 
-                     Array.from(client.orders.values()) : 
-                     (Array.isArray(client.orders) ? client.orders : []);
-        
-        orders.forEach(order => {
-          totalOrders++;
-          if (order.status === 'ongoing') {
-            activeClients.add(client.uniqueId);
-          }
-          if (order.orderItems) {
-            order.orderItems.forEach(item => {
-              revenue += item.amount || 0;
-            });
-          }
-        });
-      }
+      const orders = ordersToArray(client.orders);
+      
+      orders.forEach(order => {
+        totalOrders++;
+        if (order.status === 'ongoing') {
+          activeClients.add(client.uniqueId);
+        }
+        if (order.orderItems) {
+          order.orderItems.forEach(item => {
+            revenue += item.amount || 0;
+          });
+        }
+      });
     });
 
     setStats({
@@ -99,16 +97,15 @@ const SalesDashboard = () => {
       setLoading(true);
       const res = await axios.post(`${API_BASE_URL}/api/team/client-kyc`, values);
       
-      const newClient = res.data?.client || res.data;
-      if (newClient) {
-        setClients(prev => Array.isArray(prev) ? [...prev, newClient] : [newClient]);
-      }
-      
       message.success('Client added successfully');
       kycForm.resetFields();
+      fetchClients(); // Refresh client list
     } catch (err) {
       console.error('KYC Error:', err);
-      message.error(err.response?.data?.error || 'Submission failed');
+      const errorMsg = err.response?.data?.message || 
+                     err.response?.data?.error || 
+                     'Submission failed';
+      message.error(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -173,29 +170,27 @@ const SalesDashboard = () => {
         }))
       };
       
-      const res = await axios.post(`${API_BASE_URL}/api/team/clients-order`, payload);
+      await axios.post(`${API_BASE_URL}/api/team/clients-order`, payload);
       
       message.success('Order created successfully');
       orderForm.resetFields();
       setOrderItems([{}]);
       setSelectedClient(null);
       fetchClients();
-      
-      return res.data;
     } catch (err) {
       console.error('Order Error:', err);
       
       if (err.response) {
         if (err.response.status === 400) {
           message.error(err.response.data.message || 'Validation failed. Please check your inputs.');
+        } else if (err.response.status === 404) {
+          message.error(err.response.data.message || 'Client not found');
         } else {
           message.error(err.response.data.error || 'Order creation failed');
         }
       } else {
         message.error(err.message || 'An error occurred');
       }
-      
-      throw err;
     } finally {
       setLoading(false);
     }
@@ -212,24 +207,24 @@ const SalesDashboard = () => {
         }
       });
       
-      const historyData = res.data?.orders || res.data || [];
-      setOrderHistory(Array.isArray(historyData) ? historyData : [historyData]);
+      const clientData = res.data?.data || res.data;
+      const historyData = ordersToArray(clientData?.orders);
+      setOrderHistory(historyData);
     } catch (err) {
       console.error('History Error:', err);
       message.error('Failed to fetch order history');
-      setOrderHistory(null);
+      setOrderHistory([]);
     } finally {
       setLoading(false);
     }
   };
 
   const addOrderItem = () => {
-    setOrderItems(prev => Array.isArray(prev) ? [...prev, {}] : [{}]);
+    setOrderItems(prev => [...prev, {}]);
   };
 
   const removeOrderItem = (index) => {
     setOrderItems(prev => {
-      if (!Array.isArray(prev)) return [];
       const newItems = [...prev];
       newItems.splice(index, 1);
       return newItems;
@@ -238,7 +233,6 @@ const SalesDashboard = () => {
 
   const updateOrderItem = (index, field, value) => {
     setOrderItems(prev => {
-      if (!Array.isArray(prev)) return [{}];
       const newItems = [...prev];
       newItems[index] = { ...newItems[index], [field]: value };
       return newItems;
@@ -246,7 +240,7 @@ const SalesDashboard = () => {
   };
 
   const handleClientSelect = (uniqueId) => {
-    const client = Array.isArray(clients) ? clients.find(c => c.uniqueId === uniqueId) : null;
+    const client = clients.find(c => c.uniqueId === uniqueId);
     setSelectedClient(client || null);
   };
 
@@ -259,16 +253,13 @@ const SalesDashboard = () => {
       title: 'Status', 
       key: 'status',
       render: (_, client) => {
-        if (!client?.orders) return <Tag>No orders</Tag>;
-        
-        const orders = client.orders instanceof Map ? 
-                     Array.from(client.orders.values()) : 
-                     (Array.isArray(client.orders) ? client.orders : []);
+        const orders = ordersToArray(client.orders);
+        if (orders.length === 0) return <Tag>No orders</Tag>;
         
         const statuses = orders.map(o => o?.status).filter(Boolean);
         
         if (statuses.includes('ongoing')) return <Tag color="blue">Active</Tag>;
-        if (statuses.length > 0 && statuses.every(s => s === 'completed')) return <Tag color="green">Completed</Tag>;
+        if (statuses.every(s => s === 'completed')) return <Tag color="green">Completed</Tag>;
         return <Tag color="orange">Mixed</Tag>;
       }
     },
@@ -301,7 +292,7 @@ const SalesDashboard = () => {
       title: 'Items', 
       dataIndex: 'orderItems', 
       key: 'items', 
-      render: items => Array.isArray(items) ? items.length : 0 
+      render: items => items?.length || 0 
     },
     { 
       title: 'Status', 
@@ -317,9 +308,7 @@ const SalesDashboard = () => {
       title: 'Amount', 
       key: 'amount', 
       render: (_, order) => (
-        Array.isArray(order.orderItems) ? 
-        order.orderItems.reduce((sum, item) => sum + (item.amount || 0), 0) :
-        0
+        order.orderItems?.reduce((sum, item) => sum + (item.amount || 0), 0) || 0
       )
     }
   ];
@@ -364,7 +353,7 @@ const SalesDashboard = () => {
       
       <Card title="Recent Clients" style={{ marginBottom: 24 }}>
         <Table 
-          dataSource={Array.isArray(clients) ? clients.slice(0, 5) : []} 
+          dataSource={clients.slice(0, 5)} 
           columns={clientColumns} 
           rowKey="uniqueId"
           loading={loading}
@@ -376,17 +365,10 @@ const SalesDashboard = () => {
         <Col span={12}>
           <Card title="Active Clients (with ongoing orders)">
             <Table 
-              dataSource={
-                Array.isArray(clients) ? 
-                clients.filter(c => {
-                  if (!c?.orders) return false;
-                  const orders = c.orders instanceof Map ? 
-                               Array.from(c.orders.values()) : 
-                               (Array.isArray(c.orders) ? c.orders : []);
-                  return orders.some(o => o?.status === 'ongoing');
-                }) : 
-                []
-              }
+              dataSource={clients.filter(c => {
+                const orders = ordersToArray(c.orders);
+                return orders.some(o => o?.status === 'ongoing');
+              })} 
               columns={clientColumns}
               rowKey="uniqueId"
               loading={loading}
@@ -397,20 +379,13 @@ const SalesDashboard = () => {
         <Col span={12}>
           <Card title="Recent Orders">
             <Table 
-              dataSource={
-                Array.isArray(clients) ?
-                clients.flatMap(client => {
-                  if (!client?.orders) return [];
-                  const orders = client.orders instanceof Map ? 
-                                 Array.from(client.orders.values()) : 
-                                 (Array.isArray(client.orders) ? client.orders : []);
-                  return orders
-                    .map(order => ({ ...order, clientName: client.name }))
-                    .sort((a, b) => new Date(b?.orderDate || 0) - new Date(a?.orderDate || 0))
-                    .slice(0, 5);
-                }) :
-                []
-              }
+              dataSource={clients.flatMap(client => {
+                const orders = ordersToArray(client.orders);
+                return orders
+                  .map(order => ({ ...order, clientName: client.name }))
+                  .sort((a, b) => new Date(b?.orderDate || 0) - new Date(a?.orderDate || 0))
+                  .slice(0, 5);
+              })}
               columns={[
                 { title: 'Client', dataIndex: 'clientName', key: 'clientName' },
                 ...orderColumns
@@ -432,18 +407,33 @@ const SalesDashboard = () => {
         <Form layout="vertical" form={kycForm} onFinish={handleKYCSubmit}>
           <Row gutter={16}>
             <Col span={12}>
-              <Form.Item name="name" label="Full Name" rules={[{ required: true }]}>
+              <Form.Item 
+                name="name" 
+                label="Full Name" 
+                rules={[{ required: true, message: 'Please enter client name' }]}
+              >
                 <Input placeholder="Client name" />
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item name="phone" label="Phone" rules={[{ required: true, pattern: /^[0-9]{10}$/ }]}>
-                <Input placeholder="10-digit phone number" />
+              <Form.Item 
+                name="phone" 
+                label="Phone" 
+                rules={[
+                  { required: true, message: 'Please enter phone number' },
+                  { pattern: /^[0-9]{10,15}$/, message: 'Phone should be 10-15 digits' }
+                ]}
+              >
+                <Input placeholder="10-15 digit phone number" />
               </Form.Item>
             </Col>
           </Row>
           
-          <Form.Item name="address" label="Address" rules={[{ required: true }]}>
+          <Form.Item 
+            name="address" 
+            label="Address" 
+            rules={[{ required: true, message: 'Please enter address' }]}
+          >
             <Input.TextArea rows={3} />
           </Form.Item>
           
@@ -451,11 +441,6 @@ const SalesDashboard = () => {
             <Col span={12}>
               <Form.Item name="gstNo" label="GST Number">
                 <Input placeholder="Optional GST number" />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item name="memoId" label="Memo ID">
-                <Input placeholder="Optional memo reference" />
               </Form.Item>
             </Col>
           </Row>
@@ -472,7 +457,7 @@ const SalesDashboard = () => {
     <>
       <Title level={3}>Create New Order</Title>
       <Card>
-        <Form layout="vertical" form={orderForm} onFinish={handleOrderSubmit}>
+        <Form layout="vertical" form={orderForm}>
           <Row gutter={16}>
             <Col span={24}>
               <Form.Item 
@@ -489,7 +474,7 @@ const SalesDashboard = () => {
                     option.children.toLowerCase().includes(input.toLowerCase())
                   }
                 >
-                  {Array.isArray(clients) && clients.map(client => (
+                  {clients.map(client => (
                     <Option key={client.uniqueId} value={client.uniqueId}>
                       {client.uniqueId} - {client.name}
                     </Option>
@@ -526,7 +511,7 @@ const SalesDashboard = () => {
 
           <Divider orientation="left">Order Items</Divider>
           
-          {Array.isArray(orderItems) && orderItems.map((item, index) => (
+          {orderItems.map((item, index) => (
             <Card key={index} type="inner" style={{ marginBottom: 16 }}>
               <Row gutter={16}>
                 <Col span={2}>
@@ -654,7 +639,11 @@ const SalesDashboard = () => {
             Add Item
           </Button>
           
-          <Button type="primary" htmlType="submit" loading={loading}>
+          <Button 
+            type="primary" 
+            onClick={handleOrderSubmit}
+            loading={loading}
+          >
             Create Order
           </Button>
         </Form>
@@ -715,45 +704,44 @@ const SalesDashboard = () => {
           </Card>
         )}
 
-        {orderHistory ? (
-          orderHistory.length > 0 ? (
-            orderHistory.map(order => (
-              <Card
-                key={order._id}
-                extra={
-                  <Tag color={order.status === 'completed' ? 'green' : 'blue'}>
-                    {order.status.toUpperCase()}
-                  </Tag>
-                }
-                style={{ marginBottom: 16 }}
-              >
-                <Row gutter={16} style={{ marginBottom: 16 }}>
-                  <Col span={8}>
-                    <Text strong>Date: </Text>
-                    <Text>{dayjs(order.orderDate).format('DD/MM/YYYY HH:mm')}</Text>
-                  </Col>
-                  <Col span={8}>
-                    <Text strong>Total Amount: </Text>
-                    <Text>₹{order.orderItems.reduce((sum, item) => sum + (item.amount || 0), 0)}</Text>
-                  </Col>
-                </Row>
+        {orderHistory.length > 0 ? (
+          orderHistory.map(order => (
+            <Card
+              key={order._id}
+              title={`Order ${order._id ? order._id.substring(0, 8) : ''}`}
+              extra={
+                <Tag color={order.status === 'completed' ? 'green' : 'blue'}>
+                  {order.status?.toUpperCase() || 'UNKNOWN'}
+                </Tag>
+              }
+              style={{ marginBottom: 16 }}
+            >
+              <Row gutter={16} style={{ marginBottom: 16 }}>
+                <Col span={8}>
+                  <Text strong>Date: </Text>
+                  <Text>{dayjs(order.orderDate).format('DD/MM/YYYY HH:mm')}</Text>
+                </Col>
+                <Col span={8}>
+                  <Text strong>Total Amount: </Text>
+                  <Text>₹{order.orderItems?.reduce((sum, item) => sum + (item.amount || 0), 0)}</Text>
+                </Col>
+              </Row>
 
-                <Table
-                  columns={orderItemColumns}
-                  dataSource={order.orderItems}
-                  rowKey={(record) => `${record.srNo}-${record.styleNo}`}
-                  pagination={false}
-                />
-              </Card>
-            ))
-          ) : (
-            <Card>
-              <Text>No orders found for selected client and date range</Text>
+              <Table
+                columns={orderItemColumns}
+                dataSource={order.orderItems || []}
+                rowKey={(record) => `${record.srNo}-${record.styleNo}`}
+                pagination={false}
+              />
             </Card>
-          )
+          ))
         ) : (
           <Card>
-            <Text>Select a client to view order history</Text>
+            <Text>
+              {selectedClient ? 
+                'No orders found for selected client and date range' : 
+                'Select a client to view order history'}
+            </Text>
           </Card>
         )}
       </Card>

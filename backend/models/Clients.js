@@ -1,35 +1,4 @@
-
 const mongoose = require("mongoose");
-const orderItemSchema = new mongoose.Schema({
-  srNo: Number,
-  styleNo: String,
-  clarity: String,
-  grossWeight: Number,
-  netWeight: Number,
-  diaWeight: Number,
-  pcs: Number,
-  amount: Number,
-  description: String
-}, { _id: false });
-
-const orderSchema = new mongoose.Schema({
-  // memoId: {
-  //   type: String,
-  //   default: undefined,
-  //   trim: true
-  // },
-  orderDate: {
-    type: Date,
-    default: Date.now
-  },
-  status: {
-    type: String,
-    enum: ["ongoing", "completed"],
-    default: "ongoing"
-  },
-  orderItems: [orderItemSchema]
-}, { _id: false }); // Keep _id for individual orders
-
 const clientSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -46,10 +15,27 @@ const clientSchema = new mongoose.Schema({
   address: String,
   gstNo: String,
   orders: {
-    type: Map,
-    of: orderSchema,
-    default: new Map()
-  }
+  type: Map,
+  of: {
+    orderDate: Date,
+    status: String,
+    orderItems: [
+      {
+        srNo: Number,
+        styleNo: String,
+        clarity: String,
+        grossWeight: Number,
+        netWeight: Number,
+        diaWeight: Number,
+        pcs: Number,
+        amount: Number,
+        description: String
+      }
+    ]
+  },
+  default: new Map()
+}
+
 }, { timestamps: true });
 module.exports = mongoose.model("Clients", clientSchema);
 

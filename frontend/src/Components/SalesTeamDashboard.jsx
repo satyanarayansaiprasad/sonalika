@@ -201,7 +201,8 @@ const SalesDashboard = () => {
     )},
     { title: 'Amount', key: 'amount', render: (_, order) => (
       order.orderItems.reduce((sum, item) => sum + (item.amount || 0), 0)
-    }
+    )}
+  
   ];
 
   const orderItemColumns = [

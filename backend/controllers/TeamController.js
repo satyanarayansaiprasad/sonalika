@@ -388,40 +388,107 @@ exports.addClientOrder = async (req, res) => {
 };
 
 
-
-
-// GET order history for a client
 exports.getOrderHistory = async (req, res) => {
   try {
-    const { uniqueId, clientId } = req.query;
+    const { uniqueId } = req.query;
 
-    let client;
-
-    // Find by uniqueId or _id
-    if (uniqueId) {
-      client = await Clients.findOne({ uniqueId });
-    } 
-     else {
-      return res.status(400).json({ error: "Please provide uniqueId or clientId" });
+    // Validate input
+    if (!uniqueId) {
+      return res.status(400).json({
+        error: "Validation Error",
+        message: "uniqueId is required",
+        details: {
+          uniqueId: "Missing uniqueId parameter"
+        }
+      });
     }
 
+    // Find client
+    const client = await Clients.findOne({ uniqueId });
     if (!client) {
-      return res.status(404).json({ error: "Client not found" });
+      return res.status(404).json({
+        error: "Not Found",
+        message: "Client not found with the provided uniqueId"
+      });
     }
 
-    // Response with clean formatted fields
-    res.status(200).json({
-      name: client.name,
-      uniqueId: client.uniqueId,
-      memoId: client.memoId,
-      phone: client.phone,
-      orderStatus: client.orders,
-      orderDate: client.orderDate,
-      orderItems: client.orderItems,
+    // Convert orders Map to array and format response
+    const orders = client.orders ? Array.from(client.orders.entries()).map(([orderId, order]) => {
+      // Extract timestamp from orderId (order_1691234567890_1234)
+      const timestamp = parseInt(orderId.split('_')[1]);
+      const orderDate = timestamp ? new Date(timestamp) : order.orderDate;
+
+      return {
+        orderId,
+        orderDate: orderDate.toISOString(),
+        formattedDate: orderDate.toLocaleString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        }),
+        status: order.status || 'ongoing',
+        items: order.orderItems.map(item => ({
+          srNo: item.srNo || 0,
+          styleNo: item.styleNo,
+          clarity: item.clarity || '',
+          grossWeight: item.grossWeight || 0,
+          netWeight: item.netWeight || 0,
+          diaWeight: item.diaWeight || 0,
+          pcs: item.pcs,
+          amount: item.amount,
+          description: item.description || ''
+        })),
+        itemCount: order.orderItems.length,
+        totalAmount: order.orderItems.reduce((sum, item) => sum + (item.amount || 0), 0)
+      };
+    }) : [];
+
+    // Sort orders by date (newest first)
+    orders.sort((a, b) => new Date(b.orderDate) - new Date(a.orderDate));
+
+    // Calculate summary statistics
+    const totalOrders = orders.length;
+    const totalItems = orders.reduce((sum, order) => sum + order.itemCount, 0);
+    const totalAmount = orders.reduce((sum, order) => sum + order.totalAmount, 0);
+
+    return res.status(200).json({
+      success: true,
+      message: "Order history retrieved successfully",
+      data: {
+        clientDetails: {
+          name: client.name,
+          uniqueId: client.uniqueId,
+          phone: client.phone,
+          address: client.address,
+          gstNo: client.gstNo
+        },
+        orders,
+        summary: {
+          totalOrders,
+          totalItems,
+          totalAmount,
+          lastOrderDate: orders[0]?.orderDate || null
+        }
+      }
     });
 
   } catch (error) {
     console.error("Error fetching order history:", error);
-    res.status(500).json({ error: "Internal Server Error" });
+
+    // Handle specific error types
+    if (error.name === 'CastError') {
+      return res.status(400).json({
+        error: "Invalid Format",
+        message: "The provided uniqueId is not valid"
+      });
+    }
+
+    return res.status(500).json({
+      error: "Internal Server Error",
+      message: "Failed to fetch order history",
+      systemMessage: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 };

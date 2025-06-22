@@ -319,19 +319,19 @@ exports.addClientOrder = async (req, res) => {
       });
     }
 
-    // Check for duplicate memoId in client's orders
-    const memoExists = client.orders.some(order => order.memoId === memoId);
-    if (memoExists) {
+    // Check for duplicate memoId in client's orders (since orders is a Map)
+    if (client.orders.has(memoId)) {
       return res.status(409).json({
         error: "Duplicate Memo",
         message: "An order with this memoId already exists for this client"
       });
     }
 
-    // Prepare new order group
-    const newOrderGroup = {
+    // Prepare new order
+    const newOrder = {
       memoId: memoId.trim(),
       orderItems: orderItems.map(item => ({
+        srNo: item.srNo || 0,
         styleNo: item.styleNo.trim(),
         clarity: item.clarity?.trim() || "",
         grossWeight: item.grossWeight || 0,
@@ -339,33 +339,31 @@ exports.addClientOrder = async (req, res) => {
         diaWeight: item.diaWeight || 0,
         pcs: item.pcs,
         amount: item.amount,
-        description: item.description?.trim() || "",
-        orderStatus: "received" // default status
+        description: item.description?.trim() || ""
       }))
     };
 
-    // Add order to client and increment counter
-    client.orders.push(newOrderGroup);
-    client.orderCounter += 1;
+    // Add order to client's orders Map
+    client.orders.set(memoId, newOrder);
 
     // Save the updated client document
     await client.save();
 
-    // Prepare response with the newly added order
-    const addedOrder = client.orders[client.orders.length - 1];
+    // Get the newly added order from the Map
+    const addedOrder = client.orders.get(memoId);
 
     return res.status(201).json({
       success: true,
       message: "Order added successfully",
       data: {
-        orderId: addedOrder._id, // MongoDB automatically adds _id even with _id: false in schema
         memoId: addedOrder.memoId,
         orderDate: addedOrder.orderDate,
+        status: addedOrder.status,
         itemCount: addedOrder.orderItems.length,
         clientDetails: {
           clientId: client._id,
           name: client.name,
-          orderCounter: client.orderCounter
+          uniqueId: client.uniqueId
         }
       }
     });
@@ -378,6 +376,14 @@ exports.addClientOrder = async (req, res) => {
       return res.status(400).json({
         error: "Invalid ID Format",
         message: "The provided clientId is not valid"
+      });
+    }
+
+    // Handle duplicate key error (for unique memoId)
+    if (error.code === 11000) {
+      return res.status(409).json({
+        error: "Duplicate Memo",
+        message: "An order with this memoId already exists"
       });
     }
 

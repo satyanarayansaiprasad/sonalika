@@ -38,7 +38,7 @@ const SalesDashboard = () => {
   const fetchClients = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${API_BASE_URL}/api/clients`);
+      const res = await axios.get(`${API_BASE_URL}/api/team/get-clients`);
       setClients(res.data || []);
       calculateStats(res.data);
     } catch (err) {
@@ -85,7 +85,7 @@ const SalesDashboard = () => {
   const handleKYCSubmit = async (values) => {
     try {
       setLoading(true);
-      const res = await axios.post(`${API_BASE_URL}/api/clients`, values);
+      const res = await axios.post(`${API_BASE_URL}/api/team/client-kyc`, values);
       setClients(prev => [...prev, res.data]);
       message.success('Client added successfully');
       kycForm.resetFields();
@@ -106,7 +106,7 @@ const SalesDashboard = () => {
         orderItems: orderItems.filter(item => item.styleNo)
       };
       
-      await axios.post(`${API_BASE_URL}/api/orders`, payload);
+      await axios.post(`${API_BASE_URL}/api/team/clients-order`, payload);
       message.success('Order created successfully');
       orderForm.resetFields();
       setOrderItems([{}]);

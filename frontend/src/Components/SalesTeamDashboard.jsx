@@ -120,28 +120,97 @@ const SalesDashboard = () => {
     }
   };
 
-  const handleOrderSubmit = async (values) => {
-    try {
-      setLoading(true);
-      const payload = {
-        clientId: selectedClient?._id,
-        memoId: values.memoId,
-        orderItems: orderItems.filter(item => item?.styleNo)
-      };
-      
-      await axios.post(`${API_BASE_URL}/api/team/clients-order`, payload);
-      message.success('Order created successfully');
-      orderForm.resetFields();
-      setOrderItems([{}]);
-      setSelectedClient(null);
-      fetchClients(); // Refresh data
-    } catch (err) {
-      console.error('Order Error:', err);
-      message.error(err.response?.data?.error || 'Order creation failed');
-    } finally {
-      setLoading(false);
+const handleOrderSubmit = async (values) => {
+  try {
+    setLoading(true);
+    
+    // Validate required fields before submission
+    if (!selectedClient?._id || !values.memoId || !orderItems || orderItems.length === 0) {
+      throw new Error('Client, memo ID, and at least one order item are required');
     }
-  };
+
+    // Validate each order item
+    const invalidItems = orderItems
+      .map((item, index) => {
+        const errors = [];
+        if (!item.styleNo) errors.push("styleNo is required");
+        if (!item.pcs || isNaN(item.pcs) )errors.push("valid pcs is required");
+        if (item.pcs < 1) errors.push("pcs must be ≥1");
+        if (!item.amount || isNaN(item.amount)) errors.push("valid amount is required");
+        
+        return errors.length > 0 ? { itemIndex: index, errors } : null;
+      })
+      .filter(Boolean);
+
+    if (invalidItems.length > 0) {
+      throw {
+        response: {
+          data: {
+            error: "Invalid Order Items",
+            message: "Some order items failed validation",
+            invalidItems
+          }
+        }
+      };
+    }
+
+    const payload = {
+      clientId: selectedClient._id,
+      memoId: values.memoId,
+      orderItems: orderItems.map(item => ({
+        srNo: item.srNo || 0,
+        styleNo: item.styleNo.trim(),
+        clarity: item.clarity?.trim() || "",
+        grossWeight: item.grossWeight || 0,
+        netWeight: item.netWeight || 0,
+        diaWeight: item.diaWeight || 0,
+        pcs: item.pcs,
+        amount: item.amount,
+        description: item.description?.trim() || ""
+      }))
+    };
+    
+    const res = await axios.post(`${API_BASE_URL}/api/team/clients-order`, payload);
+    
+    message.success('Order created successfully');
+    orderForm.resetFields();
+    setOrderItems([{}]);
+    setSelectedClient(null);
+    fetchClients(); // Refresh data
+    
+    return res.data;
+  } catch (err) {
+    console.error('Order Error:', err);
+    
+    if (err.response?.data?.error === "Invalid Order Items") {
+      message.error({
+        content: (
+          <div>
+            <p>Some order items failed validation:</p>
+            <ul>
+              {err.response.data.invalidItems.map((item, idx) => (
+                <li key={idx}>
+                  Item {item.itemIndex + 1}: {item.errors.join(', ')}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ),
+        duration: 5
+      });
+    } else if (err.response?.data?.error === "Duplicate Memo") {
+      message.error('An order with this memoId already exists for this client');
+    } else if (err.response?.data?.error === "Not Found") {
+      message.error('Client not found with the provided ID');
+    } else {
+      message.error(err.response?.data?.error || 'Order creation failed');
+    }
+    
+    throw err;
+  } finally {
+    setLoading(false);
+  }
+};
 
   const fetchOrderHistory = async (clientId) => {
     try {
@@ -419,7 +488,7 @@ const SalesDashboard = () => {
         <Form layout="vertical" form={orderForm} onFinish={handleOrderSubmit}>
           <Row gutter={16}>
             <Col span={12}>
-              <Form.Item name="clientId" label="Client" rules={[{ required: true }]}>
+              <Form.Item name="clientId" label="Client" rules={[{ required: true, message: 'Please select a client' }]}>
                 <Select
                   showSearch
                   placeholder="Select client"
@@ -438,8 +507,8 @@ const SalesDashboard = () => {
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item name="memoId" label="Memo ID">
-                <Input placeholder="Optional memo reference" />
+              <Form.Item name="memoId" label="Memo ID" rules={[{ required: true, message: 'Memo ID is required' }]}>
+                <Input placeholder="Enter memo reference" />
               </Form.Item>
             </Col>
           </Row>
@@ -480,14 +549,16 @@ const SalesDashboard = () => {
                       value={item.srNo}
                       onChange={val => updateOrderItem(index, 'srNo', val)}
                       style={{ width: '100%' }}
+                      min={0}
                     />
                   </Form.Item>
                 </Col>
                 <Col span={4}>
-                  <Form.Item label="Style No">
+                  <Form.Item label="Style No" required>
                     <Input
                       value={item.styleNo}
                       onChange={e => updateOrderItem(index, 'styleNo', e.target.value)}
+                      placeholder="Required"
                     />
                   </Form.Item>
                 </Col>
@@ -505,6 +576,8 @@ const SalesDashboard = () => {
                       value={item.grossWeight}
                       onChange={val => updateOrderItem(index, 'grossWeight', val)}
                       style={{ width: '100%' }}
+                      min={0}
+                      step={0.01}
                     />
                   </Form.Item>
                 </Col>
@@ -514,34 +587,40 @@ const SalesDashboard = () => {
                       value={item.netWeight}
                       onChange={val => updateOrderItem(index, 'netWeight', val)}
                       style={{ width: '100%' }}
+                      min={0}
+                      step={0.01}
                     />
                   </Form.Item>
                 </Col>
                 <Col span={3}>
-                  
                   <Form.Item label="DIA WT">
                     <InputNumber
                       value={item.diaWeight}
                       onChange={val => updateOrderItem(index, 'diaWeight', val)}
                       style={{ width: '100%' }}
+                      min={0}
+                      step={0.01}
                     />
                   </Form.Item>
                 </Col>
                 <Col span={2}>
-                  <Form.Item label="PCS">
+                  <Form.Item label="PCS" required>
                     <InputNumber
                       value={item.pcs}
                       onChange={val => updateOrderItem(index, 'pcs', val)}
                       style={{ width: '100%' }}
+                      min={1}
                     />
                   </Form.Item>
                 </Col>
                 <Col span={3}>
-                  <Form.Item label="Amount">
+                  <Form.Item label="Amount" required>
                     <InputNumber
                       value={item.amount}
                       onChange={val => updateOrderItem(index, 'amount', val)}
                       style={{ width: '100%' }}
+                      min={0}
+                      step={0.01}
                     />
                   </Form.Item>
                 </Col>
@@ -662,7 +741,7 @@ const SalesDashboard = () => {
                 <Table
                   columns={orderItemColumns}
                   dataSource={order.orderItems}
-                  rowKey="srNo"
+                  rowKey={(record) => `${record.srNo}-${record.styleNo}`}
                   pagination={false}
                 />
               </Card>

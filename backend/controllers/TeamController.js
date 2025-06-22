@@ -272,17 +272,17 @@ exports.getClients = async (req, res) => {
 // Add order items to existing client by uniqueId or _id
 exports.addClientOrder = async (req, res) => {
   try {
-    const { clientId, orderItems } = req.body;
+    const { uniqueId, orders } = req.body;
 
     // Validate required fields
-    if (!clientId || !orderItems || !Array.isArray(orderItems) || orderItems.length === 0) {
+    if (!uniqueId || !orderItems || !Array.isArray(orders) || orders.length === 0) {
       return res.status(400).json({
         error: "Validation Error",
-        message: "clientId and at least one order item are required",
+        message: "uniqueId and at least one order item are required",
         details: {
-          clientId: !clientId ? "Missing clientId" : "Valid",
-          orderItems: !orderItems ? "Missing order items" 
-                   : !Array.isArray(orderItems) ? "orderItems must be an array" 
+          uniqueId: !uniqueId ? "Missing uniqueId" : "Valid",
+          orderItems: !orders ? "Missing order items" 
+                   : !Array.isArray(orders) ? "orderItems must be an array" 
                    : orderItems.length === 0 ? "At least one order item required" 
                    : "Valid"
         }
@@ -309,12 +309,12 @@ exports.addClientOrder = async (req, res) => {
       });
     }
 
-    // Find client and verify existence
-    const client = await Clients.findById(clientId);
+    // Find client using uniqueId
+    const client = await Clients.findOne({ uniqueId });
     if (!client) {
       return res.status(404).json({
         error: "Not Found",
-        message: "Client not found with the provided ID"
+        message: "Client not found with the provided uniqueId"
       });
     }
 
@@ -325,7 +325,7 @@ exports.addClientOrder = async (req, res) => {
     const newOrder = {
       orderDate: new Date(),
       status: 'ongoing', // Default status
-      orderItems: orderItems.map(item => ({
+      orders: orders.map(item => ({
         srNo: item.srNo || 0,
         styleNo: item.styleNo.trim(),
         clarity: item.clarity?.trim() || "",
@@ -356,7 +356,7 @@ exports.addClientOrder = async (req, res) => {
         status: addedOrder.status,
         itemCount: addedOrder.orderItems.length,
         clientDetails: {
-          clientId: client._id,
+          
           name: client.name,
           uniqueId: client.uniqueId
         }
@@ -369,12 +369,11 @@ exports.addClientOrder = async (req, res) => {
     // Handle specific error types
     if (error.name === 'CastError') {
       return res.status(400).json({
-        error: "Invalid ID Format",
-        message: "The provided clientId is not valid"
+        error: "Invalid Format",
+        message: "The provided uniqueId is not valid"
       });
     }
 
-    // Handle other potential errors
     return res.status(500).json({
       error: "Internal Server Error",
       message: "Failed to process the order",
@@ -382,6 +381,7 @@ exports.addClientOrder = async (req, res) => {
     });
   }
 };
+
 
 
 
@@ -395,9 +395,8 @@ exports.getOrderHistory = async (req, res) => {
     // Find by uniqueId or _id
     if (uniqueId) {
       client = await Clients.findOne({ uniqueId });
-    } else if (clientId) {
-      client = await Clients.findById(clientId);
-    } else {
+    } 
+     else {
       return res.status(400).json({ error: "Please provide uniqueId or clientId" });
     }
 

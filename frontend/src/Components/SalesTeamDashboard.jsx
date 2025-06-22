@@ -39,24 +39,20 @@ const SalesDashboard = () => {
     setLoading(true);
     try {
       const res = await axios.get(`${API_BASE_URL}/api/team/get-clients`);
-      
-      // Ensure we're working with an array
       const clientsData = Array.isArray(res.data) ? res.data : 
                          (res.data.clients || res.data.data || []);
-      
       setClients(clientsData);
       calculateStats(clientsData);
     } catch (err) {
       console.error('Fetch error:', err);
       message.error('Failed to fetch clients');
-      setClients([]); // Reset to empty array on error
+      setClients([]);
     } finally {
       setLoading(false);
     }
   };
 
   const calculateStats = (clientsData) => {
-    // Ensure we have an array to work with
     if (!Array.isArray(clientsData)) {
       console.error('Invalid clients data format:', clientsData);
       clientsData = [];
@@ -68,7 +64,6 @@ const SalesDashboard = () => {
 
     clientsData.forEach(client => {
       if (client?.orders) {
-        // Handle both Map and array format for orders
         const orders = client.orders instanceof Map ? 
                      Array.from(client.orders.values()) : 
                      (Array.isArray(client.orders) ? client.orders : []);
@@ -76,7 +71,7 @@ const SalesDashboard = () => {
         orders.forEach(order => {
           totalOrders++;
           if (order.status === 'ongoing') {
-            activeClients.add(client._id);
+            activeClients.add(client.uniqueId);
           }
           if (order.orderItems) {
             order.orderItems.forEach(item => {
@@ -104,7 +99,6 @@ const SalesDashboard = () => {
       setLoading(true);
       const res = await axios.post(`${API_BASE_URL}/api/team/client-kyc`, values);
       
-      // Ensure new client is added to array properly
       const newClient = res.data?.client || res.data;
       if (newClient) {
         setClients(prev => Array.isArray(prev) ? [...prev, newClient] : [newClient]);
@@ -120,110 +114,104 @@ const SalesDashboard = () => {
     }
   };
 
-const handleOrderSubmit = async (values) => {
-  try {
-    setLoading(true);
-    
-    // Validate required fields before submission
-    if (!selectedClient?._id || !values.memoId || !orderItems || orderItems.length === 0) {
-      throw new Error('Client, memo ID, and at least one order item are required');
-    }
+  const handleOrderSubmit = async () => {
+    try {
+      setLoading(true);
+      
+      if (!selectedClient?.uniqueId) {
+        throw new Error('Please select a client');
+      }
 
-    // Validate each order item
-    const invalidItems = orderItems
-      .map((item, index) => {
-        const errors = [];
-        if (!item.styleNo) errors.push("styleNo is required");
-        if (!item.pcs || isNaN(item.pcs) )errors.push("valid pcs is required");
-        if (item.pcs < 1) errors.push("pcs must be ≥1");
-        if (!item.amount || isNaN(item.amount)) errors.push("valid amount is required");
-        
-        return errors.length > 0 ? { itemIndex: index, errors } : null;
-      })
-      .filter(Boolean);
+      if (!orderItems || orderItems.length === 0) {
+        throw new Error('Please add at least one order item');
+      }
 
-    if (invalidItems.length > 0) {
-      throw {
-        response: {
-          data: {
-            error: "Invalid Order Items",
-            message: "Some order items failed validation",
-            invalidItems
-          }
-        }
+      const invalidItems = orderItems
+        .map((item, index) => {
+          const errors = [];
+          if (!item.styleNo?.trim()) errors.push("Style No is required");
+          if (!item.pcs || isNaN(item.pcs)) errors.push("PCS must be a number");
+          if (item.pcs < 1) errors.push("PCS must be at least 1");
+          if (!item.amount || isNaN(item.amount)) errors.push("Amount must be a number");
+          if (item.amount <= 0) errors.push("Amount must be greater than 0");
+          
+          return errors.length > 0 ? { itemIndex: index, errors } : null;
+        })
+        .filter(Boolean);
+
+      if (invalidItems.length > 0) {
+        message.error({
+          content: (
+            <div>
+              <p>Please fix the following errors:</p>
+              <ul>
+                {invalidItems.map((item, idx) => (
+                  <li key={idx}>
+                    <strong>Item {item.itemIndex + 1}:</strong> {item.errors.join(', ')}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ),
+          duration: 10
+        });
+        return;
+      }
+
+      const payload = {
+        uniqueId: selectedClient.uniqueId,
+        orderItems: orderItems.map(item => ({
+          srNo: item.srNo || 0,
+          styleNo: item.styleNo.trim(),
+          clarity: item.clarity?.trim() || "",
+          grossWeight: item.grossWeight || 0,
+          netWeight: item.netWeight || 0,
+          diaWeight: item.diaWeight || 0,
+          pcs: item.pcs,
+          amount: item.amount,
+          description: item.description?.trim() || ""
+        }))
       };
+      
+      const res = await axios.post(`${API_BASE_URL}/api/team/clients-order`, payload);
+      
+      message.success('Order created successfully');
+      orderForm.resetFields();
+      setOrderItems([{}]);
+      setSelectedClient(null);
+      fetchClients();
+      
+      return res.data;
+    } catch (err) {
+      console.error('Order Error:', err);
+      
+      if (err.response) {
+        if (err.response.status === 400) {
+          message.error(err.response.data.message || 'Validation failed. Please check your inputs.');
+        } else {
+          message.error(err.response.data.error || 'Order creation failed');
+        }
+      } else {
+        message.error(err.message || 'An error occurred');
+      }
+      
+      throw err;
+    } finally {
+      setLoading(false);
     }
+  };
 
-    const payload = {
-      clientId: selectedClient._id,
-      memoId: values.memoId,
-      orderItems: orderItems.map(item => ({
-        srNo: item.srNo || 0,
-        styleNo: item.styleNo.trim(),
-        clarity: item.clarity?.trim() || "",
-        grossWeight: item.grossWeight || 0,
-        netWeight: item.netWeight || 0,
-        diaWeight: item.diaWeight || 0,
-        pcs: item.pcs,
-        amount: item.amount,
-        description: item.description?.trim() || ""
-      }))
-    };
-    
-    const res = await axios.post(`${API_BASE_URL}/api/team/clients-order`, payload);
-    
-    message.success('Order created successfully');
-    orderForm.resetFields();
-    setOrderItems([{}]);
-    setSelectedClient(null);
-    fetchClients(); // Refresh data
-    
-    return res.data;
-  } catch (err) {
-    console.error('Order Error:', err);
-    
-    if (err.response?.data?.error === "Invalid Order Items") {
-      message.error({
-        content: (
-          <div>
-            <p>Some order items failed validation:</p>
-            <ul>
-              {err.response.data.invalidItems.map((item, idx) => (
-                <li key={idx}>
-                  Item {item.itemIndex + 1}: {item.errors.join(', ')}
-                </li>
-              ))}
-            </ul>
-          </div>
-        ),
-        duration: 5
-      });
-    } else if (err.response?.data?.error === "Duplicate Memo") {
-      message.error('An order with this memoId already exists for this client');
-    } else if (err.response?.data?.error === "Not Found") {
-      message.error('Client not found with the provided ID');
-    } else {
-      message.error(err.response?.data?.error || 'Order creation failed');
-    }
-    
-    throw err;
-  } finally {
-    setLoading(false);
-  }
-};
-
-  const fetchOrderHistory = async (clientId) => {
+  const fetchOrderHistory = async (uniqueId) => {
     try {
       setLoading(true);
       const res = await axios.get(`${API_BASE_URL}/api/team/order-history`, {
         params: { 
-          clientId, 
+          uniqueId, 
           from: dateRange[0]?.toISOString(), 
           to: dateRange[1]?.toISOString() 
         }
       });
       
-      // Ensure we have valid order history data
       const historyData = res.data?.orders || res.data || [];
       setOrderHistory(Array.isArray(historyData) ? historyData : [historyData]);
     } catch (err) {
@@ -257,8 +245,8 @@ const handleOrderSubmit = async (values) => {
     });
   };
 
-  const handleClientSelect = (clientId) => {
-    const client = Array.isArray(clients) ? clients.find(c => c._id === clientId) : null;
+  const handleClientSelect = (uniqueId) => {
+    const client = Array.isArray(clients) ? clients.find(c => c.uniqueId === uniqueId) : null;
     setSelectedClient(client || null);
   };
 
@@ -292,8 +280,8 @@ const handleOrderSubmit = async (values) => {
           size="small" 
           onClick={() => {
             setSelectedMenu('history');
-            handleClientSelect(client._id);
-            fetchOrderHistory(client._id);
+            handleClientSelect(client.uniqueId);
+            fetchOrderHistory(client.uniqueId);
           }}
         >
           View Orders
@@ -303,7 +291,6 @@ const handleOrderSubmit = async (values) => {
   ];
 
   const orderColumns = [
-    { title: 'Memo ID', dataIndex: 'memoId', key: 'memoId' },
     { 
       title: 'Date', 
       dataIndex: 'orderDate', 
@@ -379,7 +366,7 @@ const handleOrderSubmit = async (values) => {
         <Table 
           dataSource={Array.isArray(clients) ? clients.slice(0, 5) : []} 
           columns={clientColumns} 
-          rowKey="_id"
+          rowKey="uniqueId"
           loading={loading}
           pagination={false}
         />
@@ -401,7 +388,7 @@ const handleOrderSubmit = async (values) => {
                 []
               }
               columns={clientColumns}
-              rowKey="_id"
+              rowKey="uniqueId"
               loading={loading}
               pagination={{ pageSize: 3 }}
             />
@@ -487,8 +474,12 @@ const handleOrderSubmit = async (values) => {
       <Card>
         <Form layout="vertical" form={orderForm} onFinish={handleOrderSubmit}>
           <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item name="clientId" label="Client" rules={[{ required: true, message: 'Please select a client' }]}>
+            <Col span={24}>
+              <Form.Item 
+                name="uniqueId"
+                label="Client" 
+                rules={[{ required: true, message: 'Please select a client' }]}
+              >
                 <Select
                   showSearch
                   placeholder="Select client"
@@ -499,16 +490,11 @@ const handleOrderSubmit = async (values) => {
                   }
                 >
                   {Array.isArray(clients) && clients.map(client => (
-                    <Option key={client._id} value={client._id}>
-                      {client.uniqueId}
+                    <Option key={client.uniqueId} value={client.uniqueId}>
+                      {client.uniqueId} - {client.name}
                     </Option>
                   ))}
                 </Select>
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item name="memoId" label="Memo ID" rules={[{ required: true, message: 'Memo ID is required' }]}>
-                <Input placeholder="Enter memo reference" />
               </Form.Item>
             </Col>
           </Row>
@@ -554,7 +540,12 @@ const handleOrderSubmit = async (values) => {
                   </Form.Item>
                 </Col>
                 <Col span={4}>
-                  <Form.Item label="Style No" required>
+                  <Form.Item 
+                    label="Style No" 
+                    required
+                    validateStatus={!item.styleNo?.trim() ? 'error' : ''}
+                    help={!item.styleNo?.trim() ? 'Required' : ''}
+                  >
                     <Input
                       value={item.styleNo}
                       onChange={e => updateOrderItem(index, 'styleNo', e.target.value)}
@@ -604,7 +595,12 @@ const handleOrderSubmit = async (values) => {
                   </Form.Item>
                 </Col>
                 <Col span={2}>
-                  <Form.Item label="PCS" required>
+                  <Form.Item 
+                    label="PCS" 
+                    required
+                    validateStatus={!item.pcs || item.pcs < 1 ? 'error' : ''}
+                    help={!item.pcs || item.pcs < 1 ? 'Must be ≥1' : ''}
+                  >
                     <InputNumber
                       value={item.pcs}
                       onChange={val => updateOrderItem(index, 'pcs', val)}
@@ -614,7 +610,12 @@ const handleOrderSubmit = async (values) => {
                   </Form.Item>
                 </Col>
                 <Col span={3}>
-                  <Form.Item label="Amount" required>
+                  <Form.Item 
+                    label="Amount" 
+                    required
+                    validateStatus={!item.amount || item.amount <= 0 ? 'error' : ''}
+                    help={!item.amount || item.amount <= 0 ? 'Must be >0' : ''}
+                  >
                     <InputNumber
                       value={item.amount}
                       onChange={val => updateOrderItem(index, 'amount', val)}
@@ -670,16 +671,16 @@ const handleOrderSubmit = async (values) => {
             <Select
               style={{ width: '100%' }}
               placeholder="Select client"
-              value={selectedClient?._id}
-              onChange={clientId => {
-                handleClientSelect(clientId);
-                fetchOrderHistory(clientId);
+              value={selectedClient?.uniqueId}
+              onChange={uniqueId => {
+                handleClientSelect(uniqueId);
+                fetchOrderHistory(uniqueId);
               }}
               showSearch
               optionFilterProp="children"
             >
               {clients.map(client => (
-                <Option key={client._id} value={client._id}>
+                <Option key={client.uniqueId} value={client.uniqueId}>
                   {client.uniqueId} - {client.name}
                 </Option>
               ))}
@@ -719,7 +720,6 @@ const handleOrderSubmit = async (values) => {
             orderHistory.map(order => (
               <Card
                 key={order._id}
-                title={`Order ${order.memoId || order._id.slice(-6)}`}
                 extra={
                   <Tag color={order.status === 'completed' ? 'green' : 'blue'}>
                     {order.status.toUpperCase()}

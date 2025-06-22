@@ -28,7 +28,7 @@ const orderSchema = new mongoose.Schema({
     default: "ongoing"
   },
   orderItems: [orderItemSchema]
-}, { _id: true }); // Keep _id for individual orders
+}, { _id: false }); // Keep _id for individual orders
 
 const clientSchema = new mongoose.Schema({
   name: {

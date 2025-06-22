@@ -15,12 +15,7 @@ const orderItemSchema = new mongoose.Schema({
 
 // Order Sub-schema (embedded in Client)
 const orderSchema = new mongoose.Schema({
-  memoId: {
-    type: String,
-    trim: true,
-    default: null,
-    sparse: true, 
-  },
+ 
   orderDate: {
     type: Date,
     default: Date.now,

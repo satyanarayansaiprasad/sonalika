@@ -500,7 +500,7 @@ const handleOrderSubmit = async (values) => {
                 >
                   {Array.isArray(clients) && clients.map(client => (
                     <Option key={client._id} value={client._id}>
-                      {client.uniqueId} - {client.name}
+                      {client.uniqueId}
                     </Option>
                   ))}
                 </Select>

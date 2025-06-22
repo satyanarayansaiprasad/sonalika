@@ -13,11 +13,11 @@ const orderItemSchema = new mongoose.Schema({
 }, { _id: false });
 
 const orderSchema = new mongoose.Schema({
-  memoId: {
-    type: String,
-    default: undefined,
-    trim: true
-  },
+  // memoId: {
+  //   type: String,
+  //   default: undefined,
+  //   trim: true
+  // },
   orderDate: {
     type: Date,
     default: Date.now

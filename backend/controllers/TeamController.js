@@ -272,16 +272,15 @@ exports.getClients = async (req, res) => {
 // Add order items to existing client by uniqueId or _id
 exports.addClientOrder = async (req, res) => {
   try {
-    const { clientId, memoId, orderItems } = req.body;
+    const { clientId, orderItems } = req.body;
 
     // Validate required fields
-    if (!clientId || !memoId || !orderItems || !Array.isArray(orderItems) || orderItems.length === 0) {
+    if (!clientId || !orderItems || !Array.isArray(orderItems) || orderItems.length === 0) {
       return res.status(400).json({
         error: "Validation Error",
-        message: "clientId, memoId, and at least one order item are required",
+        message: "clientId and at least one order item are required",
         details: {
           clientId: !clientId ? "Missing clientId" : "Valid",
-          memoId: !memoId ? "Missing memoId" : "Valid",
           orderItems: !orderItems ? "Missing order items" 
                    : !Array.isArray(orderItems) ? "orderItems must be an array" 
                    : orderItems.length === 0 ? "At least one order item required" 
@@ -319,17 +318,13 @@ exports.addClientOrder = async (req, res) => {
       });
     }
 
-    // Check for duplicate memoId in client's orders (since orders is a Map)
-    if (client.orders.has(memoId)) {
-      return res.status(409).json({
-        error: "Duplicate Memo",
-        message: "An order with this memoId already exists for this client"
-      });
-    }
+    // Generate a unique identifier for the order
+    const orderId = new Date().getTime().toString(); // Using timestamp as a simple unique ID
 
     // Prepare new order
     const newOrder = {
-      memoId: memoId.trim(),
+      orderDate: new Date(),
+      status: 'ongoing', // Default status
       orderItems: orderItems.map(item => ({
         srNo: item.srNo || 0,
         styleNo: item.styleNo.trim(),
@@ -344,19 +339,19 @@ exports.addClientOrder = async (req, res) => {
     };
 
     // Add order to client's orders Map
-    client.orders.set(memoId, newOrder);
+    client.orders.set(orderId, newOrder);
 
     // Save the updated client document
     await client.save();
 
     // Get the newly added order from the Map
-    const addedOrder = client.orders.get(memoId);
+    const addedOrder = client.orders.get(orderId);
 
     return res.status(201).json({
       success: true,
       message: "Order added successfully",
       data: {
-        memoId: addedOrder.memoId,
+        orderId: orderId,
         orderDate: addedOrder.orderDate,
         status: addedOrder.status,
         itemCount: addedOrder.orderItems.length,
@@ -379,14 +374,6 @@ exports.addClientOrder = async (req, res) => {
       });
     }
 
-    // Handle duplicate key error (for unique memoId)
-    if (error.code === 11000) {
-      return res.status(409).json({
-        error: "Duplicate Memo",
-        message: "An order with this memoId already exists"
-      });
-    }
-
     // Handle other potential errors
     return res.status(500).json({
       error: "Internal Server Error",
@@ -395,7 +382,6 @@ exports.addClientOrder = async (req, res) => {
     });
   }
 };
-
 
 
 

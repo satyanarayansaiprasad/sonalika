@@ -15,6 +15,12 @@ const orderItemSchema = new mongoose.Schema({
 
 // Order Schema
 const orderSchema = new mongoose.Schema({
+  memoId: {
+    type: String,
+    default: undefined, // Field won't exist if not provided
+    trim: true,
+    maxlength: 50
+  },
   orderDate: {
     type: Date,
     default: Date.now

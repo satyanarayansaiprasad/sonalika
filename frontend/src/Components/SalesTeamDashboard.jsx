@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   Layout, Menu, Card, Table, Form, Input, Button, message, Space, 
-  Typography, Spin, Row, Col, Statistic, Divider, InputNumber, Select
+  Typography, Spin, Row, Col, Statistic, Divider, InputNumber, Select, Tag
 } from 'antd';
 import {
   DashboardOutlined, UserAddOutlined, ShoppingCartOutlined, 
@@ -62,16 +62,20 @@ const SalesTeamDashboard = () => {
     try {
       setLoading(true);
       const payload = {
-      clientId: selectedClient._id,  // Use the selected client's ID
-      memoId: values.memoId,
-      orderItems: orderItems.filter(item => item.styleNo)
-    };
+        clientId: selectedClient._id,
+        orders: {
+          memoId: values.memoId,
+          status: 'ongoing',
+          orderItems: orderItems.filter(item => item.styleNo)
+        }
+      };
       
       await axios.post(`${API_BASE_URL}/api/team/addClientOrder`, payload);
       message.success('Order submitted successfully');
       orderForm.resetFields();
       setOrderItems([{}]);
       setSelectedClient(null);
+      fetchClients(); // Refresh client data
     } catch (err) {
       console.error('Order Error:', err);
       message.error(err.response?.data?.error || 'Order submission failed');
@@ -122,7 +126,19 @@ const SalesTeamDashboard = () => {
     { title: 'Name', dataIndex: 'name', key: 'name' },
     { title: 'Phone', dataIndex: 'phone', key: 'phone' },
     { title: 'GST No', dataIndex: 'gstNo', key: 'gstNo' },
-    { title: 'Status', dataIndex: 'status', key: 'status' },
+    { 
+      title: 'Status', 
+      key: 'status',
+      render: (_, client) => {
+        if (!client.orders || client.orders.size === 0) return 'No orders';
+        
+        const statuses = Array.from(client.orders.values()).map(o => o.status);
+        
+        if (statuses.includes('ongoing')) return <Tag color="blue">Ongoing</Tag>;
+        if (statuses.every(s => s === 'completed')) return <Tag color="green">Completed</Tag>;
+        return <Tag color="orange">Mixed</Tag>;
+      }
+    },
   ];
 
   const orderHistoryColumns = [
@@ -150,7 +166,11 @@ const SalesTeamDashboard = () => {
           <Card>
             <Statistic 
               title="Ongoing Orders" 
-              value={clients.filter(c => c.status === 'ongoing').length} 
+              value={clients.reduce((count, client) => {
+                if (!client.orders) return count;
+                return count + Array.from(client.orders.values())
+                  .filter(o => o.status === 'ongoing').length;
+              }, 0)} 
             />
           </Card>
         </Col>
@@ -158,7 +178,11 @@ const SalesTeamDashboard = () => {
           <Card>
             <Statistic 
               title="Completed Orders" 
-              value={clients.filter(c => c.status === 'completed').length} 
+              value={clients.reduce((count, client) => {
+                if (!client.orders) return count;
+                return count + Array.from(client.orders.values())
+                  .filter(o => o.status === 'completed').length;
+              }, 0)} 
             />
           </Card>
         </Col>
@@ -176,9 +200,11 @@ const SalesTeamDashboard = () => {
       
       <Row gutter={16}>
         <Col span={12}>
-          <Card title="Ongoing Orders">
+          <Card title="Clients with Ongoing Orders">
             <Table 
-              dataSource={clients.filter(c => c.status === 'ongoing')} 
+              dataSource={clients.filter(client => 
+                client.orders && Array.from(client.orders.values()).some(o => o.status === 'ongoing')
+              )} 
               columns={clientColumns} 
               rowKey="_id" 
               loading={loading}
@@ -187,9 +213,11 @@ const SalesTeamDashboard = () => {
           </Card>
         </Col>
         <Col span={12}>
-          <Card title="Completed Orders">
+          <Card title="Clients with Completed Orders">
             <Table 
-              dataSource={clients.filter(c => c.status === 'completed')} 
+              dataSource={clients.filter(client => 
+                client.orders && Array.from(client.orders.values()).every(o => o.status === 'completed')
+              )} 
               columns={clientColumns} 
               rowKey="_id" 
               loading={loading}
@@ -225,7 +253,7 @@ const SalesTeamDashboard = () => {
           
           <Row gutter={16}>
             <Col span={12}>
-              <Form.Item name="gstNo" label="GST No" rules={[{ required: true }]}>
+              <Form.Item name="gstNo" label="GST No">
                 <Input placeholder="GST Number" />
               </Form.Item>
             </Col>
@@ -264,7 +292,7 @@ const SalesTeamDashboard = () => {
                 >
                   {clients.map(client => (
                     <Option key={client.uniqueId} value={client.uniqueId}>
-                      {client.uniqueId} 
+                      {client.uniqueId} - {client.name}
                     </Option>
                   ))}
                 </Select>
@@ -422,7 +450,21 @@ const SalesTeamDashboard = () => {
       <Card>
         <Form layout="inline" onFinish={handleFetchOrderHistory}>
           <Form.Item name="uniqueId" label="Client Unique ID" rules={[{ required: true }]}>
-            <Input placeholder="Enter Client Unique ID" style={{ width: 200 }} />
+            <Select
+              showSearch
+              placeholder="Select client"
+              optionFilterProp="children"
+              filterOption={(input, option) =>
+                option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+              }
+              loading={loading}
+            >
+              {clients.map(client => (
+                <Option key={client.uniqueId} value={client.uniqueId}>
+                  {client.uniqueId} - {client.name}
+                </Option>
+              ))}
+            </Select>
           </Form.Item>
           <Button type="primary" htmlType="submit" loading={loading}>
             Search
@@ -446,29 +488,43 @@ const SalesTeamDashboard = () => {
                   <Text>{orderHistory.phone}</Text>
                 </Col>
               </Row>
-              <Row gutter={16} style={{ marginTop: 8 }}>
-                <Col span={8}>
-                  <Text strong>Memo ID: </Text>
-                  <Text>{orderHistory.memoId || 'N/A'}</Text>
-                </Col>
-                <Col span={8}>
-                  <Text strong>Status: </Text>
-                  <Text>{orderHistory.status}</Text>
-                </Col>
-                <Col span={8}>
-                  <Text strong>Order Date: </Text>
-                  <Text>{new Date(orderHistory.orderDate).toLocaleString()}</Text>
-                </Col>
-              </Row>
             </Card>
             
-            <Table
-              columns={orderHistoryColumns}
-              dataSource={orderHistory.orderItems}
-              rowKey="srNo"
-              style={{ marginTop: 16 }}
-              pagination={{ pageSize: 5 }}
-            />
+            {Array.from(orderHistory.orders || []).map(([orderId, orders]) => (
+              <div key={orderId} style={{ marginTop: 24 }}>
+                <Card 
+                  title={`Order ${orderId}`}
+                  extra={
+                    <Tag color={orders.status === 'completed' ? 'green' : 'blue'}>
+                      {orders.status.toUpperCase()}
+                    </Tag>
+                  }
+                >
+                  <Row gutter={16}>
+                    <Col span={8}>
+                      <Text strong>Memo ID: </Text>
+                      <Text>{orders.memoId || 'N/A'}</Text>
+                    </Col>
+                    <Col span={8}>
+                      <Text strong>Order Date: </Text>
+                      <Text>{new Date(orders.orderDate).toLocaleString()}</Text>
+                    </Col>
+                    <Col span={8}>
+                      <Text strong>Items: </Text>
+                      <Text>{orders.orderItems?.length || 0}</Text>
+                    </Col>
+                  </Row>
+                  
+                  <Table
+                    columns={orderHistoryColumns}
+                    dataSource={orders.orderItems || []}
+                    rowKey="srNo"
+                    style={{ marginTop: 16 }}
+                    pagination={{ pageSize: 5 }}
+                  />
+                </Card>
+              </div>
+            ))}
           </div>
         )}
       </Card>

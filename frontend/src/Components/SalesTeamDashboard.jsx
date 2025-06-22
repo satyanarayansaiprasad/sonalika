@@ -476,7 +476,7 @@ const SalesDashboard = () => {
                 >
                   {clients.map(client => (
                     <Option key={client.uniqueId} value={client.uniqueId}>
-                      {client.uniqueId} - {client.name}
+                      {client.uniqueId} 
                     </Option>
                   ))}
                 </Select>

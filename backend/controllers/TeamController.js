@@ -311,8 +311,7 @@ exports.addClientOrder = async (req, res) => {
       });
     }
 
-    // Generate a unique identifier for the order
-    const orderId = new mongoose.Types.ObjectId().toString(); // Better unique ID generation
+    const orderId = `order_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
 
     // Prepare new order
     const newOrder = {

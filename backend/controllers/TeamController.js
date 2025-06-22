@@ -32,6 +32,117 @@ exports.loginSalesteam = async (req, res) => {
 
 
 // Step 1: Create client KYC with auto-generated uniqueId
+// exports.createClientKYC = async (req, res) => {
+//   try {
+//     const { name, phone, address, gstNo } = req.body;
+
+//     // Validate required fields with better error messages
+//     const missingFields = [];
+//     if (!name) missingFields.push('name');
+//     if (!phone) missingFields.push('phone');
+//     if (!address) missingFields.push('address');
+//     if (!gstNo) missingFields.push('gstNo');
+    
+//     if (missingFields.length > 0) {
+//       return res.status(400).json({ 
+//         error: "Missing required fields",
+//         missingFields,
+//         message: `Please provide: ${missingFields.join(', ')}`
+//       });
+//     }
+
+//     // Validate phone number format
+//     const phoneRegex = /^[0-9]{10,15}$/;
+//     if (!phoneRegex.test(phone)) {
+//       return res.status(400).json({ 
+//         error: "Invalid phone number",
+//         message: "Phone number should be 10-15 digits"
+//       });
+//     }
+
+//     // Generate unique ID safely
+//     let uniqueId;
+//     let attempts = 0;
+//     const maxAttempts = 5;
+    
+//     do {
+//       // Get count of clients (better than countDocuments for performance)
+//       const lastClient = await Clients.findOne().sort({ _id: -1 }).limit(1);
+//       const lastSerial = lastClient ? parseInt(lastClient.uniqueId.replace('sonalika', '')) || 0 : 0;
+      
+//       const nextSerial = lastSerial + 1;
+//       const paddedSerial = String(nextSerial).padStart(4, "0");
+//       uniqueId = `sonalika${paddedSerial}`;
+      
+//       attempts++;
+//       if (attempts >= maxAttempts) {
+//         return res.status(500).json({ 
+//           error: "Unique ID generation failed",
+//           message: "Please try again later"
+//         });
+//       }
+//     } while (await Clients.exists({ uniqueId }));
+
+//     // Create new client
+//     const newClient = new Clients({
+//       name: name.trim(),
+//       phone: phone.trim(),
+//       address: address.trim(),
+//       gstNo: gstNo.trim().toUpperCase(),
+//       uniqueId,
+//       orders: []
+//     });
+
+//     // Validate before save (to catch schema validation errors)
+//     await newClient.validate();
+
+//     // Save to database
+//     await newClient.save();
+
+//     return res.status(201).json({
+//       success: true,
+//       message: "KYC submitted successfully",
+//       data: {
+//         clientId: newClient._id,
+//         uniqueId: newClient.uniqueId,
+//         name: newClient.name,
+//         phone: newClient.phone,
+//         orders:newClient.orders
+//       }
+//     });
+
+//   } catch (error) {
+//     console.error("Error submitting KYC:", error);
+    
+//     // Handle duplicate key errors (if unique constraint fails)
+//     if (error.code === 11000) {
+//       return res.status(409).json({
+//         error: "Duplicate entry",
+//         message: "Client with similar details already exists"
+//       });
+//     }
+    
+//     // Handle validation errors
+//     if (error.name === 'ValidationError') {
+//       const errors = Object.values(error.errors).map(err => err.message);
+//       return res.status(400).json({
+//         error: "Validation failed",
+//         messages: errors
+//       });
+//     }
+    
+//     // Generic server error
+//     return res.status(500).json({
+//       error: "Internal Server Error",
+//       message: "Could not process KYC request"
+//     });
+//   }
+// };
+
+
+
+
+
 exports.createClientKYC = async (req, res) => {
   try {
     const { name, phone, address, gstNo } = req.body;
@@ -41,7 +152,6 @@ exports.createClientKYC = async (req, res) => {
     if (!name) missingFields.push('name');
     if (!phone) missingFields.push('phone');
     if (!address) missingFields.push('address');
-    if (!gstNo) missingFields.push('gstNo');
     
     if (missingFields.length > 0) {
       return res.status(400).json({ 
@@ -66,7 +176,7 @@ exports.createClientKYC = async (req, res) => {
     const maxAttempts = 5;
     
     do {
-      // Get count of clients (better than countDocuments for performance)
+      // Get the last client's uniqueId
       const lastClient = await Clients.findOne().sort({ _id: -1 }).limit(1);
       const lastSerial = lastClient ? parseInt(lastClient.uniqueId.replace('sonalika', '')) || 0 : 0;
       
@@ -83,17 +193,17 @@ exports.createClientKYC = async (req, res) => {
       }
     } while (await Clients.exists({ uniqueId }));
 
-    // Create new client
+    // Create new client with empty orders Map
     const newClient = new Clients({
       name: name.trim(),
       phone: phone.trim(),
       address: address.trim(),
-      gstNo: gstNo.trim().toUpperCase(),
+      gstNo: gstNo ? gstNo.trim().toUpperCase() : undefined, // Make gstNo optional
       uniqueId,
-      orders: []
+      orders: new Map() // Initialize empty Map instead of array
     });
 
-    // Validate before save (to catch schema validation errors)
+    // Validate before save
     await newClient.validate();
 
     // Save to database
@@ -107,18 +217,20 @@ exports.createClientKYC = async (req, res) => {
         uniqueId: newClient.uniqueId,
         name: newClient.name,
         phone: newClient.phone,
-        orders:newClient.orders
+        orders: Object.fromEntries(newClient.orders) // Convert Map to object for response
       }
     });
 
   } catch (error) {
     console.error("Error submitting KYC:", error);
     
-    // Handle duplicate key errors (if unique constraint fails)
+    // Handle duplicate key errors
     if (error.code === 11000) {
       return res.status(409).json({
         error: "Duplicate entry",
-        message: "Client with similar details already exists"
+        message: error.keyValue.uniqueId 
+               ? `Client with uniqueId ${error.keyValue.uniqueId} already exists`
+               : "Client with similar details already exists"
       });
     }
     
@@ -138,7 +250,6 @@ exports.createClientKYC = async (req, res) => {
     });
   }
 };
-
 
 
 exports.getClients = async (req, res) => {

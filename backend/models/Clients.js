@@ -1,76 +1,145 @@
 const mongoose = require("mongoose");
 
-// Order Item Sub-schema
+// Order Item Schema
 const orderItemSchema = new mongoose.Schema({
   srNo: Number,
   styleNo: String,
   clarity: String,
-  grossWeight: Number,  // GR WT
-  netWeight: Number,    // NT WT
-  diaWeight: Number,    // DIA WT
+  grossWeight: Number,
+  netWeight: Number,
+  diaWeight: Number,
   pcs: Number,
   amount: Number,
-  description: String,
+  description: String
 }, { _id: false });
 
-// Order Sub-schema (embedded in Client)
+// Order Schema
 const orderSchema = new mongoose.Schema({
- 
   orderDate: {
     type: Date,
-    default: Date.now,
+    default: Date.now
   },
   status: {
     type: String,
     enum: ["ongoing", "completed"],
-    default: "ongoing",
+    default: "ongoing"
   },
-  orderItems: [orderItemSchema],
+  orderItems: [orderItemSchema]
 }, { _id: false });
 
 // Main Client Schema
-const clientsSchema = new mongoose.Schema(
-  {
-    name: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    uniqueId: {
-      type: String,
-      required: true,
-      unique: true, // like sonalika0001
-      trim: true,
-    },
-    phone: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    address: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    gstNo: {
-      type: String,
-      trim: true,
-      default: null,
-    },
-  orders: {
-  type: [orderSchema],
-  default: [],
-  validate: {
-    validator: function(v) {
-      return Array.isArray(v);
-    },
-    message: props => `${props.value} is not a valid array!`
-  }
-},
+const clientsSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: true,
+    trim: true
   },
-  {
-    timestamps: true,
+  uniqueId: {
+    type: String,
+    required: true,
+    unique: true,
+    trim: true
+  },
+  phone: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  address: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  gstNo: {
+    type: String,
+    trim: true
+  },
+  // Orders stored as an object with order IDs as keys
+  orders: {
+    type: Map,
+    of: orderSchema,
+    default: {}
   }
-);
+}, {
+  timestamps: true
+});
 
 module.exports = mongoose.model("Clients", clientsSchema);
+
+
+// const mongoose = require("mongoose");
+
+// // Order Item Sub-schema
+// const orderItemSchema = new mongoose.Schema({
+//   srNo: Number,
+//   styleNo: String,
+//   clarity: String,
+//   grossWeight: Number,  // GR WT
+//   netWeight: Number,    // NT WT
+//   diaWeight: Number,    // DIA WT
+//   pcs: Number,
+//   amount: Number,
+//   description: String,
+// }, { _id: false });
+
+// // Order Sub-schema (embedded in Client)
+// const orderSchema = new mongoose.Schema({
+ 
+//   orderDate: {
+//     type: Date,
+//     default: Date.now,
+//   },
+//   status: {
+//     type: String,
+//     enum: ["ongoing", "completed"],
+//     default: "ongoing",
+//   },
+//   orderItems: [orderItemSchema],
+// }, { _id: false });
+
+// // Main Client Schema
+// const clientsSchema = new mongoose.Schema(
+//   {
+//     name: {
+//       type: String,
+//       required: true,
+//       trim: true,
+//     },
+//     uniqueId: {
+//       type: String,
+//       required: true,
+//       unique: true, // like sonalika0001
+//       trim: true,
+//     },
+//     phone: {
+//       type: String,
+//       required: true,
+//       trim: true,
+//     },
+//     address: {
+//       type: String,
+//       required: true,
+//       trim: true,
+//     },
+//     gstNo: {
+//       type: String,
+//       trim: true,
+//       default: null,
+//     },
+//   orders: {
+//   type: [orderSchema],
+//   default: [],
+//   validate: {
+//     validator: function(v) {
+//       return Array.isArray(v);
+//     },
+//     message: props => `${props.value} is not a valid array!`
+//   }
+// },
+//   },
+//   {
+//     timestamps: true,
+//   }
+// );
+
+// module.exports = mongoose.model("Clients", clientsSchema);

@@ -243,7 +243,7 @@ const SalesDashboard = () => {
     },
     { 
       title: 'Items', 
-      dataIndex: 'orderItems", 
+      dataIndex: 'orderItems', 
       key: 'items', 
       render: items => Array.isArray(items) ? items.length : 0 
     },

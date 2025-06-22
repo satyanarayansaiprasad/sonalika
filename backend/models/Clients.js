@@ -1,6 +1,5 @@
-const mongoose = require("mongoose");
 
-// Order Item Schema
+const mongoose = require("mongoose");
 const orderItemSchema = new mongoose.Schema({
   srNo: Number,
   styleNo: String,
@@ -13,13 +12,11 @@ const orderItemSchema = new mongoose.Schema({
   description: String
 }, { _id: false });
 
-// Order Schema
 const orderSchema = new mongoose.Schema({
   memoId: {
     type: String,
-    default: undefined, // Field won't exist if not provided
-    trim: true,
-    maxlength: 50
+    default: undefined,
+    trim: true
   },
   orderDate: {
     type: Date,
@@ -31,10 +28,9 @@ const orderSchema = new mongoose.Schema({
     default: "ongoing"
   },
   orderItems: [orderItemSchema]
-}, { _id: false });
+}, { _id: true }); // Keep _id for individual orders
 
-// Main Client Schema
-const clientsSchema = new mongoose.Schema({
+const clientSchema = new mongoose.Schema({
   name: {
     type: String,
     required: true,
@@ -46,31 +42,96 @@ const clientsSchema = new mongoose.Schema({
     unique: true,
     trim: true
   },
-  phone: {
-    type: String,
-    required: true,
-    trim: true
-  },
-  address: {
-    type: String,
-    required: true,
-    trim: true
-  },
-  gstNo: {
-    type: String,
-    trim: true
-  },
-  // Orders stored as an object with order IDs as keys
+  phone: String,
+  address: String,
+  gstNo: String,
   orders: {
     type: Map,
     of: orderSchema,
-    default: {}
+    default: new Map()
   }
-}, {
-  timestamps: true
-});
+}, { timestamps: true });
+module.exports = mongoose.model("Clients", clientSchema);
 
-module.exports = mongoose.model("Clients", clientsSchema);
+
+
+
+// const mongoose = require("mongoose");
+
+// // Order Item Sub-schema
+// const orderItemSchema = new mongoose.Schema({
+//   srNo: Number,
+//   styleNo: String,
+//   clarity: String,
+//   grossWeight: Number,  // GR WT
+//   netWeight: Number,    // NT WT
+//   diaWeight: Number,    // DIA WT
+//   pcs: Number,
+//   amount: Number,
+//   description: String,
+// }, { _id: false });
+
+// // Order Sub-schema (embedded in Client)
+// const orderSchema = new mongoose.Schema({
+ 
+//   orderDate: {
+//     type: Date,
+//     default: Date.now,
+//   },
+//   status: {
+//     type: String,
+//     enum: ["ongoing", "completed"],
+//     default: "ongoing",
+//   },
+//   orderItems: [orderItemSchema],
+// }, { _id: false });
+
+// // Main Client Schema
+// const clientsSchema = new mongoose.Schema(
+//   {
+//     name: {
+//       type: String,
+//       required: true,
+//       trim: true,
+//     },
+//     uniqueId: {
+//       type: String,
+//       required: true,
+//       unique: true, // like sonalika0001
+//       trim: true,
+//     },
+//     phone: {
+//       type: String,
+//       required: true,
+//       trim: true,
+//     },
+//     address: {
+//       type: String,
+//       required: true,
+//       trim: true,
+//     },
+//     gstNo: {
+//       type: String,
+//       trim: true,
+//       default: null,
+//     },
+//   orders: {
+//   type: [orderSchema],
+//   default: [],
+//   validate: {
+//     validator: function(v) {
+//       return Array.isArray(v);
+//     },
+//     message: props => `${props.value} is not a valid array!`
+//   }
+// },
+//   },
+//   {
+//     timestamps: true,
+//   }
+// );
+
+// module.exports = mongoose.model("Clients", clientsSchema);
 
 
 // const mongoose = require("mongoose");

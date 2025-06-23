@@ -7,7 +7,7 @@ import axios from 'axios';
 import dayjs from 'dayjs';
 import { 
   LayoutDashboard, User, ShoppingCart, History, 
-  Plus, Minus, Search, ChevronDown, ChevronRight
+  Plus, Minus, Search, ChevronDown, ChevronRight, Menu as MenuIcon
 } from 'lucide-react';
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -18,8 +18,21 @@ const { Option } = Select;
 
 const API_BASE_URL = import.meta.env.VITE_BASE_URL;
 
+// Color palette
+const colors = {
+  gold: "#f9e79f",
+  darkGold: "#D4AF37",
+  roseGold: "#B76E79",
+  platinum: "#E5E4E2",
+  deepNavy: "#00072D",
+  velvet: "#3D0C02",
+  light: "#F8F8F8",
+  diamond: "rgba(255,255,255,0.9)",
+};
+
 const SalesDashboard = () => {
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileMenuVisible, setMobileMenuVisible] = useState(false);
   const [selectedMenu, setSelectedMenu] = useState('dashboard');
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -46,7 +59,7 @@ const SalesDashboard = () => {
       title: 'Unique ID',
       dataIndex: 'uniqueId',
       key: 'uniqueId',
-      render: (text) => <span className="font-mono font-semibold text-blue-600">{text}</span>
+      render: (text) => <span className="font-mono font-semibold" style={{ color: colors.darkGold }}>{text}</span>
     },
     {
       title: 'Name',
@@ -56,6 +69,7 @@ const SalesDashboard = () => {
         <span 
           className="text-gray-800 font-medium cursor-pointer hover:text-blue-600 transition-colors" 
           onClick={() => handleClientClick(record)}
+          style={{ color: colors.velvet }}
         >
           {record.name}
         </span>
@@ -68,39 +82,41 @@ const SalesDashboard = () => {
       title: 'Unique ID',
       dataIndex: 'uniqueId',
       key: 'uniqueId',
-      render: (text) => <span className="font-mono font-semibold text-blue-600">{text}</span>
+      render: (text) => <span className="font-mono font-semibold" style={{ color: colors.darkGold }}>{text}</span>
     },
     {
-  title: 'Status',
-  key: 'status',
-  render: (_, client) => {
-    const orders = ordersToArray(client.orders);
-    if (!orders.length) {
-      return <Tag className="bg-gray-100 text-gray-700">No Orders</Tag>;
-    }
+      title: 'Status',
+      key: 'status',
+      render: (_, client) => {
+        const orders = ordersToArray(client.orders);
+        if (!orders.length) {
+          return <Tag className="bg-gray-100 text-gray-700">No Orders</Tag>;
+        }
 
-    // Get latest order (by date)
-    const latestOrder = orders
-      .filter(order => order?.orderDate)
-      .sort((a, b) => new Date(b.orderDate) - new Date(a.orderDate))[0];
+        const latestOrder = orders
+          .filter(order => order?.orderDate)
+          .sort((a, b) => new Date(b.orderDate) - new Date(a.orderDate))[0];
 
-    if (latestOrder?.status === 'completed') {
-      return <Tag className="bg-green-100 text-green-800">Completed</Tag>;
-    } else if (latestOrder?.status === 'ongoing') {
-      return <Tag className="bg-blue-100 text-blue-800">Ongoing</Tag>;
-    } else {
-      return <Tag className="bg-yellow-100 text-yellow-800">Pending</Tag>;
-    }
-  }
-}
-,
+        if (latestOrder?.status === 'completed') {
+          return <Tag style={{ backgroundColor: '#e6f7ee', color: '#08965b' }}>Completed</Tag>;
+        } else if (latestOrder?.status === 'ongoing') {
+          return <Tag style={{ backgroundColor: '#e6f4ff', color: colors.darkGold }}>Ongoing</Tag>;
+        } else {
+          return <Tag style={{ backgroundColor: '#fff7e6', color: '#d46b08' }}>Pending</Tag>;
+        }
+      }
+    },
     {
       title: 'Action',
       key: 'action',
       render: (_, client) => (
         <Button 
           size="small" 
-          className="bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200"
+          style={{ 
+            backgroundColor: colors.platinum,
+            color: colors.darkGold,
+            borderColor: colors.darkGold
+          }}
           onClick={() => handleClientClick(client)}
         >
           View Details
@@ -127,11 +143,12 @@ const SalesDashboard = () => {
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.9, opacity: 0 }}
             onClick={(e) => e.stopPropagation()}
+            style={{ border: `2px solid ${colors.darkGold}` }}
           >
             <div className="flex justify-between items-start mb-4">
               <div>
-                <h3 className="text-xl font-bold text-gray-800">{client.name}</h3>
-                <p className="text-sm text-gray-500">{client.uniqueId}</p>
+                <h3 className="text-xl font-bold" style={{ color: colors.velvet }}>{client.name}</h3>
+                <p className="text-sm" style={{ color: colors.darkGold }}>{client.uniqueId}</p>
               </div>
               <button
                 className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -172,15 +189,15 @@ const SalesDashboard = () => {
             <div className="mt-6 pt-4 border-t border-gray-200">
               <h4 className="font-medium text-gray-800 mb-2">Order Summary</h4>
               <div className="grid grid-cols-2 gap-4">
-                <div className="bg-blue-50 rounded-lg p-3">
+                <div className="rounded-lg p-3" style={{ backgroundColor: colors.gold }}>
                   <p className="text-sm text-gray-600">Total Orders</p>
-                  <p className="text-lg font-bold text-blue-600">
+                  <p className="text-lg font-bold" style={{ color: colors.velvet }}>
                     {client.orders ? ordersToArray(client.orders).length : 0}
                   </p>
                 </div>
-                <div className="bg-green-50 rounded-lg p-3">
+                <div className="rounded-lg p-3" style={{ backgroundColor: colors.roseGold }}>
                   <p className="text-sm text-gray-600">Active Orders</p>
-                  <p className="text-lg font-bold text-green-600">
+                  <p className="text-lg font-bold" style={{ color: colors.light }}>
                     {client.orders ? ordersToArray(client.orders).filter(o => o.status === 'ongoing').length : 0}
                   </p>
                 </div>
@@ -202,19 +219,21 @@ const SalesDashboard = () => {
         onCancel={onClose}
         footer={null}
         width={800}
+        style={{ top: 20 }}
+        bodyStyle={{ padding: 0 }}
       >
-        <div className="space-y-4">
+        <div className="space-y-4 p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <h4 className="font-medium text-gray-700 mb-2">Client Information</h4>
+            <div className="p-4 rounded-lg" style={{ backgroundColor: colors.platinum }}>
+              <h4 className="font-medium mb-2" style={{ color: colors.velvet }}>Client Information</h4>
               <div className="space-y-2">
                 <p><span className="font-medium">Name:</span> {order.client?.name || 'N/A'}</p>
                 <p><span className="font-medium">Phone:</span> {order.client?.phone || 'N/A'}</p>
                 <p><span className="font-medium">GST:</span> {order.client?.gstNo || 'N/A'}</p>
               </div>
             </div>
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <h4 className="font-medium text-gray-700 mb-2">Order Information</h4>
+            <div className="p-4 rounded-lg" style={{ backgroundColor: colors.platinum }}>
+              <h4 className="font-medium mb-2" style={{ color: colors.velvet }}>Order Information</h4>
               <div className="space-y-2">
                 <p><span className="font-medium">Date:</span> {dayjs(order.orderDate).format('DD/MM/YYYY')}</p>
                 <p><span className="font-medium">Status:</span> 
@@ -227,7 +246,7 @@ const SalesDashboard = () => {
             </div>
           </div>
 
-          <Divider>Order Items</Divider>
+          <Divider style={{ borderColor: colors.darkGold }}>Order Items</Divider>
 
           <Table
             columns={[
@@ -559,13 +578,13 @@ const SalesDashboard = () => {
       title: 'Unique ID', 
       dataIndex: 'uniqueId', 
       key: 'uniqueId',
-      render: (text) => <span className="font-medium">{text}</span>
+      render: (text) => <span className="font-medium" style={{ color: colors.darkGold }}>{text}</span>
     },
     { 
       title: 'Name', 
       dataIndex: 'name', 
       key: 'name',
-      render: (text) => <span className="text-gray-700">{text}</span>
+      render: (text) => <span style={{ color: colors.velvet }}>{text}</span>
     },
     { 
       title: 'Phone', 
@@ -584,13 +603,13 @@ const SalesDashboard = () => {
       key: 'status',
       render: (_, client) => {
         const orders = ordersToArray(client.orders);
-        if (orders.length === 0) return <Tag className="bg-gray-100 text-gray-800">No orders</Tag>;
+        if (orders.length === 0) return <Tag style={{ backgroundColor: colors.platinum }}>No orders</Tag>;
         
         const statuses = orders.map(o => o?.status).filter(Boolean);
         
-        if (statuses.includes('ongoing')) return <Tag className="bg-blue-100 text-blue-800">Active</Tag>;
-        if (statuses.every(s => s === 'completed')) return <Tag className="bg-green-100 text-green-800">Completed</Tag>;
-        return <Tag className="bg-orange-100 text-orange-800">Mixed</Tag>;
+        if (statuses.includes('ongoing')) return <Tag style={{ backgroundColor: '#e6f4ff', color: colors.darkGold }}>Active</Tag>;
+        if (statuses.every(s => s === 'completed')) return <Tag style={{ backgroundColor: '#e6f7ee', color: '#08965b' }}>Completed</Tag>;
+        return <Tag style={{ backgroundColor: '#fff7e6', color: '#d46b08' }}>Mixed</Tag>;
       }
     },
     {
@@ -599,7 +618,11 @@ const SalesDashboard = () => {
       render: (_, client) => (
         <Button 
           size="small" 
-          className="bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200"
+          style={{ 
+            backgroundColor: colors.platinum,
+            color: colors.darkGold,
+            borderColor: colors.darkGold
+          }}
           onClick={() => {
             setSelectedMenu('history');
             handleClientSelect(client.uniqueId);
@@ -617,7 +640,7 @@ const SalesDashboard = () => {
       title: 'Order ID', 
       dataIndex: 'orderId', 
       key: 'orderId',
-      render: id => <span className="font-medium">{id ? id.substring(0, 8) + '...' : 'N/A'}</span>
+      render: id => <span className="font-medium" style={{ color: colors.darkGold }}>{id ? id.substring(0, 8) + '...' : 'N/A'}</span>
     },
     { 
       title: 'Date', 
@@ -711,29 +734,29 @@ const SalesDashboard = () => {
 
   const renderDashboard = () => (
     <div className="space-y-6">
-      <h3 className="text-2xl font-semibold text-gray-800">Sales Dashboard</h3>
+      <h3 className="text-2xl font-semibold" style={{ color: colors.velvet }}>Sales Dashboard</h3>
       
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <div className="bg-white rounded-lg shadow p-4 border border-gray-200">
+        <div className="rounded-lg shadow p-4 border" style={{ backgroundColor: colors.diamond, borderColor: colors.darkGold }}>
           <Statistic 
             title={<span className="text-gray-600">Total Clients</span>} 
             value={stats.totalClients} 
-            valueStyle={{ color: '#3b82f6', fontSize: '24px' }}
+            valueStyle={{ color: colors.velvet, fontSize: '24px' }}
           />
         </div>
-        <div className="bg-white rounded-lg shadow p-4 border border-gray-200">
+        <div className="rounded-lg shadow p-4 border" style={{ backgroundColor: colors.diamond, borderColor: colors.roseGold }}>
           <Statistic 
             title={<span className="text-gray-600">Active Clients</span>} 
             value={stats.activeClients} 
-            valueStyle={{ color: '#10b981', fontSize: '24px' }}
+            valueStyle={{ color: colors.roseGold, fontSize: '24px' }}
           />
         </div>
-        <div className="bg-white rounded-lg shadow p-4 border border-gray-200">
+        <div className="rounded-lg shadow p-4 border" style={{ backgroundColor: colors.diamond, borderColor: colors.darkGold }}>
           <Statistic 
             title={<span className="text-gray-600">Total Orders</span>} 
             value={stats.totalOrders} 
-            valueStyle={{ color: '#f59e0b', fontSize: '24px' }}
+            valueStyle={{ color: colors.velvet, fontSize: '24px' }}
           />
         </div>
       </div>
@@ -741,8 +764,8 @@ const SalesDashboard = () => {
       {/* Clients and Orders Sections */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* All Clients */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5">
-          <h2 className="text-lg font-semibold text-gray-800 mb-3 border-b pb-2">All Clients</h2>
+        <div className="rounded-2xl shadow-sm border p-5" style={{ backgroundColor: colors.diamond, borderColor: colors.darkGold }}>
+          <h2 className="text-lg font-semibold mb-3 border-b pb-2" style={{ color: colors.velvet }}>All Clients</h2>
           <Table 
             dataSource={clients} 
             columns={minimalClientColumns} 
@@ -755,14 +778,14 @@ const SalesDashboard = () => {
             className="custom-table"
             onRow={(record) => ({
               onClick: () => handleClientClick(record),
-              className: 'cursor-pointer hover:bg-gray-50'
+              style: { cursor: 'pointer', backgroundColor: colors.light }
             })}
           />
         </div>
 
         {/* Ongoing Orders */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5">
-          <h2 className="text-lg font-semibold text-yellow-500 mb-3 border-b pb-2">Ongoing Orders</h2>
+        <div className="rounded-2xl shadow-sm border p-5" style={{ backgroundColor: colors.diamond, borderColor: colors.darkGold }}>
+          <h2 className="text-lg font-semibold mb-3 border-b pb-2" style={{ color: colors.velvet }}>Ongoing Orders</h2>
           <Table 
             dataSource={clients.filter(client => {
               const orders = ordersToArray(client.orders);
@@ -780,8 +803,8 @@ const SalesDashboard = () => {
         </div>
 
         {/* Completed Orders */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5">
-          <h2 className="text-lg font-semibold text-green-700 mb-3 border-b pb-2">Completed Orders</h2>
+        <div className="rounded-2xl shadow-sm border p-5" style={{ backgroundColor: colors.diamond, borderColor: colors.darkGold }}>
+          <h2 className="text-lg font-semibold mb-3 border-b pb-2" style={{ color: colors.velvet }}>Completed Orders</h2>
           <Table 
             dataSource={clients.flatMap(client => {
               const orders = ordersToArray(client.orders);
@@ -799,6 +822,7 @@ const SalesDashboard = () => {
                   <span 
                     className="font-medium cursor-pointer hover:text-blue-600 transition-colors"
                     onClick={() => handleClientClick(record.client)}
+                    style={{ color: colors.velvet }}
                   >
                     {text}
                   </span>
@@ -837,100 +861,111 @@ const SalesDashboard = () => {
     </div>
   );
 
-const renderKYCForm = () => (
-  <div className="space-y-6">
-    <h3 className="text-2xl font-semibold text-gray-800">Client KYC Form</h3>
+  const renderKYCForm = () => (
+    <div className="space-y-6">
+      <h3 className="text-2xl font-semibold" style={{ color: colors.velvet }}>Client KYC Form</h3>
 
-    {kycFields.map((field, index) => (
-      <div
-        key={index}
-        className="bg-white rounded-lg shadow p-4 border border-gray-800 space-y-4"
-      >
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-  <Input
-  value={field.name}
-  onChange={e => updateKycField(index, 'name', e.target.value)}
-  placeholder="Full name *"
-  style={{ border: '1px solid black', borderRadius: '6px' }}
-/>
+      {kycFields.map((field, index) => (
+        <div
+          key={index}
+          className="rounded-lg shadow p-4 border space-y-4"
+          style={{ backgroundColor: colors.diamond, borderColor: colors.darkGold }}
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Input
+              value={field.name}
+              onChange={e => updateKycField(index, 'name', e.target.value)}
+              placeholder="Full name *"
+              style={{ borderColor: colors.darkGold, borderRadius: '6px' }}
+            />
+            <Input
+              value={field.phone}
+              onChange={e => updateKycField(index, 'phone', e.target.value)}
+              placeholder="Phone *"
+              style={{ borderColor: colors.darkGold, borderRadius: '6px' }}
+            />
+            <Input
+              value={field.gstNo}
+              onChange={e => updateKycField(index, 'gstNo', e.target.value)}
+              placeholder="GST No (Optional)"
+              style={{ borderColor: colors.darkGold, borderRadius: '6px' }}
+            />
+            {kycFields.length > 1 && (
+              <Button
+                danger
+                icon={<Minus className="h-4 w-4" />}
+                onClick={() => removeKycRow(index)}
+                style={{ 
+                  backgroundColor: colors.platinum,
+                  color: colors.roseGold,
+                  borderColor: colors.roseGold
+                }}
+              />
+            )}
+          </div>
 
-  <Input
-    value={field.phone}
-    onChange={e => updateKycField(index, 'phone', e.target.value)}
-    placeholder="Phone *"
-    style={{ border: '1px solid black', borderRadius: '6px' }}
-  />
-  <Input
-    value={field.gstNo}
-    onChange={e => updateKycField(index, 'gstNo', e.target.value)}
-    placeholder="GST No (Optional)"
-style={{ border: '1px solid black', borderRadius: '6px' }}
-  />
-  {/* <div className="flex items-start">
-    <Button
-      danger
-      icon={<Minus className="h-4 w-4" />}
-      onClick={() => removeKycRow(index)}
-      disabled={kycFields.length <= 1}
-      className="bg-red-50 text-red-600 hover:bg-red-100 border border-red-200"
-    />
-  </div> */}
-</div>
+          <Input.TextArea
+            value={field.address}
+            onChange={e => updateKycField(index, 'address', e.target.value)}
+            placeholder="Full address *"
+            rows={2}
+            style={{ borderColor: colors.darkGold, borderRadius: '6px' }}
+          />
+        </div>
+      ))}
 
-<Input.TextArea
-  value={field.address}
-  onChange={e => updateKycField(index, 'address', e.target.value)}
-  placeholder="Full address *"
-  rows={2}
- style={{ border: '1px solid black', borderRadius: '6px' }}
-/>
-
+      <div className="flex justify-between items-center">
+        <Button
+          type="dashed"
+          onClick={addKycRow}
+          icon={<Plus className="h-4 w-4" />}
+          style={{ 
+            borderColor: colors.darkGold,
+            color: colors.darkGold,
+            borderStyle: 'dashed'
+          }}
+        >
+          Add Row
+        </Button>
+        <Button
+          type="primary"
+          onClick={handleKYCSubmit}
+          loading={loading}
+          style={{ 
+            backgroundColor: colors.darkGold,
+            color: colors.light,
+            border: 'none',
+            fontWeight: 'medium',
+            padding: '8px 24px',
+            borderRadius: '6px'
+          }}
+        >
+          Submit KYC
+        </Button>
       </div>
-    ))}
 
-    <div className="flex justify-between items-center">
-      <Button
-        type="dashed"
-        onClick={addKycRow}
-        icon={<Plus className="h-4 w-4" />}
-        className="border-dashed border-gray-800 text-gray-800 hover:border-blue-500 hover:text-blue-600"
-      >
-        Add Row
-      </Button>
-      <Button
-        type="primary"
-        onClick={handleKYCSubmit}
-        loading={loading}
-        className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded"
-      >
-        Submit KYC
-      </Button>
+      {/* Client List */}
+      <div className="mt-10 border rounded-lg p-4" style={{ borderColor: colors.darkGold, backgroundColor: colors.diamond }}>
+        <h4 className="text-lg font-medium mb-4" style={{ color: colors.velvet }}>Existing Clients</h4>
+        <Table
+          dataSource={clients}
+          columns={clientColumns}
+          rowKey="uniqueId"
+          loading={loading}
+          pagination={{ pageSize: 5 }}
+          scroll={{ x: true }}
+          className="w-full custom-table"
+        />
+      </div>
     </div>
-
-    {/* Client List */}
-    <div className="mt-10 border border-gray-800 rounded-lg p-4">
-      <h4 className="text-lg font-medium mb-4 text-gray-800">Existing Clients</h4>
-      <Table
-        dataSource={clients}
-        columns={clientColumns}
-        rowKey="uniqueId"
-        loading={loading}
-        pagination={{ pageSize: 5 }}
-        scroll={{ x: true }}
-        className="w-full custom-table"
-      />
-    </div>
-  </div>
-);
-
-
+  );
 
   const renderOrderForm = () => (
-    <div >
-      <h3 className="text-2xl font-semibold text-gray-800">Create New Order</h3>
-      <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
+    <div>
+      <h3 className="text-2xl font-semibold" style={{ color: colors.velvet }}>Create New Order</h3>
+      <div className="rounded-lg shadow p-6 border" style={{ backgroundColor: colors.diamond, borderColor: colors.darkGold }}>
         <div className="mb-6">
-          <label className="block  font-medium text-gray-700 mb-2">Client</label>
+          <label className="block font-medium mb-2" style={{ color: colors.velvet }}>Client</label>
           <Select
             showSearch
             placeholder="Select client"
@@ -939,140 +974,167 @@ style={{ border: '1px solid black', borderRadius: '6px' }}
             filterOption={(input, option) =>
               option.children.toLowerCase().includes(input.toLowerCase())
             }
-            className="w-auto border border-gray-600 hover:border-blue-400"
-            suffixIcon={<ChevronDown className="h-4 w-4 text-gray-500" />}
+            style={{ 
+              width: '100%',
+              borderColor: colors.darkGold
+            }}
+            suffixIcon={<ChevronDown className="h-4 w-4" style={{ color: colors.darkGold }} />}
           >
             {clients.map(client => (
               <Option key={client.uniqueId} value={client.uniqueId}>
-                {client.uniqueId}
+                {client.uniqueId} - {client.name}
               </Option>
             ))}
           </Select>
         </div>
 
         {selectedClient && (
-          <div className="bg-gray-50 rounded-lg p-4 mb-6 border border-gray-200">
+          <div className="rounded-lg p-4 mb-6" style={{ backgroundColor: colors.platinum, borderColor: colors.darkGold }}>
             <table className="w-full">
               <tbody>
                 <tr>
-                  <td className="font-medium text-gray-700 p-1">Client:</td>
-                  <td className="text-gray-600 p-1">{selectedClient.name}</td>
+                  <td className="font-medium p-1" style={{ color: colors.velvet }}>Client:</td>
+                  <td className="p-1" style={{ color: colors.deepNavy }}>{selectedClient.name}</td>
                 </tr>
                 <tr>
-                  <td className="font-medium text-gray-700 p-1">Phone:</td>
-                  <td className="text-gray-600 p-1">{selectedClient.phone}</td>
+                  <td className="font-medium p-1" style={{ color: colors.velvet }}>Phone:</td>
+                  <td className="p-1" style={{ color: colors.deepNavy }}>{selectedClient.phone}</td>
                 </tr>
                 <tr>
-                  <td className="font-medium text-gray-700 p-1">GST:</td>
-                  <td className="text-gray-600 p-1">{selectedClient.gstNo || 'N/A'}</td>
+                  <td className="font-medium p-1" style={{ color: colors.velvet }}>GST:</td>
+                  <td className="p-1" style={{ color: colors.deepNavy }}>{selectedClient.gstNo || 'N/A'}</td>
                 </tr>
                 <tr>
-                  <td className="font-medium text-gray-700 p-1">Address:</td>
-                  <td className="text-gray-600 p-1">{selectedClient.address}</td>
+                  <td className="font-medium p-1" style={{ color: colors.velvet }}>Address:</td>
+                  <td className="p-1" style={{ color: colors.deepNavy }}>{selectedClient.address}</td>
                 </tr>
               </tbody>
             </table>
           </div>
         )}
 
-        <h4 className="text-lg font-medium text-gray-700 mb-4 border-b border-gray-200 pb-2">
+        <h4 className="text-lg font-medium mb-4 pb-2" style={{ color: colors.velvet, borderBottom: `1px solid ${colors.darkGold}` }}>
           Order Items
         </h4>
         
-        <table className="w-full mb-4">
+        <table className="w-full mb-4" style={{ border: `1px solid ${colors.darkGold}` }}>
           <thead>
-            <tr className="bg-gray-100 border-2 border-gray-900">
-              <th className="p-2 text-left text-gray-700 font-medium border border-gray-900">SR No</th>
-              <th className="p-2 text-left text-gray-700 font-medium border border-gray-900">Style No*</th>
-              <th className="p-2 text-left text-gray-700 font-medium border border-gray-900">Clarity</th>
-              <th className="p-2 text-left text-gray-700 font-medium border border-gray-900">Gross WT</th>
-              <th className="p-2 text-left text-gray-700 font-medium border border-gray-900">Net WT</th>
-              <th className="p-2 text-left text-gray-700 font-medium border border-gray-900">DIA WT</th>
-              <th className="p-2 text-left text-gray-700 font-medium border border-gray-900">PCS*</th>
-              <th className="p-2 text-left text-gray-700 font-medium border border-gray-900">Amount*</th>
-              <th className="p-2 text-left text-gray-700 font-medium border border-gray-900">Action</th>
+            <tr style={{ backgroundColor: colors.platinum }}>
+              <th className="p-2 text-left font-medium border" style={{ borderColor: colors.darkGold, color: colors.velvet }}>SR No</th>
+              <th className="p-2 text-left font-medium border" style={{ borderColor: colors.darkGold, color: colors.velvet }}>Style No*</th>
+              <th className="p-2 text-left font-medium border" style={{ borderColor: colors.darkGold, color: colors.velvet }}>Clarity</th>
+              <th className="p-2 text-left font-medium border" style={{ borderColor: colors.darkGold, color: colors.velvet }}>Gross WT</th>
+              <th className="p-2 text-left font-medium border" style={{ borderColor: colors.darkGold, color: colors.velvet }}>Net WT</th>
+              <th className="p-2 text-left font-medium border" style={{ borderColor: colors.darkGold, color: colors.velvet }}>DIA WT</th>
+              <th className="p-2 text-left font-medium border" style={{ borderColor: colors.darkGold, color: colors.velvet }}>PCS*</th>
+              <th className="p-2 text-left font-medium border" style={{ borderColor: colors.darkGold, color: colors.velvet }}>Amount*</th>
+              <th className="p-2 text-left font-medium border" style={{ borderColor: colors.darkGold, color: colors.velvet }}>Action</th>
             </tr>
           </thead>
           <tbody>
             {orderItems.map((item, index) => (
-              <tr key={index} className="border border-gray-600 hover:bg-gray-50">
-                <td className="p-2 border border-gray-600">
+              <tr key={index} className="border" style={{ borderColor: colors.darkGold, backgroundColor: colors.light }}>
+                <td className="p-2 border" style={{ borderColor: colors.darkGold }}>
                   <InputNumber
                     value={item.srNo}
                     onChange={val => updateOrderItem(index, 'srNo', val)}
-                    className="w-full border-gray-300 hover:border-blue-400"
+                    style={{ 
+                      width: '100%',
+                      borderColor: colors.darkGold
+                    }}
                     min={0}
                   />
                 </td>
-                <td className="p-2 border border-gray-600">
+                <td className="p-2 border" style={{ borderColor: colors.darkGold }}>
                   <Input
                     value={item.styleNo}
                     onChange={e => updateOrderItem(index, 'styleNo', e.target.value)}
                     placeholder="Style number"
-                    className="w-full border-gray-300 hover:border-blue-400"
+                    style={{ 
+                      width: '100%',
+                      borderColor: colors.darkGold
+                    }}
                   />
                 </td>
-                <td className="p-2 border border-gray-600">
+                <td className="p-2 border" style={{ borderColor: colors.darkGold }}>
                   <Input
                     value={item.clarity}
                     onChange={e => updateOrderItem(index, 'clarity', e.target.value)}
-                    className="w-full border-gray-300 hover:border-blue-400"
+                    style={{ 
+                      width: '100%',
+                      borderColor: colors.darkGold
+                    }}
                   />
                 </td>
-                <td className="p-2 border border-gray-600">
+                <td className="p-2 border" style={{ borderColor: colors.darkGold }}>
                   <InputNumber
                     value={item.grossWeight}
                     onChange={val => updateOrderItem(index, 'grossWeight', val)}
-                    className="w-full border-gray-300 hover:border-blue-400"
+                    style={{ 
+                      width: '100%',
+                      borderColor: colors.darkGold
+                    }}
                     min={0}
                     step={0.01}
                   />
                 </td>
-                <td className="p-2 border border-gray-600">
+                <td className="p-2 border" style={{ borderColor: colors.darkGold }}>
                   <InputNumber
                     value={item.netWeight}
                     onChange={val => updateOrderItem(index, 'netWeight', val)}
-                    className="w-full border-gray-300 hover:border-blue-400"
+                    style={{ 
+                      width: '100%',
+                      borderColor: colors.darkGold
+                    }}
                     min={0}
                     step={0.01}
                   />
                 </td>
-                <td className="p-2 border border-gray-600">
+                <td className="p-2 border" style={{ borderColor: colors.darkGold }}>
                   <InputNumber
                     value={item.diaWeight}
                     onChange={val => updateOrderItem(index, 'diaWeight', val)}
-                    className="w-full border-gray-300 hover:border-blue-400"
+                    style={{ 
+                      width: '100%',
+                      borderColor: colors.darkGold
+                    }}
                     min={0}
                     step={0.01}
                   />
                 </td>
-                <td className="p-2 border border-gray-600">
+                <td className="p-2 border" style={{ borderColor: colors.darkGold }}>
                   <InputNumber
                     value={item.pcs}
                     onChange={val => updateOrderItem(index, 'pcs', val)}
-                    className={`w-full border-gray-300 hover:border-blue-400 ${
-                      !item.pcs || item.pcs < 1 ? 'border-red-500' : ''
-                    }`}
+                    style={{ 
+                      width: '100%',
+                      borderColor: !item.pcs || item.pcs < 1 ? colors.roseGold : colors.darkGold
+                    }}
                     min={1}
                   />
                 </td>
-                <td className="p-2 border border-gray-600">
+                <td className="p-2 border" style={{ borderColor: colors.darkGold }}>
                   <InputNumber
                     value={item.amount}
                     onChange={val => updateOrderItem(index, 'amount', val)}
-                    className={`w-full border-gray-300 hover:border-blue-400 ${
-                      !item.amount || item.amount <= 0 ? 'border-red-500' : ''
-                    }`}
+                    style={{ 
+                      width: '100%',
+                      borderColor: !item.amount || item.amount <= 0 ? colors.roseGold : colors.darkGold
+                    }}
                     min={0}
                     step={0.01}
                   />
                 </td>
-                <td className="p-2 border border-gray-600 text-center">
+                <td className="p-2 border text-center" style={{ borderColor: colors.darkGold }}>
                   <Button
                     danger
                     icon={<Minus className="h-4 w-4" />}
                     onClick={() => removeOrderItem(index)}
-                    className="flex items-center justify-center bg-red-50 text-red-600 hover:bg-red-100 border border-red-200"
+                    style={{ 
+                      backgroundColor: colors.platinum,
+                      color: colors.roseGold,
+                      borderColor: colors.roseGold
+                    }}
                   />
                 </td>
               </tr>
@@ -1081,14 +1143,17 @@ style={{ border: '1px solid black', borderRadius: '6px' }}
         </table>
 
         <div className="mb-6">
-          <label className="block font-medium text-gray-700 mb-2">Description</label>
+          <label className="block font-medium mb-2" style={{ color: colors.velvet }}>Description</label>
           {orderItems.map((item, index) => (
             <div key={index} className="mb-4">
               <Input.TextArea
                 value={item.description}
                 onChange={e => updateOrderItem(index, 'description', e.target.value)}
                 rows={2}
-                className="w-full border-gray-300 hover:border-blue-400"
+                style={{ 
+                  width: '100%',
+                  borderColor: colors.darkGold
+                }}
                 placeholder={`Description for item ${index + 1}`}
               />
             </div>
@@ -1100,7 +1165,11 @@ style={{ border: '1px solid black', borderRadius: '6px' }}
             type="dashed"
             onClick={addOrderItem}
             icon={<Plus className="h-4 w-4" />}
-            className="border-dashed border-gray-300 text-gray-600 hover:border-blue-400 hover:text-blue-600"
+            style={{ 
+              borderColor: colors.darkGold,
+              color: colors.darkGold,
+              borderStyle: 'dashed'
+            }}
           >
             Add Item
           </Button>
@@ -1109,7 +1178,14 @@ style={{ border: '1px solid black', borderRadius: '6px' }}
             type="primary" 
             onClick={handleOrderSubmit}
             loading={loading}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded"
+            style={{ 
+              backgroundColor: colors.darkGold,
+              color: colors.light,
+              border: 'none',
+              fontWeight: 'medium',
+              padding: '8px 24px',
+              borderRadius: '6px'
+            }}
           >
             Create Order
           </Button>
@@ -1118,292 +1194,314 @@ style={{ border: '1px solid black', borderRadius: '6px' }}
     </div>
   );
 
-const renderOrderHistory = () => (
-  <div className="space-y-6">
-    <h3 className="text-2xl font-semibold text-gray-800">Order History</h3>
-    <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
-      {/* Search and Filter Section */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <Select
-          className="w-full border-gray-300 hover:border-blue-400"
-          placeholder="Search client by ID"
-          value={selectedClient?.uniqueId}
-          onChange={uniqueId => {
-            handleClientSelect(uniqueId);
-            fetchOrderHistory(uniqueId);
-          }}
-          showSearch
-          optionFilterProp="children"
-          filterOption={(input, option) =>
-            option.children.toLowerCase().includes(input.toLowerCase())
-          }
-          suffixIcon={<Search className="h-4 w-4 text-gray-500" />}
-        >
-          {clients.map(client => (
-            <Option key={client.uniqueId} value={client.uniqueId}>
-              {client.uniqueId} - {client.name}
-            </Option>
-          ))}
-        </Select>
-        
-        <RangePicker
-          className="w-full border-gray-300 hover:border-blue-400"
-          value={dateRange}
-          onChange={setDateRange}
-          disabledDate={current => current && current > dayjs().endOf('day')}
-        />
-        
-        <Select
-          className="w-full border-gray-300 hover:border-blue-400"
-          placeholder="Filter by status"
-          allowClear
-          onChange={value => {
-            // You would need to implement status filtering logic
-          }}
-          suffixIcon={<ChevronDown className="h-4 w-4 text-gray-500" />}
-        >
-          <Option value="ongoing">Ongoing</Option>
-          <Option value="completed">Completed</Option>
-        </Select>
-      </div>
+  const renderOrderHistory = () => (
+    <div className="space-y-6">
+      <h3 className="text-2xl font-semibold" style={{ color: colors.velvet }}>Order History</h3>
+      <div className="rounded-lg shadow p-6 border" style={{ backgroundColor: colors.diamond, borderColor: colors.darkGold }}>
+        {/* Search and Filter Section */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <Select
+            style={{ 
+              width: '100%',
+              borderColor: colors.darkGold
+            }}
+            placeholder="Search client by ID"
+            value={selectedClient?.uniqueId}
+            onChange={uniqueId => {
+              handleClientSelect(uniqueId);
+              fetchOrderHistory(uniqueId);
+            }}
+            showSearch
+            optionFilterProp="children"
+            filterOption={(input, option) =>
+              option.children.toLowerCase().includes(input.toLowerCase())
+            }
+            suffixIcon={<Search className="h-4 w-4" style={{ color: colors.darkGold }} />}
+          >
+            {clients.map(client => (
+              <Option key={client.uniqueId} value={client.uniqueId}>
+                {client.uniqueId} - {client.name}
+              </Option>
+            ))}
+          </Select>
+          
+          <RangePicker
+            style={{ 
+              width: '100%',
+              borderColor: colors.darkGold
+            }}
+            value={dateRange}
+            onChange={setDateRange}
+            disabledDate={current => current && current > dayjs().endOf('day')}
+          />
+          
+          <Select
+            style={{ 
+              width: '100%',
+              borderColor: colors.darkGold
+            }}
+            placeholder="Filter by status"
+            allowClear
+            onChange={value => {
+              // You would need to implement status filtering logic
+            }}
+            suffixIcon={<ChevronDown className="h-4 w-4" style={{ color: colors.darkGold }} />}
+          >
+            <Option value="ongoing">Ongoing</Option>
+            <Option value="completed">Completed</Option>
+          </Select>
+        </div>
 
-      {/* Client Info Card */}
-      {selectedClient && (
-        <div className="bg-gray-50 rounded-lg p-4 mb-6 border border-gray-200">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div>
-              <p className="text-sm text-gray-500">Client ID</p>
-              <p className="font-medium">{selectedClient.uniqueId}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Name</p>
-              <p className="font-medium">{selectedClient.name}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Phone</p>
-              <p className="font-medium">{selectedClient.phone}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Total Orders</p>
-              <p className="font-medium">
-                {selectedClient.orders ? ordersToArray(selectedClient.orders).length : 0}
-              </p>
+        {/* Client Info Card */}
+        {selectedClient && (
+          <div className="rounded-lg p-4 mb-6" style={{ backgroundColor: colors.platinum, borderColor: colors.darkGold }}>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div>
+                <p className="text-sm" style={{ color: colors.velvet }}>Client ID</p>
+                <p className="font-medium" style={{ color: colors.deepNavy }}>{selectedClient.uniqueId}</p>
+              </div>
+              <div>
+                <p className="text-sm" style={{ color: colors.velvet }}>Name</p>
+                <p className="font-medium" style={{ color: colors.deepNavy }}>{selectedClient.name}</p>
+              </div>
+              <div>
+                <p className="text-sm" style={{ color: colors.velvet }}>Phone</p>
+                <p className="font-medium" style={{ color: colors.deepNavy }}>{selectedClient.phone}</p>
+              </div>
+              <div>
+                <p className="text-sm" style={{ color: colors.velvet }}>Total Orders</p>
+                <p className="font-medium" style={{ color: colors.deepNavy }}>
+                  {selectedClient.orders ? ordersToArray(selectedClient.orders).length : 0}
+                </p>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Orders Table with Expandable Rows */}
-      <Table
-        columns={[
-          { 
-            title: 'Order ID', 
-            dataIndex: 'orderId', 
-            key: 'orderId',
-            render: (id, record) => (
-              <span 
-                className="font-medium text-blue-600 cursor-pointer hover:underline"
-                onClick={() => handleOrderClick(record)}
-              >
-                {id ? `${id.substring(0, 8)}...` : 'N/A'}
-              </span>
-            ),
-            sorter: (a, b) => a.orderId.localeCompare(b.orderId)
-          },
-          { 
-            title: 'Date', 
-            dataIndex: 'orderDate', 
-            key: 'date',
-            render: date => (
-              <span className="text-gray-600">
-                {date ? dayjs(date).format('DD MMM YYYY') : 'N/A'}
-              </span>
-            ),
-            sorter: (a, b) => new Date(a.orderDate) - new Date(b.orderDate)
-          },
-          { 
-            title: 'Status', 
-            dataIndex: 'status', 
-            key: 'status',
-            render: status => (
-              <Tag className={
-                status === 'completed' 
-                  ? 'bg-green-100 text-green-800' 
-                  : status === 'ongoing' 
-                    ? 'bg-blue-100 text-blue-800' 
-                    : 'bg-gray-100 text-gray-800'
-              }>
-                {status ? status.toUpperCase() : 'UNKNOWN'}
-              </Tag>
-            ),
-            filters: [
-              { text: 'Ongoing', value: 'ongoing' },
-              { text: 'Completed', value: 'completed' }
-            ],
-            onFilter: (value, record) => record.status === value
-          },
-          { 
-            title: 'Items', 
-            dataIndex: 'orderItems', 
-            key: 'items',
-            render: items => (
-              <span className="font-medium">
-                {items?.length || 0}
-              </span>
-            ),
-            sorter: (a, b) => (a.orderItems?.length || 0) - (b.orderItems?.length || 0)
-          },
-          { 
-            title: 'Amount (₹)', 
-            key: 'amount',
-            render: (_, order) => (
-              <span className="font-medium">
-                {order.orderItems?.reduce((sum, item) => sum + (item.amount || 0), 0) || 0}
-              </span>
-            ),
-            sorter: (a, b) => {
-              const aAmount = a.orderItems?.reduce((sum, item) => sum + (item.amount || 0), 0) || 0;
-              const bAmount = b.orderItems?.reduce((sum, item) => sum + (item.amount || 0), 0) || 0;
-              return aAmount - bAmount;
+        {/* Orders Table with Expandable Rows */}
+        <Table
+          columns={[
+            { 
+              title: 'Order ID', 
+              dataIndex: 'orderId', 
+              key: 'orderId',
+              render: (id, record) => (
+                <span 
+                  className="font-medium cursor-pointer hover:underline"
+                  style={{ color: colors.darkGold }}
+                  onClick={() => handleOrderClick(record)}
+                >
+                  {id ? `${id.substring(0, 8)}...` : 'N/A'}
+                </span>
+              ),
+              sorter: (a, b) => a.orderId.localeCompare(b.orderId)
+            },
+            { 
+              title: 'Date', 
+              dataIndex: 'orderDate', 
+              key: 'date',
+              render: date => (
+                <span className="text-gray-600">
+                  {date ? dayjs(date).format('DD MMM YYYY') : 'N/A'}
+                </span>
+              ),
+              sorter: (a, b) => new Date(a.orderDate) - new Date(b.orderDate)
+            },
+            { 
+              title: 'Status', 
+              dataIndex: 'status', 
+              key: 'status',
+              render: status => (
+                <Tag style={{
+                  backgroundColor: status === 'completed' 
+                    ? '#e6f7ee' 
+                    : status === 'ongoing' 
+                      ? '#e6f4ff' 
+                      : '#fff7e6',
+                  color: status === 'completed' 
+                    ? '#08965b' 
+                    : status === 'ongoing' 
+                      ? colors.darkGold 
+                      : '#d46b08'
+                }}>
+                  {status ? status.toUpperCase() : 'UNKNOWN'}
+                </Tag>
+              ),
+              filters: [
+                { text: 'Ongoing', value: 'ongoing' },
+                { text: 'Completed', value: 'completed' }
+              ],
+              onFilter: (value, record) => record.status === value
+            },
+            { 
+              title: 'Items', 
+              dataIndex: 'orderItems', 
+              key: 'items',
+              render: items => (
+                <span className="font-medium">
+                  {items?.length || 0}
+                </span>
+              ),
+              sorter: (a, b) => (a.orderItems?.length || 0) - (b.orderItems?.length || 0)
+            },
+            { 
+              title: 'Amount (₹)', 
+              key: 'amount',
+              render: (_, order) => (
+                <span className="font-medium">
+                  {order.orderItems?.reduce((sum, item) => sum + (item.amount || 0), 0) || 0}
+                </span>
+              ),
+              sorter: (a, b) => {
+                const aAmount = a.orderItems?.reduce((sum, item) => sum + (item.amount || 0), 0) || 0;
+                const bAmount = b.orderItems?.reduce((sum, item) => sum + (item.amount || 0), 0) || 0;
+                return aAmount - bAmount;
+              }
             }
-          }
-        ]}
-        dataSource={orderHistory}
-        rowKey="orderId"
-        loading={loading}
-        expandable={{
-          expandedRowRender: order => (
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <div>
-                  <h4 className="font-medium text-gray-700 mb-2">Order Details</h4>
-                  <div className="space-y-2">
-                    <p><span className="font-medium">Order ID:</span> {order.orderId}</p>
-                    <p><span className="font-medium">Date:</span> {dayjs(order.orderDate).format('DD MMM YYYY')}</p>
-                    <p><span className="font-medium">Status:</span> 
-                      <Tag className={`ml-2 ${order.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}`}>
-                        {order.status?.toUpperCase() || 'UNKNOWN'}
-                      </Tag>
-                    </p>
+          ]}
+          dataSource={orderHistory}
+          rowKey="orderId"
+          loading={loading}
+          expandable={{
+            expandedRowRender: order => (
+              <div className="p-4 rounded-lg" style={{ backgroundColor: colors.platinum }}>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <h4 className="font-medium mb-2" style={{ color: colors.velvet }}>Order Details</h4>
+                    <div className="space-y-2">
+                      <p><span className="font-medium">Order ID:</span> {order.orderId}</p>
+                      <p><span className="font-medium">Date:</span> {dayjs(order.orderDate).format('DD MMM YYYY')}</p>
+                      <p><span className="font-medium">Status:</span> 
+                        <Tag style={{ 
+                          backgroundColor: order.status === 'completed' ? '#e6f7ee' : '#e6f4ff',
+                          color: order.status === 'completed' ? '#08965b' : colors.darkGold,
+                          marginLeft: '8px'
+                        }}>
+                          {order.status?.toUpperCase() || 'UNKNOWN'}
+                        </Tag>
+                      </p>
+                    </div>
+                  </div>
+                  <div>
+                    <h4 className="font-medium mb-2" style={{ color: colors.velvet }}>Client Details</h4>
+                    <div className="space-y-2">
+                      <p><span className="font-medium">Name:</span> {order.client?.name || selectedClient?.name || 'N/A'}</p>
+                      <p><span className="font-medium">Phone:</span> {order.client?.phone || selectedClient?.phone || 'N/A'}</p>
+                      <p><span className="font-medium">GST:</span> {order.client?.gstNo || selectedClient?.gstNo || 'N/A'}</p>
+                    </div>
                   </div>
                 </div>
-                <div>
-                  <h4 className="font-medium text-gray-700 mb-2">Client Details</h4>
-                  <div className="space-y-2">
-                    <p><span className="font-medium">Name:</span> {order.client?.name || selectedClient?.name || 'N/A'}</p>
-                    <p><span className="font-medium">Phone:</span> {order.client?.phone || selectedClient?.phone || 'N/A'}</p>
-                    <p><span className="font-medium">GST:</span> {order.client?.gstNo || selectedClient?.gstNo || 'N/A'}</p>
-                  </div>
-                </div>
+
+                <Divider style={{ borderColor: colors.darkGold }}>Order Items</Divider>
+
+                <Table
+                  columns={[
+                    { 
+                      title: 'SR No', 
+                      dataIndex: 'srNo', 
+                      key: 'srNo',
+                      render: text => <span className="text-gray-700">{text}</span>
+                    },
+                    { 
+                      title: 'Style No', 
+                      dataIndex: 'styleNo', 
+                      key: 'styleNo',
+                      render: text => <span className="font-medium">{text}</span>
+                    },
+                    { 
+                      title: 'Clarity', 
+                      dataIndex: 'clarity', 
+                      key: 'clarity',
+                      render: text => <span className="text-gray-600">{text || 'N/A'}</span>
+                    },
+                    { 
+                      title: 'Gross WT', 
+                      dataIndex: 'grossWeight', 
+                      key: 'grossWeight',
+                      render: text => <span className="text-gray-600">{text}</span>
+                    },
+                    { 
+                      title: 'Net WT', 
+                      dataIndex: 'netWeight', 
+                      key: 'netWeight',
+                      render: text => <span className="text-gray-600">{text}</span>
+                    },
+                    { 
+                      title: 'DIA WT', 
+                      dataIndex: 'diaWeight', 
+                      key: 'diaWeight',
+                      render: text => <span className="text-gray-600">{text}</span>
+                    },
+                    { 
+                      title: 'PCS', 
+                      dataIndex: 'pcs', 
+                      key: 'pcs',
+                      render: text => <span className="font-medium">{text}</span>
+                    },
+                    { 
+                      title: 'Amount', 
+                      dataIndex: 'amount', 
+                      key: 'amount',
+                      render: text => <span className="font-medium">₹{text}</span>
+                    },
+                    { 
+                      title: 'Description', 
+                      dataIndex: 'description', 
+                      key: 'description',
+                      render: text => <span className="text-gray-600">{text || 'N/A'}</span>
+                    }
+                  ]}
+                  dataSource={order.orderItems || []}
+                  rowKey={(orders) => `${orders.srNo}-${orders.styleNo}`}
+                  pagination={false}
+                  size="small"
+                  bordered
+                />
               </div>
-
-              <Divider>Order Items</Divider>
-
-              <Table
-                columns={[
-                  { 
-                    title: 'SR No', 
-                    dataIndex: 'srNo', 
-                    key: 'srNo',
-                    render: text => <span className="text-gray-700">{text}</span>
-                  },
-                  { 
-                    title: 'Style No', 
-                    dataIndex: 'styleNo', 
-                    key: 'styleNo',
-                    render: text => <span className="font-medium">{text}</span>
-                  },
-                  { 
-                    title: 'Clarity', 
-                    dataIndex: 'clarity', 
-                    key: 'clarity',
-                    render: text => <span className="text-gray-600">{text || 'N/A'}</span>
-                  },
-                  { 
-                    title: 'Gross WT', 
-                    dataIndex: 'grossWeight', 
-                    key: 'grossWeight',
-                    render: text => <span className="text-gray-600">{text}</span>
-                  },
-                  { 
-                    title: 'Net WT', 
-                    dataIndex: 'netWeight', 
-                    key: 'netWeight',
-                    render: text => <span className="text-gray-600">{text}</span>
-                  },
-                  { 
-                    title: 'DIA WT', 
-                    dataIndex: 'diaWeight', 
-                    key: 'diaWeight',
-                    render: text => <span className="text-gray-600">{text}</span>
-                  },
-                  { 
-                    title: 'PCS', 
-                    dataIndex: 'pcs', 
-                    key: 'pcs',
-                    render: text => <span className="font-medium">{text}</span>
-                  },
-                  { 
-                    title: 'Amount', 
-                    dataIndex: 'amount', 
-                    key: 'amount',
-                    render: text => <span className="font-medium">₹{text}</span>
-                  },
-                  { 
-                    title: 'Description', 
-                    dataIndex: 'description', 
-                    key: 'description',
-                    render: text => <span className="text-gray-600">{text || 'N/A'}</span>
-                  }
-                ]}
-                dataSource={order.orderItems || []}
-                rowKey={(orders) => `${orders.srNo}-${orders.styleNo}`}
-                pagination={false}
-                size="small"
-                bordered
-              />
-            </div>
-          ),
-          expandIcon: ({ expanded, onExpand, orders }) =>
-            expanded ? (
-              <ChevronDown 
-                className="h-4 w-4 text-gray-500 cursor-pointer" 
-                onClick={e => onExpand(orders, e)}
-              />
-            ) : (
-              <ChevronRight 
-                className="h-4 w-4 text-gray-500 cursor-pointer" 
-                onClick={e => onExpand(orders, e)}
-              />
             ),
-          rowExpandable: order => order.orderItems?.length > 0
-        }}
-        pagination={{
-          pageSize: 10,
-          showSizeChanger: true,
-          pageSizeOptions: ['10', '20', '50']
-        }}
-        locale={{
-          emptyText: (
-            <div className="text-center py-8">
-              <img 
-                src="/empty-box-icon.svg" 
-                alt="No orders" 
-                className="mx-auto h-16 w-16 text-gray-400 mb-4"
-              />
-              <p className="text-gray-500">
-                {selectedClient 
-                  ? 'No orders found for this client' 
-                  : 'Select a client to view their order history'}
-              </p>
-            </div>
-          )
-        }}
-        className="custom-table"
-      />
+            expandIcon: ({ expanded, onExpand, orders }) =>
+              expanded ? (
+                <ChevronDown 
+                  className="h-4 w-4 cursor-pointer" 
+                  onClick={e => onExpand(orders, e)}
+                  style={{ color: colors.darkGold }}
+                />
+              ) : (
+                <ChevronRight 
+                  className="h-4 w-4 cursor-pointer" 
+                  onClick={e => onExpand(orders, e)}
+                  style={{ color: colors.darkGold }}
+                />
+              ),
+            rowExpandable: order => order.orderItems?.length > 0
+          }}
+          pagination={{
+            pageSize: 10,
+            showSizeChanger: true,
+            pageSizeOptions: ['10', '20', '50']
+          }}
+          locale={{
+            emptyText: (
+              <div className="text-center py-8">
+                <img 
+                  src="/empty-box-icon.svg" 
+                  alt="No orders" 
+                  className="mx-auto h-16 w-16 mb-4"
+                  style={{ color: colors.darkGold }}
+                />
+                <p style={{ color: colors.velvet }}>
+                  {selectedClient 
+                    ? 'No orders found for this client' 
+                    : 'Select a client to view their order history'}
+                </p>
+              </div>
+            )
+          }}
+          className="custom-table"
+        />
+      </div>
     </div>
-  </div>
-);
+  );
 
   const renderContent = () => {
     switch(selectedMenu) {
@@ -1415,12 +1513,19 @@ const renderOrderHistory = () => (
     }
   };
 
+  const toggleMobileMenu = () => {
+    setMobileMenuVisible(!mobileMenuVisible);
+  };
+
   return (
     <div className="min-h-screen flex bg-gray-50">
-      {/* Sidebar */}
-      <div className="w-64 bg-gray-800 text-white flex-shrink-0 hidden md:block">
-        <div className="h-16 flex items-center justify-center border-b border-gray-700">
-          <span className="text-xl font-bold">SALES</span>
+      {/* Desktop Sidebar */}
+      <div 
+        className="w-64 text-white flex-shrink-0 hidden md:block"
+        style={{ backgroundColor: colors.deepNavy }}
+      >
+        <div className="h-16 flex items-center justify-center border-b" style={{ borderColor: colors.darkGold }}>
+          <span className="text-xl font-bold" style={{ color: colors.gold }}>JEWELRY SALES</span>
         </div>
         <nav className="p-4">
           <ul className="space-y-2">
@@ -1429,9 +1534,13 @@ const renderOrderHistory = () => (
                 onClick={() => setSelectedMenu('dashboard')}
                 className={`w-full flex items-center p-3 rounded-lg transition-colors ${
                   selectedMenu === 'dashboard' 
-                    ? 'bg-blue-700 text-white' 
-                    : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                    ? 'bg-opacity-20' 
+                    : 'text-gray-300 hover:bg-opacity-10'
                 }`}
+                style={{ 
+                  backgroundColor: selectedMenu === 'dashboard' ? colors.gold : 'transparent',
+                  color: selectedMenu === 'dashboard' ? colors.deepNavy : colors.platinum
+                }}
               >
                 <LayoutDashboard className="h-5 w-5 mr-3" />
                 <span>Dashboard</span>
@@ -1442,9 +1551,13 @@ const renderOrderHistory = () => (
                 onClick={() => setSelectedMenu('kyc')}
                 className={`w-full flex items-center p-3 rounded-lg transition-colors ${
                   selectedMenu === 'kyc' 
-                    ? 'bg-blue-700 text-white' 
-                    : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                    ? 'bg-opacity-20' 
+                    : 'text-gray-300 hover:bg-opacity-10'
                 }`}
+                style={{ 
+                  backgroundColor: selectedMenu === 'kyc' ? colors.gold : 'transparent',
+                  color: selectedMenu === 'kyc' ? colors.deepNavy : colors.platinum
+                }}
               >
                 <User className="h-5 w-5 mr-3" />
                 <span>Client KYC</span>
@@ -1455,9 +1568,13 @@ const renderOrderHistory = () => (
                 onClick={() => setSelectedMenu('order')}
                 className={`w-full flex items-center p-3 rounded-lg transition-colors ${
                   selectedMenu === 'order' 
-                    ? 'bg-blue-700 text-white' 
-                    : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                    ? 'bg-opacity-20' 
+                    : 'text-gray-300 hover:bg-opacity-10'
                 }`}
+                style={{ 
+                  backgroundColor: selectedMenu === 'order' ? colors.gold : 'transparent',
+                  color: selectedMenu === 'order' ? colors.deepNavy : colors.platinum
+                }}
               >
                 <ShoppingCart className="h-5 w-5 mr-3" />
                 <span>Create Order</span>
@@ -1468,9 +1585,13 @@ const renderOrderHistory = () => (
                 onClick={() => setSelectedMenu('history')}
                 className={`w-full flex items-center p-3 rounded-lg transition-colors ${
                   selectedMenu === 'history' 
-                    ? 'bg-blue-700 text-white' 
-                    : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                    ? 'bg-opacity-20' 
+                    : 'text-gray-300 hover:bg-opacity-10'
                 }`}
+                style={{ 
+                  backgroundColor: selectedMenu === 'history' ? colors.gold : 'transparent',
+                  color: selectedMenu === 'history' ? colors.deepNavy : colors.platinum
+                }}
               >
                 <History className="h-5 w-5 mr-3" />
                 <span>Order History</span>
@@ -1480,37 +1601,50 @@ const renderOrderHistory = () => (
         </nav>
       </div>
       
-      {/* Mobile Sidebar Toggle */}
-      <div className="md:hidden fixed bottom-4 right-4 z-50">
-        <button
-          onClick={() => setCollapsed(!collapsed)}
-          className="bg-blue-600 text-white p-3 rounded-full shadow-lg"
+      {/* Mobile Header with Hamburger */}
+      <div className="md:hidden fixed top-0 left-0 right-0 z-50">
+        <header 
+          className="shadow-sm h-16 flex items-center justify-between px-4"
+          style={{ backgroundColor: colors.deepNavy }}
         >
-          {collapsed ? <ChevronRight /> : <ChevronDown />}
-        </button>
+          <h4 className="text-lg font-semibold" style={{ color: colors.gold }}>Jewelry Sales</h4>
+          <button
+            onClick={toggleMobileMenu}
+            className="text-white p-2 rounded-md focus:outline-none"
+          >
+            <MenuIcon className="h-6 w-6" style={{ color: colors.gold }} />
+          </button>
+        </header>
       </div>
 
       {/* Mobile Sidebar */}
-      {collapsed && (
-        <div className="md:hidden fixed inset-0 z-40">
-          <div className="absolute inset-0 bg-black bg-opacity-50" onClick={() => setCollapsed(false)}></div>
-          <div className="absolute left-0 top-0 bottom-0 w-64 bg-gray-800 text-white">
-            <div className="h-16 flex items-center justify-center border-b border-gray-700">
-              <span className="text-xl font-bold">SALES</span>
-            </div>
+      {mobileMenuVisible && (
+        <div className="md:hidden fixed inset-0 z-40 mt-16">
+          <div 
+            className="absolute inset-0 bg-black bg-opacity-50" 
+            onClick={toggleMobileMenu}
+          ></div>
+          <div 
+            className="absolute left-0 top-0 bottom-0 w-64"
+            style={{ backgroundColor: colors.deepNavy }}
+          >
             <nav className="p-4">
               <ul className="space-y-2">
                 <li>
                   <button
                     onClick={() => {
                       setSelectedMenu('dashboard');
-                      setCollapsed(false);
+                      toggleMobileMenu();
                     }}
                     className={`w-full flex items-center p-3 rounded-lg transition-colors ${
                       selectedMenu === 'dashboard' 
-                        ? 'bg-blue-700 text-white' 
-                        : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                        ? 'bg-opacity-20' 
+                        : 'text-gray-300 hover:bg-opacity-10'
                     }`}
+                    style={{ 
+                      backgroundColor: selectedMenu === 'dashboard' ? colors.gold : 'transparent',
+                      color: selectedMenu === 'dashboard' ? colors.deepNavy : colors.platinum
+                    }}
                   >
                     <LayoutDashboard className="h-5 w-5 mr-3" />
                     <span>Dashboard</span>
@@ -1520,13 +1654,17 @@ const renderOrderHistory = () => (
                   <button
                     onClick={() => {
                       setSelectedMenu('kyc');
-                      setCollapsed(false);
+                      toggleMobileMenu();
                     }}
                     className={`w-full flex items-center p-3 rounded-lg transition-colors ${
                       selectedMenu === 'kyc' 
-                        ? 'bg-blue-700 text-white' 
-                        : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                        ? 'bg-opacity-20' 
+                        : 'text-gray-300 hover:bg-opacity-10'
                     }`}
+                    style={{ 
+                      backgroundColor: selectedMenu === 'kyc' ? colors.gold : 'transparent',
+                      color: selectedMenu === 'kyc' ? colors.deepNavy : colors.platinum
+                    }}
                   >
                     <User className="h-5 w-5 mr-3" />
                     <span>Client KYC</span>
@@ -1536,13 +1674,17 @@ const renderOrderHistory = () => (
                   <button
                     onClick={() => {
                       setSelectedMenu('order');
-                      setCollapsed(false);
+                      toggleMobileMenu();
                     }}
                     className={`w-full flex items-center p-3 rounded-lg transition-colors ${
                       selectedMenu === 'order' 
-                        ? 'bg-blue-700 text-white' 
-                        : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                        ? 'bg-opacity-20' 
+                        : 'text-gray-300 hover:bg-opacity-10'
                     }`}
+                    style={{ 
+                      backgroundColor: selectedMenu === 'order' ? colors.gold : 'transparent',
+                      color: selectedMenu === 'order' ? colors.deepNavy : colors.platinum
+                    }}
                   >
                     <ShoppingCart className="h-5 w-5 mr-3" />
                     <span>Create Order</span>
@@ -1552,13 +1694,17 @@ const renderOrderHistory = () => (
                   <button
                     onClick={() => {
                       setSelectedMenu('history');
-                      setCollapsed(false);
+                      toggleMobileMenu();
                     }}
                     className={`w-full flex items-center p-3 rounded-lg transition-colors ${
                       selectedMenu === 'history' 
-                        ? 'bg-blue-700 text-white' 
-                        : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                        ? 'bg-opacity-20' 
+                        : 'text-gray-300 hover:bg-opacity-10'
                     }`}
+                    style={{ 
+                      backgroundColor: selectedMenu === 'history' ? colors.gold : 'transparent',
+                      color: selectedMenu === 'history' ? colors.deepNavy : colors.platinum
+                    }}
                   >
                     <History className="h-5 w-5 mr-3" />
                     <span>Order History</span>
@@ -1570,13 +1716,19 @@ const renderOrderHistory = () => (
         </div>
       )}
       
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header */}
-        <header className="bg-white shadow-sm z-10 border-b border-gray-200">
+      <div className="flex-1 flex flex-col overflow-hidden md:mt-0 mt-16">
+        {/* Desktop Header */}
+        <header 
+          className="shadow-sm z-10 border-b hidden md:block"
+          style={{ 
+            backgroundColor: colors.diamond,
+            borderColor: colors.darkGold
+          }}
+        >
           <div className="flex items-center justify-between h-16 px-6">
-            <h4 className="text-lg font-semibold text-gray-800">Sales Dashboard</h4>
+            <h4 className="text-lg font-semibold" style={{ color: colors.velvet }}>Sales Dashboard</h4>
             <div className="flex items-center space-x-4">
-              <span className="text-gray-600 hidden md:block">
+              <span style={{ color: colors.velvet }}>
                 {dayjs().format('DD MMM YYYY')}
               </span>
             </div>
@@ -1584,11 +1736,20 @@ const renderOrderHistory = () => (
         </header>
         
         {/* Content */}
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-50">
-          <div className="bg-white rounded-lg shadow p-4 md:p-6 min-h-[calc(100vh-8rem)] border border-gray-200">
+        <main className="flex-1 overflow-y-auto p-4 md:p-6" style={{ backgroundColor: colors.light }}>
+          <div 
+            className="rounded-lg shadow p-4 md:p-6 min-h-[calc(100vh-8rem)] border"
+            style={{ 
+              backgroundColor: colors.diamond,
+              borderColor: colors.darkGold
+            }}
+          >
             {loading ? (
               <div className="flex justify-center items-center h-full">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+                <div 
+                  className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2"
+                  style={{ borderColor: colors.darkGold }}
+                ></div>
               </div>
             ) : (
               renderContent()
@@ -1610,19 +1771,37 @@ const renderOrderHistory = () => (
       {/* Custom Table Styling */}
       <style jsx global>{`
         .custom-table .ant-table-thead > tr > th {
-          background-color: #f3f4f6 !important;
-          color: #374151 !important;
+          background-color: ${colors.platinum} !important;
+          color: ${colors.velvet} !important;
           font-weight: 600 !important;
-          border-bottom: 1px solid #e5e7eb !important;
+          border-bottom: 1px solid ${colors.darkGold} !important;
         }
         .custom-table .ant-table-tbody > tr > td {
-          border-bottom: 1px solid #e5e7eb !important;
+          border-bottom: 1px solid ${colors.darkGold} !important;
+          background-color: ${colors.light};
         }
         .custom-table .ant-table-tbody > tr:hover > td {
-          background-color: #f9fafb !important;
+          background-color: ${colors.platinum} !important;
         }
         .ant-table-expanded-row .custom-table .ant-table-thead > tr > th {
-          background-color: #f9fafb !important;
+          background-color: ${colors.platinum} !important;
+        }
+        .ant-table-expanded-row .custom-table .ant-table-tbody > tr > td {
+          background-color: ${colors.platinum} !important;
+        }
+        .ant-picker, .ant-input, .ant-input-number, .ant-select-selector {
+          border-color: ${colors.darkGold} !important;
+        }
+        .ant-picker:hover, .ant-input:hover, .ant-input-number:hover, .ant-select-selector:hover {
+          border-color: ${colors.roseGold} !important;
+        }
+        .ant-btn-primary {
+          background-color: ${colors.darkGold} !important;
+          border-color: ${colors.darkGold} !important;
+        }
+        .ant-btn-primary:hover {
+          background-color: ${colors.roseGold} !important;
+          border-color: ${colors.roseGold} !important;
         }
       `}</style>
     </div>

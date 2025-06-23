@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import {
+import { 
   Layout, Menu, Card, Table, Form, Input, Button, message, Space,
   Typography, Spin, Row, Col, Statistic, Divider, InputNumber, Select, Tag, DatePicker
 } from 'antd';
-import {
-  DashboardOutlined, UserOutlined, ShoppingCartOutlined,
-  HistoryOutlined, PlusOutlined, MinusOutlined, SearchOutlined
-} from '@ant-design/icons';
 import axios from 'axios';
 import dayjs from 'dayjs';
+import { 
+  LayoutDashboard, User, ShoppingCart, History, 
+  Plus, Minus, Search, ChevronDown, ChevronRight
+} from 'lucide-react';
 
 const { RangePicker } = DatePicker;
 const { Sider, Header, Content } = Layout;
@@ -38,9 +38,12 @@ const SalesDashboard = () => {
   // Convert orders Map to array for easier handling
   const ordersToArray = (orders) => {
     if (!orders) return [];
-    if (orders instanceof Map) return Array.from(orders.values());
+    if (orders instanceof Map) return Array.from(orders.entries()).map(([orderId, order]) => ({ 
+      orderId,
+      ...order 
+    }));
     if (Array.isArray(orders)) return orders;
-    return Object.values(orders);
+    return Object.entries(orders).map(([orderId, order]) => ({ orderId, ...order }));
   };
 
   const fetchClients = async () => {
@@ -99,7 +102,7 @@ const SalesDashboard = () => {
       
       message.success('Client added successfully');
       kycForm.resetFields();
-      fetchClients(); // Refresh client list
+      fetchClients();
     } catch (err) {
       console.error('KYC Error:', err);
       const errorMsg = err.response?.data?.message || 
@@ -200,15 +203,16 @@ const SalesDashboard = () => {
     try {
       setLoading(true);
       const res = await axios.get(`${API_BASE_URL}/api/team/order-history`, {
-        params: { 
-          uniqueId, 
-          from: dateRange[0]?.toISOString(), 
-          to: dateRange[1]?.toISOString() 
-        }
+        params: { uniqueId }
       });
       
       const clientData = res.data?.data || res.data;
-      const historyData = ordersToArray(clientData?.orders);
+      const historyData = clientData?.orders ? 
+        Array.from(clientData.orders.entries()).map(([orderId, order]) => ({
+          orderId,
+          ...order
+        })) : [];
+      
       setOrderHistory(historyData);
     } catch (err) {
       console.error('History Error:', err);
@@ -245,22 +249,42 @@ const SalesDashboard = () => {
   };
 
   const clientColumns = [
-    { title: 'Unique ID', dataIndex: 'uniqueId', key: 'uniqueId' },
-    { title: 'Name', dataIndex: 'name', key: 'name' },
-    { title: 'Phone', dataIndex: 'phone', key: 'phone' },
-    { title: 'GST No', dataIndex: 'gstNo', key: 'gstNo' },
+    { 
+      title: 'Unique ID', 
+      dataIndex: 'uniqueId', 
+      key: 'uniqueId',
+      render: (text) => <span className="font-medium">{text}</span>
+    },
+    { 
+      title: 'Name', 
+      dataIndex: 'name', 
+      key: 'name',
+      render: (text) => <span className="text-gray-700">{text}</span>
+    },
+    { 
+      title: 'Phone', 
+      dataIndex: 'phone', 
+      key: 'phone',
+      render: (text) => <span className="text-gray-600">{text}</span>
+    },
+    { 
+      title: 'GST No', 
+      dataIndex: 'gstNo', 
+      key: 'gstNo',
+      render: (text) => <span className="text-gray-600">{text || 'N/A'}</span>
+    },
     { 
       title: 'Status', 
       key: 'status',
       render: (_, client) => {
         const orders = ordersToArray(client.orders);
-        if (orders.length === 0) return <Tag>No orders</Tag>;
+        if (orders.length === 0) return <Tag className="bg-gray-100 text-gray-800">No orders</Tag>;
         
         const statuses = orders.map(o => o?.status).filter(Boolean);
         
-        if (statuses.includes('ongoing')) return <Tag color="blue">Active</Tag>;
-        if (statuses.every(s => s === 'completed')) return <Tag color="green">Completed</Tag>;
-        return <Tag color="orange">Mixed</Tag>;
+        if (statuses.includes('ongoing')) return <Tag className="bg-blue-100 text-blue-800">Active</Tag>;
+        if (statuses.every(s => s === 'completed')) return <Tag className="bg-green-100 text-green-800">Completed</Tag>;
+        return <Tag className="bg-orange-100 text-orange-800">Mixed</Tag>;
       }
     },
     {
@@ -269,6 +293,7 @@ const SalesDashboard = () => {
       render: (_, client) => (
         <Button 
           size="small" 
+          className="bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200"
           onClick={() => {
             setSelectedMenu('history');
             handleClientSelect(client.uniqueId);
@@ -283,23 +308,29 @@ const SalesDashboard = () => {
 
   const orderColumns = [
     { 
+      title: 'Order ID', 
+      dataIndex: 'orderId', 
+      key: 'orderId',
+      render: id => <span className="font-medium">{id ? id.substring(0, 8) + '...' : 'N/A'}</span>
+    },
+    { 
       title: 'Date', 
       dataIndex: 'orderDate', 
       key: 'date', 
-      render: date => date ? dayjs(date).format('DD/MM/YYYY') : 'N/A' 
+      render: date => <span className="text-gray-600">{date ? dayjs(date).format('DD/MM/YYYY') : 'N/A'}</span>
     },
     { 
       title: 'Items', 
       dataIndex: 'orderItems', 
       key: 'items', 
-      render: items => items?.length || 0 
+      render: items => <span className="font-medium">{items?.length || 0}</span>
     },
     { 
       title: 'Status', 
       dataIndex: 'status', 
       key: 'status', 
       render: status => (
-        <Tag color={status === 'completed' ? 'green' : 'blue'}>
+        <Tag className={`${status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}`}>
           {status ? status.toUpperCase() : 'UNKNOWN'}
         </Tag>
       )
@@ -308,333 +339,429 @@ const SalesDashboard = () => {
       title: 'Amount', 
       key: 'amount', 
       render: (_, order) => (
-        order.orderItems?.reduce((sum, item) => sum + (item.amount || 0), 0) || 0
+        <span className="font-medium">
+          ₹{order.orderItems?.reduce((sum, item) => sum + (item.amount || 0), 0) || 0}
+        </span>
       )
     }
   ];
 
   const orderItemColumns = [
-    { title: 'SR No', dataIndex: 'srNo', key: 'srNo' },
-    { title: 'Style No', dataIndex: 'styleNo', key: 'styleNo' },
-    { title: 'Clarity', dataIndex: 'clarity', key: 'clarity' },
-    { title: 'Gross WT', dataIndex: 'grossWeight', key: 'grossWeight' },
-    { title: 'Net WT', dataIndex: 'netWeight', key: 'netWeight' },
-    { title: 'DIA WT', dataIndex: 'diaWeight', key: 'diaWeight' },
-    { title: 'PCS', dataIndex: 'pcs', key: 'pcs' },
-    { title: 'Amount', dataIndex: 'amount', key: 'amount' },
-    { title: 'Description', dataIndex: 'description', key: 'description' },
+    { 
+      title: 'SR No', 
+      dataIndex: 'srNo', 
+      key: 'srNo',
+      render: (text) => <span className="text-gray-700">{text}</span>
+    },
+    { 
+      title: 'Style No', 
+      dataIndex: 'styleNo', 
+      key: 'styleNo',
+      render: (text) => <span className="font-medium">{text}</span>
+    },
+    { 
+      title: 'Clarity', 
+      dataIndex: 'clarity', 
+      key: 'clarity',
+      render: (text) => <span className="text-gray-700">{text}</span>
+    },
+    { 
+      title: 'Gross WT', 
+      dataIndex: 'grossWeight', 
+      key: 'grossWeight',
+      render: (text) => <span className="text-gray-700">{text}</span>
+    },
+    { 
+      title: 'Net WT', 
+      dataIndex: 'netWeight', 
+      key: 'netWeight',
+      render: (text) => <span className="text-gray-700">{text}</span>
+    },
+    { 
+      title: 'DIA WT', 
+      dataIndex: 'diaWeight', 
+      key: 'diaWeight',
+      render: (text) => <span className="text-gray-700">{text}</span>
+    },
+    { 
+      title: 'PCS', 
+      dataIndex: 'pcs', 
+      key: 'pcs',
+      render: (text) => <span className="font-medium">{text}</span>
+    },
+    { 
+      title: 'Amount', 
+      dataIndex: 'amount', 
+      key: 'amount',
+      render: (text) => <span className="font-medium">₹{text}</span>
+    },
+    { 
+      title: 'Description', 
+      dataIndex: 'description', 
+      key: 'description',
+      render: (text) => <span className="text-gray-600">{text}</span>
+    },
   ];
 
   const renderDashboard = () => (
-    <>
-      <Title level={3}>Sales Dashboard</Title>
-      <Row gutter={16} style={{ marginBottom: 24 }}>
-        <Col span={6}>
-          <Card>
-            <Statistic title="Total Clients" value={stats.totalClients} />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card>
-            <Statistic title="Active Clients" value={stats.activeClients} />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card>
-            <Statistic title="Total Orders" value={stats.totalOrders} />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card>
-            <Statistic title="Revenue" prefix="₹" value={stats.revenue} precision={2} />
-          </Card>
-        </Col>
-      </Row>
+    <div className="space-y-6">
+      <h3 className="text-2xl font-semibold text-gray-800">Sales Dashboard</h3>
       
-      <Card title="Recent Clients" style={{ marginBottom: 24 }}>
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-white rounded-lg shadow p-4 border border-gray-200">
+          <Statistic 
+            title={<span className="text-gray-600">Total Clients</span>} 
+            value={stats.totalClients} 
+            valueStyle={{ color: '#3b82f6', fontSize: '24px' }}
+          />
+        </div>
+        <div className="bg-white rounded-lg shadow p-4 border border-gray-200">
+          <Statistic 
+            title={<span className="text-gray-600">Active Clients</span>} 
+            value={stats.activeClients} 
+            valueStyle={{ color: '#10b981', fontSize: '24px' }}
+          />
+        </div>
+        <div className="bg-white rounded-lg shadow p-4 border border-gray-200">
+          <Statistic 
+            title={<span className="text-gray-600">Total Orders</span>} 
+            value={stats.totalOrders} 
+            valueStyle={{ color: '#f59e0b', fontSize: '24px' }}
+          />
+        </div>
+        <div className="bg-white rounded-lg shadow p-4 border border-gray-200">
+          <Statistic 
+            title={<span className="text-gray-600">Revenue</span>} 
+            prefix="₹" 
+            value={stats.revenue} 
+            precision={2} 
+            valueStyle={{ color: '#8b5cf6', fontSize: '24px' }}
+          />
+        </div>
+      </div>
+      
+      {/* Recent Clients */}
+      <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
+        <h4 className="text-lg font-medium mb-4 text-gray-800">Recent Clients</h4>
         <Table 
           dataSource={clients.slice(0, 5)} 
           columns={clientColumns} 
           rowKey="uniqueId"
           loading={loading}
           pagination={false}
+          className="w-full custom-table"
         />
-      </Card>
+      </div>
       
-      <Row gutter={16}>
-        <Col span={12}>
-          <Card title="Active Clients (with ongoing orders)">
-            <Table 
-              dataSource={clients.filter(c => {
-                const orders = ordersToArray(c.orders);
-                return orders.some(o => o?.status === 'ongoing');
-              })} 
-              columns={clientColumns}
-              rowKey="uniqueId"
-              loading={loading}
-              pagination={{ pageSize: 3 }}
-            />
-          </Card>
-        </Col>
-        <Col span={12}>
-          <Card title="Recent Orders">
-            <Table 
-              dataSource={clients.flatMap(client => {
-                const orders = ordersToArray(client.orders);
-                return orders
-                  .map(order => ({ ...order, clientName: client.name }))
-                  .sort((a, b) => new Date(b?.orderDate || 0) - new Date(a?.orderDate || 0))
-                  .slice(0, 5);
-              })}
-              columns={[
-                { title: 'Client', dataIndex: 'clientName', key: 'clientName' },
-                ...orderColumns
-              ]}
-              rowKey="_id"
-              loading={loading}
-              pagination={false}
-            />
-          </Card>
-        </Col>
-      </Row>
-    </>
+      {/* Bottom Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Active Clients */}
+        <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
+          <h4 className="text-lg font-medium mb-4 text-gray-800">Active Clients (with ongoing orders)</h4>
+          <Table 
+            dataSource={clients.filter(c => {
+              const orders = ordersToArray(c.orders);
+              return orders.some(o => o?.status === 'ongoing');
+            })} 
+            columns={clientColumns}
+            rowKey="uniqueId"
+            loading={loading}
+            pagination={{ pageSize: 3 }}
+            className="w-full custom-table"
+          />
+        </div>
+        
+        {/* Recent Orders */}
+        <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
+          <h4 className="text-lg font-medium mb-4 text-gray-800">Recent Orders</h4>
+          <Table 
+            dataSource={clients.flatMap(client => {
+              const orders = ordersToArray(client.orders);
+              return orders
+                .map(order => ({ ...order, clientName: client.name }))
+                .sort((a, b) => new Date(b?.orderDate || 0) - new Date(a?.orderDate || 0))
+                .slice(0, 5);
+            })}
+            columns={[
+              { 
+                title: 'Client', 
+                dataIndex: 'clientName', 
+                key: 'clientName',
+                render: (text) => <span className="font-medium">{text}</span>
+              },
+              ...orderColumns
+            ]}
+            rowKey="orderId"
+            loading={loading}
+            pagination={false}
+            className="w-full custom-table"
+          />
+        </div>
+      </div>
+    </div>
   );
 
   const renderKYCForm = () => (
-    <>
-      <Title level={3}>Add New Client</Title>
-      <Card>
+    <div className="space-y-6">
+      <h3 className="text-2xl font-semibold text-gray-800">Add New Client</h3>
+      <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
         <Form layout="vertical" form={kycForm} onFinish={handleKYCSubmit}>
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item 
-                name="name" 
-                label="Full Name" 
-                rules={[{ required: true, message: 'Please enter client name' }]}
-              >
-                <Input placeholder="Client name" />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item 
-                name="phone" 
-                label="Phone" 
-                rules={[
-                  { required: true, message: 'Please enter phone number' },
-                  { pattern: /^[0-9]{10,15}$/, message: 'Phone should be 10-15 digits' }
-                ]}
-              >
-                <Input placeholder="10-15 digit phone number" />
-              </Form.Item>
-            </Col>
-          </Row>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <Form.Item 
+              name="name" 
+              label={<span className="font-medium text-gray-700">Full Name</span>}
+              rules={[{ required: true, message: 'Please enter client name' }]}
+              className="mb-0"
+            >
+              <Input 
+                placeholder="Client name" 
+                className="w-full border-gray-300 hover:border-blue-400 focus:border-blue-500"
+              />
+            </Form.Item>
+            <Form.Item 
+              name="phone" 
+              label={<span className="font-medium text-gray-700">Phone</span>}
+              rules={[
+                { required: true, message: 'Please enter phone number' },
+                { pattern: /^[0-9]{10,15}$/, message: 'Phone should be 10-15 digits' }
+              ]}
+              className="mb-0"
+            >
+              <Input 
+                placeholder="10-15 digit phone number" 
+                className="w-full border-gray-300 hover:border-blue-400 focus:border-blue-500"
+              />
+            </Form.Item>
+          </div>
           
           <Form.Item 
             name="address" 
-            label="Address" 
+            label={<span className="font-medium text-gray-700">Address</span>}
             rules={[{ required: true, message: 'Please enter address' }]}
+            className="mb-4"
           >
-            <Input.TextArea rows={3} />
+            <Input.TextArea 
+              rows={3} 
+              className="w-full border-gray-300 hover:border-blue-400 focus:border-blue-500"
+            />
           </Form.Item>
           
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item name="gstNo" label="GST Number">
-                <Input placeholder="Optional GST number" />
-              </Form.Item>
-            </Col>
-          </Row>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <Form.Item 
+              name="gstNo" 
+              label={<span className="font-medium text-gray-700">GST Number</span>}
+              className="mb-0"
+            >
+              <Input 
+                placeholder="Optional GST number" 
+                className="w-full border-gray-300 hover:border-blue-400 focus:border-blue-500"
+              />
+            </Form.Item>
+          </div>
           
-          <Button type="primary" htmlType="submit" loading={loading}>
+          <Button 
+            type="primary" 
+            htmlType="submit" 
+            loading={loading}
+            className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded flex items-center"
+          >
             Submit KYC
           </Button>
         </Form>
-      </Card>
-    </>
+      </div>
+    </div>
   );
 
   const renderOrderForm = () => (
-    <>
-      <Title level={3}>Create New Order</Title>
-      <Card>
+    <div className="space-y-6">
+      <h3 className="text-2xl font-semibold text-gray-800">Create New Order</h3>
+      <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
         <Form layout="vertical" form={orderForm}>
-          <Row gutter={16}>
-            <Col span={24}>
-              <Form.Item 
-                name="uniqueId"
-                label="Client" 
-                rules={[{ required: true, message: 'Please select a client' }]}
+          <div className="grid grid-cols-1 gap-4 mb-4">
+            <Form.Item 
+              name="uniqueId"
+              label={<span className="font-medium text-gray-700">Client</span>}
+              rules={[{ required: true, message: 'Please select a client' }]}
+              className="mb-0"
+            >
+              <Select
+                showSearch
+                placeholder="Select client"
+                optionFilterProp="children"
+                onChange={handleClientSelect}
+                filterOption={(input, option) =>
+                  option.children.toLowerCase().includes(input.toLowerCase())
+                }
+                className="w-full border-gray-300 hover:border-blue-400"
+                suffixIcon={<ChevronDown className="h-4 w-4 text-gray-500" />}
               >
-                <Select
-                  showSearch
-                  placeholder="Select client"
-                  optionFilterProp="children"
-                  onChange={handleClientSelect}
-                  filterOption={(input, option) =>
-                    option.children.toLowerCase().includes(input.toLowerCase())
-                  }
-                >
-                  {clients.map(client => (
-                    <Option key={client.uniqueId} value={client.uniqueId}>
-                      {client.uniqueId} 
-                    </Option>
-                  ))}
-                </Select>
-              </Form.Item>
-            </Col>
-          </Row>
+                {clients.map(client => (
+                  <Option key={client.uniqueId} value={client.uniqueId}>
+                    {client.uniqueId}
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
+          </div>
 
           {selectedClient && (
-            <Card type="inner" style={{ marginBottom: 16 }}>
-              <Row gutter={16}>
-                <Col span={8}>
-                  <Text strong>Client: </Text>
-                  <Text>{selectedClient.name}</Text>
-                </Col>
-                <Col span={8}>
-                  <Text strong>Phone: </Text>
-                  <Text>{selectedClient.phone}</Text>
-                </Col>
-                <Col span={8}>
-                  <Text strong>GST: </Text>
-                  <Text>{selectedClient.gstNo || 'N/A'}</Text>
-                </Col>
-              </Row>
-              <Row style={{ marginTop: 8 }}>
-                <Col span={24}>
-                  <Text strong>Address: </Text>
-                  <Text>{selectedClient.address}</Text>
-                </Col>
-              </Row>
-            </Card>
+            <div className="bg-gray-50 rounded-lg p-4 mb-6 border border-gray-200">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-2">
+                <div>
+                  <span className="font-medium text-gray-700">Client: </span>
+                  <span className="text-gray-600">{selectedClient.name}</span>
+                </div>
+                <div>
+                  <span className="font-medium text-gray-700">Phone: </span>
+                  <span className="text-gray-600">{selectedClient.phone}</span>
+                </div>
+                <div>
+                  <span className="font-medium text-gray-700">GST: </span>
+                  <span className="text-gray-600">{selectedClient.gstNo || 'N/A'}</span>
+                </div>
+              </div>
+              <div>
+                <span className="font-medium text-gray-700">Address: </span>
+                <span className="text-gray-600">{selectedClient.address}</span>
+              </div>
+            </div>
           )}
 
-          <Divider orientation="left">Order Items</Divider>
+          <div className="border-b border-gray-200 mb-6">
+            <h4 className="text-lg font-medium text-gray-700">Order Items</h4>
+          </div>
           
           {orderItems.map((item, index) => (
-            <Card key={index} type="inner" style={{ marginBottom: 16 }}>
-              <Row gutter={16}>
-                <Col span={2}>
-                  <Form.Item label="SR No">
+            <div key={index} className="bg-gray-50 rounded-lg p-4 mb-4 border border-gray-200">
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-4 mb-4">
+                <div className="md:col-span-1">
+                  <Form.Item label={<span className="text-gray-700">SR No</span>} className="mb-0">
                     <InputNumber
                       value={item.srNo}
                       onChange={val => updateOrderItem(index, 'srNo', val)}
-                      style={{ width: '100%' }}
+                      className="w-full border-gray-300 hover:border-blue-400"
                       min={0}
                     />
                   </Form.Item>
-                </Col>
-                <Col span={4}>
+                </div>
+                <div className="md:col-span-2">
                   <Form.Item 
-                    label="Style No" 
+                    label={<span className="text-gray-700">Style No</span>}
                     required
                     validateStatus={!item.styleNo?.trim() ? 'error' : ''}
                     help={!item.styleNo?.trim() ? 'Required' : ''}
+                    className="mb-0"
                   >
                     <Input
                       value={item.styleNo}
                       onChange={e => updateOrderItem(index, 'styleNo', e.target.value)}
                       placeholder="Required"
+                      className="w-full border-gray-300 hover:border-blue-400"
                     />
                   </Form.Item>
-                </Col>
-                <Col span={3}>
-                  <Form.Item label="Clarity">
+                </div>
+                <div className="md:col-span-2">
+                  <Form.Item label={<span className="text-gray-700">Clarity</span>} className="mb-0">
                     <Input
                       value={item.clarity}
                       onChange={e => updateOrderItem(index, 'clarity', e.target.value)}
+                      className="w-full border-gray-300 hover:border-blue-400"
                     />
                   </Form.Item>
-                </Col>
-                <Col span={3}>
-                  <Form.Item label="Gross WT">
+                </div>
+                <div className="md:col-span-1">
+                  <Form.Item label={<span className="text-gray-700">Gross WT</span>} className="mb-0">
                     <InputNumber
                       value={item.grossWeight}
                       onChange={val => updateOrderItem(index, 'grossWeight', val)}
-                      style={{ width: '100%' }}
+                      className="w-full border-gray-300 hover:border-blue-400"
                       min={0}
                       step={0.01}
                     />
                   </Form.Item>
-                </Col>
-                <Col span={3}>
-                  <Form.Item label="Net WT">
+                </div>
+                <div className="md:col-span-1">
+                  <Form.Item label={<span className="text-gray-700">Net WT</span>} className="mb-0">
                     <InputNumber
                       value={item.netWeight}
                       onChange={val => updateOrderItem(index, 'netWeight', val)}
-                      style={{ width: '100%' }}
+                      className="w-full border-gray-300 hover:border-blue-400"
                       min={0}
                       step={0.01}
                     />
                   </Form.Item>
-                </Col>
-                <Col span={3}>
-                  <Form.Item label="DIA WT">
+                </div>
+                <div className="md:col-span-1">
+                  <Form.Item label={<span className="text-gray-700">DIA WT</span>} className="mb-0">
                     <InputNumber
                       value={item.diaWeight}
                       onChange={val => updateOrderItem(index, 'diaWeight', val)}
-                      style={{ width: '100%' }}
+                      className="w-full border-gray-300 hover:border-blue-400"
                       min={0}
                       step={0.01}
                     />
                   </Form.Item>
-                </Col>
-                <Col span={2}>
+                </div>
+                <div className="md:col-span-1">
                   <Form.Item 
-                    label="PCS" 
+                    label={<span className="text-gray-700">PCS</span>}
                     required
                     validateStatus={!item.pcs || item.pcs < 1 ? 'error' : ''}
                     help={!item.pcs || item.pcs < 1 ? 'Must be ≥1' : ''}
+                    className="mb-0"
                   >
                     <InputNumber
                       value={item.pcs}
                       onChange={val => updateOrderItem(index, 'pcs', val)}
-                      style={{ width: '100%' }}
+                      className="w-full border-gray-300 hover:border-blue-400"
                       min={1}
                     />
                   </Form.Item>
-                </Col>
-                <Col span={3}>
+                </div>
+                <div className="md:col-span-1">
                   <Form.Item 
-                    label="Amount" 
+                    label={<span className="text-gray-700">Amount</span>}
                     required
                     validateStatus={!item.amount || item.amount <= 0 ? 'error' : ''}
                     help={!item.amount || item.amount <= 0 ? 'Must be >0' : ''}
+                    className="mb-0"
                   >
                     <InputNumber
                       value={item.amount}
                       onChange={val => updateOrderItem(index, 'amount', val)}
-                      style={{ width: '100%' }}
+                      className="w-full border-gray-300 hover:border-blue-400"
                       min={0}
                       step={0.01}
                     />
                   </Form.Item>
-                </Col>
-                <Col span={1}>
+                </div>
+                <div className="md:col-span-1 flex items-end justify-center">
                   <Button
                     danger
-                    icon={<MinusOutlined />}
+                    icon={<Minus className="h-4 w-4" />}
                     onClick={() => removeOrderItem(index)}
-                    style={{ marginTop: 30 }}
+                    className="flex items-center justify-center bg-red-50 text-red-600 hover:bg-red-100 border border-red-200"
                   />
-                </Col>
-              </Row>
+                </div>
+              </div>
               
-              <Form.Item label="Description">
+              <Form.Item label={<span className="text-gray-700">Description</span>} className="mb-0">
                 <Input.TextArea
                   value={item.description}
                   onChange={e => updateOrderItem(index, 'description', e.target.value)}
                   rows={2}
+                  className="w-full border-gray-300 hover:border-blue-400"
                 />
               </Form.Item>
-            </Card>
+            </div>
           ))}
           
           <Button
             type="dashed"
             onClick={addOrderItem}
-            icon={<PlusOutlined />}
-            style={{ marginBottom: 16 }}
+            icon={<Plus className="h-4 w-4" />}
+            className="mb-6 flex items-center border-dashed border-gray-300 text-gray-600 hover:border-blue-400 hover:text-blue-600"
           >
             Add Item
           </Button>
@@ -643,109 +770,101 @@ const SalesDashboard = () => {
             type="primary" 
             onClick={handleOrderSubmit}
             loading={loading}
+            className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded flex items-center"
           >
             Create Order
           </Button>
         </Form>
-      </Card>
-    </>
+      </div>
+    </div>
   );
 
   const renderOrderHistory = () => (
-    <>
-      <Title level={3}>Order History</Title>
-      <Card>
-        <Row gutter={16} style={{ marginBottom: 24 }}>
-          <Col span={12}>
-            <Select
-              style={{ width: '100%' }}
-              placeholder="Select client"
-              value={selectedClient?.uniqueId}
-              onChange={uniqueId => {
-                handleClientSelect(uniqueId);
-                fetchOrderHistory(uniqueId);
-              }}
-              showSearch
-              optionFilterProp="children"
-            >
-              {clients.map(client => (
-                <Option key={client.uniqueId} value={client.uniqueId}>
-                  {client.uniqueId} - {client.name}
-                </Option>
-              ))}
-            </Select>
-          </Col>
-          <Col span={12}>
-            <RangePicker
-              style={{ width: '100%' }}
-              value={dateRange}
-              onChange={setDateRange}
-              disabledDate={current => current > dayjs()}
-            />
-          </Col>
-        </Row>
+    <div className="space-y-6">
+      <h3 className="text-2xl font-semibold text-gray-800">Order History</h3>
+      <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
+        <div className="grid grid-cols-1 gap-4 mb-6">
+          <Select
+            className="w-full border-gray-300 hover:border-blue-400"
+            placeholder="Select client"
+            value={selectedClient?.uniqueId}
+            onChange={uniqueId => {
+              handleClientSelect(uniqueId);
+              fetchOrderHistory(uniqueId);
+            }}
+            showSearch
+            optionFilterProp="children"
+            suffixIcon={<ChevronDown className="h-4 w-4 text-gray-500" />}
+          >
+            {clients.map(client => (
+              <Option key={client.uniqueId} value={client.uniqueId}>
+                {client.uniqueId} - {client.name}
+              </Option>
+            ))}
+          </Select>
+        </div>
 
         {selectedClient && (
-          <Card type="inner" style={{ marginBottom: 16 }}>
-            <Row gutter={16}>
-              <Col span={8}>
-                <Text strong>Client: </Text>
-                <Text>{selectedClient.name}</Text>
-              </Col>
-              <Col span={8}>
-                <Text strong>Unique ID: </Text>
-                <Text>{selectedClient.uniqueId}</Text>
-              </Col>
-              <Col span={8}>
-                <Text strong>Phone: </Text>
-                <Text>{selectedClient.phone}</Text>
-              </Col>
-            </Row>
-          </Card>
+          <div className="bg-gray-50 rounded-lg p-4 mb-6 border border-gray-200">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <span className="font-medium text-gray-700">Client: </span>
+                <span className="text-gray-600">{selectedClient.name}</span>
+              </div>
+              <div>
+                <span className="font-medium text-gray-700">Unique ID: </span>
+                <span className="text-gray-600">{selectedClient.uniqueId}</span>
+              </div>
+              <div>
+                <span className="font-medium text-gray-700">Phone: </span>
+                <span className="text-gray-600">{selectedClient.phone}</span>
+              </div>
+            </div>
+          </div>
         )}
 
         {orderHistory.length > 0 ? (
-          orderHistory.map(order => (
-            <Card
-              key={order._id}
-              title={`Order ${order._id ? order._id.substring(0, 8) : ''}`}
-              extra={
-                <Tag color={order.status === 'completed' ? 'green' : 'blue'}>
-                  {order.status?.toUpperCase() || 'UNKNOWN'}
-                </Tag>
-              }
-              style={{ marginBottom: 16 }}
-            >
-              <Row gutter={16} style={{ marginBottom: 16 }}>
-                <Col span={8}>
-                  <Text strong>Date: </Text>
-                  <Text>{dayjs(order.orderDate).format('DD/MM/YYYY HH:mm')}</Text>
-                </Col>
-                <Col span={8}>
-                  <Text strong>Total Amount: </Text>
-                  <Text>₹{order.orderItems?.reduce((sum, item) => sum + (item.amount || 0), 0)}</Text>
-                </Col>
-              </Row>
-
-              <Table
-                columns={orderItemColumns}
-                dataSource={order.orderItems || []}
-                rowKey={(record) => `${record.srNo}-${record.styleNo}`}
-                pagination={false}
-              />
-            </Card>
-          ))
+          <Table
+            columns={orderColumns}
+            dataSource={orderHistory}
+            rowKey="orderId"
+            expandable={{
+              expandedRowRender: order => (
+                <Table
+                  columns={orderItemColumns}
+                  dataSource={order.orderItems || []}
+                  rowKey={(record) => `${record.srNo}-${record.styleNo}`}
+                  pagination={false}
+                  className="w-full custom-table"
+                />
+              ),
+              expandIcon: ({ expanded, onExpand, record }) =>
+                expanded ? (
+                  <ChevronDown 
+                    className="h-4 w-4 text-gray-500 cursor-pointer" 
+                    onClick={e => onExpand(record, e)}
+                  />
+                ) : (
+                  <ChevronRight 
+                    className="h-4 w-4 text-gray-500 cursor-pointer" 
+                    onClick={e => onExpand(record, e)}
+                  />
+                ),
+              rowExpandable: order => order.orderItems?.length > 0
+            }}
+            className="w-full custom-table"
+          />
         ) : (
-          <Card>
-            <Text>
+          <div className="bg-white rounded-lg p-4 border border-gray-200">
+            <p className="text-gray-600">
               {selectedClient ? 
-                'No orders found for selected client and date range' : 
+                'No orders found for selected client' : 
                 'Select a client to view order history'}
-            </Text>
-          </Card>
+            </p>
+          </div>
         )}
-      </Card>
-    </>
+      </div>
+    </div>
   );
 
   const renderContent = () => {
@@ -759,72 +878,118 @@ const SalesDashboard = () => {
   };
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
-      <Sider collapsible collapsed={collapsed} onCollapse={setCollapsed}>
-        <div className="logo" style={{ 
-          height: 32, 
-          margin: 16, 
-          background: 'rgba(255, 255, 255, 0.2)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: 'white',
-          fontWeight: 'bold'
-        }}>
-          SALES
+    <div className="min-h-screen flex bg-gray-50">
+      {/* Sidebar */}
+      <div className="w-64 bg-gray-800 text-white flex-shrink-0">
+        <div className="h-16 flex items-center justify-center border-b border-gray-700">
+          <span className="text-xl font-bold">SALES</span>
         </div>
-        <Menu
-          theme="dark"
-          selectedKeys={[selectedMenu]}
-          mode="inline"
-          onClick={({ key }) => setSelectedMenu(key)}
-        >
-          <Menu.Item key="dashboard" icon={<DashboardOutlined />}>
-            Dashboard
-          </Menu.Item>
-          <Menu.Item key="kyc" icon={<UserOutlined />}>
-            Client KYC
-          </Menu.Item>
-          <Menu.Item key="order" icon={<ShoppingCartOutlined />}>
-            Create Order
-          </Menu.Item>
-          <Menu.Item key="history" icon={<HistoryOutlined />}>
-            Order History
-          </Menu.Item>
-        </Menu>
-      </Sider>
-      <Layout>
-        <Header style={{ 
-          background: '#fff', 
-          padding: '0 24px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          boxShadow: '0 1px 4px rgba(0,21,41,0.08)'
-        }}>
-          <Title level={4} style={{ margin: 0 }}>Sales Dashboard</Title>
-          <Space>
-            <Button icon={<SearchOutlined />}>Search</Button>
-          </Space>
-        </Header>
-        <Content style={{ margin: '24px 16px 0' }}>
-          <div style={{ 
-            padding: 24, 
-            background: '#fff', 
-            minHeight: 'calc(100vh - 112px)',
-            borderRadius: 4
-          }}>
+        <nav className="p-4">
+          <ul className="space-y-2">
+            <li>
+              <button
+                onClick={() => setSelectedMenu('dashboard')}
+                className={`w-full flex items-center p-3 rounded-lg transition-colors ${
+                  selectedMenu === 'dashboard' 
+                    ? 'bg-blue-700 text-white' 
+                    : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                }`}
+              >
+                <LayoutDashboard className="h-5 w-5 mr-3" />
+                <span>Dashboard</span>
+              </button>
+            </li>
+            <li>
+              <button
+                onClick={() => setSelectedMenu('kyc')}
+                className={`w-full flex items-center p-3 rounded-lg transition-colors ${
+                  selectedMenu === 'kyc' 
+                    ? 'bg-blue-700 text-white' 
+                    : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                }`}
+              >
+                <User className="h-5 w-5 mr-3" />
+                <span>Client KYC</span>
+              </button>
+            </li>
+            <li>
+              <button
+                onClick={() => setSelectedMenu('order')}
+                className={`w-full flex items-center p-3 rounded-lg transition-colors ${
+                  selectedMenu === 'order' 
+                    ? 'bg-blue-700 text-white' 
+                    : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                }`}
+              >
+                <ShoppingCart className="h-5 w-5 mr-3" />
+                <span>Create Order</span>
+              </button>
+            </li>
+            <li>
+              <button
+                onClick={() => setSelectedMenu('history')}
+                className={`w-full flex items-center p-3 rounded-lg transition-colors ${
+                  selectedMenu === 'history' 
+                    ? 'bg-blue-700 text-white' 
+                    : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                }`}
+              >
+                <History className="h-5 w-5 mr-3" />
+                <span>Order History</span>
+              </button>
+            </li>
+          </ul>
+        </nav>
+      </div>
+      
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Header */}
+        <header className="bg-white shadow-sm z-10 border-b border-gray-200">
+          <div className="flex items-center justify-between h-16 px-6">
+            <h4 className="text-lg font-semibold text-gray-800">Sales Dashboard</h4>
+            <div className="flex items-center space-x-4">
+              <button className="flex items-center text-gray-600 hover:text-gray-900">
+                <Search className="h-5 w-5 mr-2" />
+                <span>Search</span>
+              </button>
+            </div>
+          </div>
+        </header>
+        
+        {/* Content */}
+        <main className="flex-1 overflow-y-auto p-6 bg-gray-50">
+          <div className="bg-white rounded-lg shadow p-6 min-h-[calc(100vh-8rem)] border border-gray-200">
             {loading ? (
-              <div style={{ display: 'flex', justifyContent: 'center', padding: '50px 0' }}>
-                <Spin size="large" />
+              <div className="flex justify-center items-center h-full">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
               </div>
             ) : (
               renderContent()
             )}
           </div>
-        </Content>
-      </Layout>
-    </Layout>
+        </main>
+      </div>
+
+      {/* Custom Table Styling */}
+      <style jsx global>{`
+        .custom-table .ant-table-thead > tr > th {
+          background-color: #f3f4f6 !important;
+          color: #374151 !important;
+          font-weight: 600 !important;
+          border-bottom: 1px solid #e5e7eb !important;
+        }
+        .custom-table .ant-table-tbody > tr > td {
+          border-bottom: 1px solid #e5e7eb !important;
+        }
+        .custom-table .ant-table-tbody > tr:hover > td {
+          background-color: #f9fafb !important;
+        }
+        .ant-table-expanded-row .custom-table .ant-table-thead > tr > th {
+          background-color: #f9fafb !important;
+        }
+      `}</style>
+    </div>
   );
 };
 

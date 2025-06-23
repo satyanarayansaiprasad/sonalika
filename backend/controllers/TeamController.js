@@ -388,43 +388,43 @@ exports.addClientOrder = async (req, res) => {
 };
 
 
-exports.getOrderHistory = async (req, res) => {
-  try {
-    const { uniqueId } = req.query;
+// exports.getOrderHistory = async (req, res) => {
+//   try {
+//     const { uniqueId } = req.query;
 
-    if (!uniqueId) {
-      return res.status(400).json({ error: "uniqueId is required" });
-    }
+//     if (!uniqueId) {
+//       return res.status(400).json({ error: "uniqueId is required" });
+//     }
 
-    const client = await Clients.findOne({ uniqueId });
-    if (!client) {
-      return res.status(404).json({ error: "Client not found" });
-    }
+//     const client = await Clients.findOne({ uniqueId });
+//     if (!client) {
+//       return res.status(404).json({ error: "Client not found" });
+//     }
 
-    const orders = Array.from(client.orders.entries()).map(([orderId, order]) => ({
-      orderId,
-      orderDate: order.orderDate,
-      status: order.status || "ongoing",
-      items: order.orderItems || []
-    }));
+//     const orders = Array.from(client.orders.entries()).map(([orderId, order]) => ({
+//       orderId,
+//       orderDate: order.orderDate,
+//       status: order.status || "ongoing",
+//       items: order.orderItems || []
+//     }));
 
-    return res.status(200).json({
-      success: true,
-      client: {
-        name: client.name,
-        uniqueId: client.uniqueId,
-        phone: client.phone,
-        address: client.address,
-        gstNo: client.gstNo
-      },
-      orders
-    });
+//     return res.status(200).json({
+//       success: true,
+//       client: {
+//         name: client.name,
+//         uniqueId: client.uniqueId,
+//         phone: client.phone,
+//         address: client.address,
+//         gstNo: client.gstNo
+//       },
+//       orders
+//     });
 
-  } catch (error) {
-    console.error("Error fetching order history:", error);
-    return res.status(500).json({
-      error: "Internal Server Error",
-      message: "Could not fetch order history"
-    });
-  }
-};
+//   } catch (error) {
+//     console.error("Error fetching order history:", error);
+//     return res.status(500).json({
+//       error: "Internal Server Error",
+//       message: "Could not fetch order history"
+//     });
+//   }
+// };

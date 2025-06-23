@@ -762,7 +762,7 @@ const SalesDashboard = () => {
 
         {/* Ongoing Orders */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5">
-          <h2 className="text-lg font-semibold text-gray-800 mb-3 border-b pb-2">Ongoing Orders</h2>
+          <h2 className="text-lg font-semibold text-yellow-500 mb-3 border-b pb-2">Ongoing Orders</h2>
           <Table 
             dataSource={clients.filter(client => {
               const orders = ordersToArray(client.orders);
@@ -781,7 +781,7 @@ const SalesDashboard = () => {
 
         {/* Completed Orders */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5">
-          <h2 className="text-lg font-semibold text-gray-800 mb-3 border-b pb-2">Completed Orders</h2>
+          <h2 className="text-lg font-semibold text-green-700 mb-3 border-b pb-2">Completed Orders</h2>
           <Table 
             dataSource={clients.flatMap(client => {
               const orders = ordersToArray(client.orders);

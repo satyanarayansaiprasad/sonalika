@@ -247,16 +247,26 @@ exports.createClientKYC = async (req, res) => {
 
 exports.getClients = async (req, res) => {
   try {
-    const clients = await Clients.find().sort({ createdAt: -1 }); // newest first
-
-    res.status(200).json({
-      message: "Clients fetched successfully",
-      total: clients.length,
-      clients,
+    const clients = await Clients.find({});
+    
+    // Convert to plain objects and handle the Map
+    const formattedClients = clients.map(client => {
+      const clientData = client.toObject();
+      
+      // Convert orders Map to array if it exists
+      if (clientData.orders && clientData.orders instanceof Map) {
+        clientData.orders = Array.from(clientData.orders.entries()).map(([id, order]) => ({
+          orderId: id,
+          ...order
+        }));
+      }
+      
+      return clientData;
     });
-  } catch (error) {
-    console.error("Error fetching clients:", error);
-    res.status(500).json({ error: "Internal Server Error" });
+    
+    res.json(formattedClients);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 };
 

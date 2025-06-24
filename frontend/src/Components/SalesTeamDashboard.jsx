@@ -1,14 +1,40 @@
-import React, { useEffect, useState } from 'react';
-import { 
-  Layout, Menu, Card, Table, Form, Input, Button, message, Space,
-  Typography, Spin, Row, Col, Statistic, Divider, InputNumber, Select, Tag, DatePicker, Modal
-} from 'antd';
-import axios from 'axios';
-import dayjs from 'dayjs';
-import { 
-  LayoutDashboard, User, ShoppingCart, History, 
-  Plus, Minus, Search, ChevronDown, ChevronRight, Menu as MenuIcon
-} from 'lucide-react';
+import React, { useEffect, useState } from "react";
+import {
+  Layout,
+  Menu,
+  Card,
+  Table,
+  Form,
+  Input,
+  Button,
+  message,
+  Space,
+  Typography,
+  Spin,
+  Row,
+  Col,
+  Statistic,
+  Divider,
+  InputNumber,
+  Select,
+  Tag,
+  DatePicker,
+  Modal,
+} from "antd";
+import axios from "axios";
+import dayjs from "dayjs";
+import {
+  LayoutDashboard,
+  User,
+  ShoppingCart,
+  History,
+  Plus,
+  Minus,
+  Search,
+  ChevronDown,
+  ChevronRight,
+  Menu as MenuIcon,
+} from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const { RangePicker } = DatePicker;
@@ -21,19 +47,40 @@ const API_BASE_URL = import.meta.env.VITE_BASE_URL;
 // Color palette
 const colors = {
   gold: "#f9e79f",
-  darkGold: "#D4AF37",
+  darkGold: "#050d3f",
   roseGold: "#B76E79",
   platinum: "#E5E4E2",
-  deepNavy: "#00072D",
-  velvet: "#3D0C02",
+  deepNavy: "#050d3f",
+  velvet: "#050d3f",
   light: "#F8F8F8",
   diamond: "rgba(255,255,255,0.9)",
 };
 
+// Mobile detection hook
+const useMobile = () => {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkIfMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    checkIfMobile();
+    window.addEventListener('resize', checkIfMobile);
+
+    return () => {
+      window.removeEventListener('resize', checkIfMobile);
+    };
+  }, []);
+
+  return isMobile;
+};
+
 const SalesDashboard = () => {
+  const isMobile = useMobile();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileMenuVisible, setMobileMenuVisible] = useState(false);
-  const [selectedMenu, setSelectedMenu] = useState('dashboard');
+  const [selectedMenu, setSelectedMenu] = useState("dashboard");
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(false);
   const [kycForm] = Form.useForm();
@@ -41,52 +88,73 @@ const SalesDashboard = () => {
   const [orderItems, setOrderItems] = useState([{}]);
   const [orderHistory, setOrderHistory] = useState([]);
   const [selectedClient, setSelectedClient] = useState(null);
-  const [dateRange, setDateRange] = useState([dayjs().subtract(30, 'days'), dayjs()]);
   const [stats, setStats] = useState({
     totalClients: 0,
     activeClients: 0,
     totalOrders: 0,
   });
   const [kycFields, setKycFields] = useState([
-    { name: '', phone: '', address: '', gstNo: '' }
+    { name: "", phone: "", address: "", gstNo: "" },
   ]);
   const [modalClient, setModalClient] = useState(null);
   const [ongoingOrderModalVisible, setOngoingOrderModalVisible] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
 
+  const cellStyle = {
+    border: "1px solid #c49b0d",
+    borderRadius: "6px",
+    padding: "4px 8px",
+    width: "100%",
+    backgroundColor: "white",
+  };
+
   const minimalClientColumns = [
     {
-      title: 'Unique ID',
-      dataIndex: 'uniqueId',
-      key: 'uniqueId',
-      render: (text) => <span className="font-mono font-semibold" style={{ color: colors.darkGold }}>{text}</span>
+      title: "Unique ID",
+      dataIndex: "uniqueId",
+      key: "uniqueId",
+      render: (text) => (
+        <span
+          className="font-mono font-semibold"
+          style={{ color: colors.darkGold }}
+        >
+          {text}
+        </span>
+      ),
     },
     {
-      title: 'Name',
-      dataIndex: 'name',
-      key: 'name',
+      title: "Name",
+      dataIndex: "name",
+      key: "name",
       render: (_, record) => (
-        <span 
-          className="text-gray-800 font-medium cursor-pointer hover:text-blue-600 transition-colors" 
+        <span
+          className="text-gray-800 font-medium cursor-pointer hover:text-blue-600 transition-colors"
           onClick={() => handleClientClick(record)}
           style={{ color: colors.velvet }}
         >
           {record.name}
         </span>
-      )
-    }
+      ),
+    },
   ];
 
   const ongoingClientColumns = [
     {
-      title: 'Unique ID',
-      dataIndex: 'uniqueId',
-      key: 'uniqueId',
-      render: (text) => <span className="font-mono font-semibold" style={{ color: colors.darkGold }}>{text}</span>
+      title: "Unique ID",
+      dataIndex: "uniqueId",
+      key: "uniqueId",
+      render: (text) => (
+        <span
+          className="font-mono font-semibold"
+          style={{ color: colors.darkGold }}
+        >
+          {text}
+        </span>
+      ),
     },
     {
-      title: 'Status',
-      key: 'status',
+      title: "Status",
+      key: "status",
       render: (_, client) => {
         const orders = ordersToArray(client.orders);
         if (!orders.length) {
@@ -94,35 +162,47 @@ const SalesDashboard = () => {
         }
 
         const latestOrder = orders
-          .filter(order => order?.orderDate)
+          .filter((order) => order?.orderDate)
           .sort((a, b) => new Date(b.orderDate) - new Date(a.orderDate))[0];
 
-        if (latestOrder?.status === 'completed') {
-          return <Tag style={{ backgroundColor: '#e6f7ee', color: '#08965b' }}>Completed</Tag>;
-        } else if (latestOrder?.status === 'ongoing') {
-          return <Tag style={{ backgroundColor: '#e6f4ff', color: colors.darkGold }}>Ongoing</Tag>;
+        if (latestOrder?.status === "completed") {
+          return (
+            <Tag style={{ backgroundColor: "#e6f7ee", color: "#08965b" }}>
+              Completed
+            </Tag>
+          );
+        } else if (latestOrder?.status === "ongoing") {
+          return (
+            <Tag style={{ backgroundColor: "#e6f4ff", color: colors.darkGold }}>
+              Ongoing
+            </Tag>
+          );
         } else {
-          return <Tag style={{ backgroundColor: '#fff7e6', color: '#d46b08' }}>Pending</Tag>;
+          return (
+            <Tag style={{ backgroundColor: "#fff7e6", color: "#d46b08" }}>
+              Pending
+            </Tag>
+          );
         }
-      }
+      },
     },
     {
-      title: 'Action',
-      key: 'action',
+      title: "Action",
+      key: "action",
       render: (_, client) => (
-        <Button 
-          size="small" 
-          style={{ 
+        <Button
+          size="small"
+          style={{
             backgroundColor: colors.platinum,
             color: colors.darkGold,
-            borderColor: colors.darkGold
+            borderColor: colors.darkGold,
           }}
           onClick={() => handleClientClick(client)}
         >
           View Details
         </Button>
-      )
-    }
+      ),
+    },
   ];
 
   const ClientModal = ({ client, onClose }) => {
@@ -147,58 +227,121 @@ const SalesDashboard = () => {
           >
             <div className="flex justify-between items-start mb-4">
               <div>
-                <h3 className="text-xl font-bold" style={{ color: colors.velvet }}>{client.name}</h3>
-                <p className="text-sm" style={{ color: colors.darkGold }}>{client.uniqueId}</p>
+                <h3 className="text-xl font-bold" style={{ color: colors.velvet }}>
+                  {client.name}
+                </h3>
+                <p className="text-sm" style={{ color: colors.darkGold }}>
+                  {client.uniqueId}
+                </p>
               </div>
               <button
                 className="text-gray-400 hover:text-gray-600 transition-colors"
                 onClick={onClose}
               >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-6 w-6"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </button>
             </div>
-            
+           
             <div className="space-y-3">
               <div className="flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5 text-gray-400 mr-2"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
+                  />
                 </svg>
                 <span className="text-gray-700">{client.phone}</span>
               </div>
-              
+
               <div className="flex items-start">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400 mr-2 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5 text-gray-400 mr-2 mt-0.5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                  />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                  />
                 </svg>
                 <span className="text-gray-700">{client.address}</span>
               </div>
-              
+
               {client.gstNo && (
                 <div className="flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5 text-gray-400 mr-2"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+                    />
                   </svg>
                   <span className="text-gray-700">GST: {client.gstNo}</span>
                 </div>
               )}
             </div>
-            
+
             <div className="mt-6 pt-4 border-t border-gray-200">
               <h4 className="font-medium text-gray-800 mb-2">Order Summary</h4>
               <div className="grid grid-cols-2 gap-4">
-                <div className="rounded-lg p-3" style={{ backgroundColor: colors.gold }}>
+                <div
+                  className="rounded-lg p-3"
+                  style={{ backgroundColor: colors.gold }}
+                >
                   <p className="text-sm text-gray-600">Total Orders</p>
                   <p className="text-lg font-bold" style={{ color: colors.velvet }}>
                     {client.orders ? ordersToArray(client.orders).length : 0}
                   </p>
                 </div>
-                <div className="rounded-lg p-3" style={{ backgroundColor: colors.roseGold }}>
+                <div
+                  className="rounded-lg p-3"
+                  style={{ backgroundColor: colors.roseGold }}
+                >
                   <p className="text-sm text-gray-600">Active Orders</p>
                   <p className="text-lg font-bold" style={{ color: colors.light }}>
-                    {client.orders ? ordersToArray(client.orders).filter(o => o.status === 'ongoing').length : 0}
+                    {client.orders
+                      ? ordersToArray(client.orders).filter(
+                          (o) => o.status === "ongoing"
+                        ).length
+                      : 0}
                   </p>
                 </div>
               </div>
@@ -209,85 +352,228 @@ const SalesDashboard = () => {
     );
   };
 
-  const OngoingOrderModal = ({ order, visible, onClose }) => {
-    if (!order) return null;
+  const OngoingOrderModal = ({ orderId, visible, onClose }) => {
+    const [order, setOrder] = useState(null);
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+      if (visible && orderId) {
+        fetchOrderDetails(orderId);
+      }
+    }, [visible, orderId]);
+
+    const fetchOrderDetails = async (id) => {
+      setLoading(true);
+      try {
+        const response = await axios.get(`${API_BASE_URL}/api/orders/${id}`);
+        setOrder(response.data);
+      } catch (error) {
+        console.error("Error fetching order:", error);
+        message.error("Failed to load order details");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (!visible) return null;
 
     return (
       <Modal
-        title={`Order Details - ${order.orderId?.substring(0, 8)}...`}
+        title={order ? `Order Details` : "Order Details"}
         visible={visible}
         onCancel={onClose}
         footer={null}
-        width={800}
+        width={isMobile ? '90%' : 800}
         style={{ top: 20 }}
-        bodyStyle={{ padding: 0 }}
       >
-        <div className="space-y-4 p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="p-4 rounded-lg" style={{ backgroundColor: colors.platinum }}>
-              <h4 className="font-medium mb-2" style={{ color: colors.velvet }}>Client Information</h4>
-              <div className="space-y-2">
-                <p><span className="font-medium">Name:</span> {order.client?.name || 'N/A'}</p>
-                <p><span className="font-medium">Phone:</span> {order.client?.phone || 'N/A'}</p>
-                <p><span className="font-medium">GST:</span> {order.client?.gstNo || 'N/A'}</p>
-              </div>
-            </div>
-            <div className="p-4 rounded-lg" style={{ backgroundColor: colors.platinum }}>
-              <h4 className="font-medium mb-2" style={{ color: colors.velvet }}>Order Information</h4>
-              <div className="space-y-2">
-                <p><span className="font-medium">Date:</span> {dayjs(order.orderDate).format('DD/MM/YYYY')}</p>
-                <p><span className="font-medium">Status:</span> 
-                  <Tag className={`ml-2 ${order.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}`}>
-                    {order.status?.toUpperCase() || 'UNKNOWN'}
-                  </Tag>
-                </p>
-                <p><span className="font-medium">Total Amount:</span> ₹{order.orderItems?.reduce((sum, item) => sum + (item.amount || 0), 0) || 0}</p>
-              </div>
-            </div>
+        {loading ? (
+          <div className="flex justify-center items-center h-64">
+            <Spin size="large" />
           </div>
+        ) : order ? (
+          <div className="space-y-4 p-6">
+            {isMobile ? (
+              <div className="space-y-4">
+                <div className="border rounded-lg p-4">
+                  <h4 className="font-medium mb-2">Client Information</h4>
+                  <div className="space-y-2">
+                    <p><span className="font-medium">Name:</span> {order.client?.name || "N/A"}</p>
+                    <p><span className="font-medium">Phone:</span> {order.client?.phone || "N/A"}</p>
+                    <p><span className="font-medium">GST:</span> {order.client?.gstNo || "N/A"}</p>
+                  </div>
+                </div>
+                
+                <div className="border rounded-lg p-4">
+                  <h4 className="font-medium mb-2">Order Information</h4>
+                  <div className="space-y-2">
+                    <p><span className="font-medium">Order ID:</span> {orderId.substring(0, 8)}...</p>
+                    <p><span className="font-medium">Date:</span> {dayjs(order.orderDate).format("DD/MM/YYYY")}</p>
+                    <p>
+                      <span className="font-medium">Status:</span>
+                      <Tag className="ml-2" style={{ 
+                        backgroundColor: order.status === "completed" ? "#e6f7ee" : "#e6f4ff",
+                        color: order.status === "completed" ? "#08965b" : colors.darkGold
+                      }}>
+                        {order.status?.toUpperCase() || "UNKNOWN"}
+                      </Tag>
+                    </p>
+                    <p>
+                      <span className="font-medium">Total Amount:</span> ₹
+                      {order.orderItems?.reduce((sum, item) => sum + (item.amount || 0), 0).toFixed(2) || "0.00"}
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="border rounded-lg p-4">
+                  <h4 className="font-medium mb-2">Order Items</h4>
+                  {order.orderItems?.length > 0 ? (
+                    <div className="space-y-4">
+                      {order.orderItems.map((item, idx) => (
+                        <div key={idx} className="border-b pb-4 last:border-b-0">
+                          <div className="grid grid-cols-2 gap-2">
+                            <p><span className="font-medium">SR No:</span> {item.srNo}</p>
+                            <p><span className="font-medium">Style No:</span> {item.styleNo}</p>
+                            <p><span className="font-medium">PCS:</span> {item.pcs}</p>
+                            <p><span className="font-medium">Amount:</span> ₹{item.amount}</p>
+                          </div>
+                          {item.description && (
+                            <p className="mt-2"><span className="font-medium">Description:</span> {item.description}</p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p>No order items found</p>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-4 rounded-lg" style={{ backgroundColor: colors.platinum }}>
+                  <h4 className="font-medium mb-2" style={{ color: colors.velvet }}>
+                    Client Information
+                  </h4>
+                  <div className="space-y-2">
+                    <p>
+                      <span className="font-medium">Name:</span>{" "}
+                      {order.client?.name || "N/A"}
+                    </p>
+                    <p>
+                      <span className="font-medium">Phone:</span>{" "}
+                      {order.client?.phone || "N/A"}
+                    </p>
+                    <p>
+                      <span className="font-medium">GST:</span>{" "}
+                      {order.client?.gstNo || "N/A"}
+                    </p>
+                  </div>
+                </div>
+                <div className="p-4 rounded-lg" style={{ backgroundColor: colors.platinum }}>
+                  <h4 className="font-medium mb-2" style={{ color: colors.velvet }}>
+                    Order Information
+                  </h4>
+                  <div className="space-y-2">
+                    <p>
+                      <span className="font-medium">Order ID:</span> {orderId}
+                    </p>
+                    <p>
+                      <span className="font-medium">Date:</span>{" "}
+                      {dayjs(order.orderDate).format("DD/MM/YYYY")}
+                    </p>
+                    <p>
+                      <span className="font-medium">Status:</span>
+                      <Tag
+                        className={`ml-2 ${
+                          order.status === "completed"
+                            ? "bg-green-100 text-green-800"
+                            : "bg-blue-100 text-blue-800"
+                        }`}
+                      >
+                        {order.status?.toUpperCase() || "UNKNOWN"}
+                      </Tag>
+                    </p>
+                    <p>
+                      <span className="font-medium">Total Amount:</span> ₹
+                      {order.orderItems
+                        ?.reduce((sum, item) => sum + (item.amount || 0), 0)
+                        .toFixed(2) || "0.00"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
 
-          <Divider style={{ borderColor: colors.darkGold }}>Order Items</Divider>
+            {!isMobile && (
+              <>
+                <Divider style={{ borderColor: colors.darkGold }}>
+                  Order Items
+                </Divider>
 
-          <Table
-            columns={[
-              { 
-                title: 'SR No', 
-                dataIndex: 'srNo', 
-                key: 'srNo',
-                render: (text) => <span className="text-gray-700">{text}</span>
-              },
-              { 
-                title: 'Style No', 
-                dataIndex: 'styleNo', 
-                key: 'styleNo',
-                render: (text) => <span className="font-medium">{text}</span>
-              },
-              { 
-                title: 'PCS', 
-                dataIndex: 'pcs', 
-                key: 'pcs',
-                render: (text) => <span className="font-medium">{text}</span>
-              },
-              { 
-                title: 'Amount', 
-                dataIndex: 'amount', 
-                key: 'amount',
-                render: (text) => <span className="font-medium">₹{text}</span>
-              },
-              { 
-                title: 'Description', 
-                dataIndex: 'description', 
-                key: 'description',
-                render: (text) => <span className="text-gray-600">{text || 'N/A'}</span>
-              },
-            ]}
-            dataSource={order.orderItems || []}
-            rowKey={(record) => `${record.srNo}-${record.styleNo}`}
-            pagination={false}
-            size="small"
-            bordered
-          />
-        </div>
+                {order.orderItems?.length > 0 ? (
+                  <Table
+                    columns={[
+                      {
+                        title: "SR No",
+                        dataIndex: "srNo",
+                        key: "srNo",
+                        render: (text) => (
+                          <span className="text-gray-700">{text}</span>
+                        ),
+                      },
+                      {
+                        title: "Style No",
+                        dataIndex: "styleNo",
+                        key: "styleNo",
+                        render: (text) => (
+                          <span className="font-medium">{text}</span>
+                        ),
+                      },
+                      {
+                        title: "PCS",
+                        dataIndex: "pcs",
+                        key: "pcs",
+                        render: (text) => (
+                          <span className="font-medium">{text}</span>
+                        ),
+                      },
+                      {
+                        title: "Amount",
+                        dataIndex: "amount",
+                        key: "amount",
+                        render: (text) => (
+                          <span className="font-medium">
+                            ₹{Number(text).toFixed(2)}
+                          </span>
+                        ),
+                      },
+                      {
+                        title: "Description",
+                        dataIndex: "description",
+                        key: "description",
+                        render: (text) => (
+                          <span className="text-gray-600">{text || "N/A"}</span>
+                        ),
+                      },
+                    ]}
+                    dataSource={order.orderItems}
+                    rowKey={(record) => `${record.srNo}-${record.styleNo}`}
+                    pagination={false}
+                    size="small"
+                    bordered
+                  />
+                ) : (
+                  <div className="text-center py-4">
+                    <p style={{ color: colors.velvet }}>No order items found</p>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        ) : (
+          <div className="text-center py-4">
+            <p style={{ color: colors.velvet }}>Order not found</p>
+          </div>
+        )}
       </Modal>
     );
   };
@@ -310,15 +596,26 @@ const SalesDashboard = () => {
     setSelectedOrder(null);
   };
 
-  // Convert orders Map to array for easier handling
   const ordersToArray = (orders) => {
     if (!orders) return [];
-    if (orders instanceof Map) return Array.from(orders.entries()).map(([orderId, order]) => ({ 
-      orderId,
-      ...order 
-    }));
+
     if (Array.isArray(orders)) return orders;
-    return Object.entries(orders).map(([orderId, order]) => ({ orderId, ...order }));
+
+    if (orders instanceof Map) {
+      return Array.from(orders.entries()).map(([orderId, order]) => ({
+        orderId,
+        ...order,
+      }));
+    }
+
+    if (typeof orders === "object" && orders !== null) {
+      return Object.entries(orders).map(([orderId, order]) => ({
+        orderId,
+        ...order,
+      }));
+    }
+
+    return [];
   };
 
   const fetchClients = async () => {
@@ -329,8 +626,8 @@ const SalesDashboard = () => {
       setClients(clientsData);
       calculateStats(clientsData);
     } catch (err) {
-      console.error('Fetch error:', err);
-      message.error('Failed to fetch clients');
+      console.error("Fetch error:", err);
+      message.error("Failed to fetch clients");
       setClients([]);
     } finally {
       setLoading(false);
@@ -341,12 +638,12 @@ const SalesDashboard = () => {
     let totalOrders = 0;
     const activeClients = new Set();
 
-    clientsData.forEach(client => {
+    clientsData.forEach((client) => {
       const orders = ordersToArray(client.orders);
-      
-      orders.forEach(order => {
+
+      orders.forEach((order) => {
         totalOrders++;
-        if (order.status === 'ongoing') {
+        if (order.status === "ongoing") {
           activeClients.add(client.uniqueId);
         }
       });
@@ -366,16 +663,16 @@ const SalesDashboard = () => {
   const handleKYCSubmit = async () => {
     try {
       setLoading(true);
-      
-      // Validate all fields
+
       const invalidFields = kycFields
         .map((field, index) => {
           const errors = [];
           if (!field.name?.trim()) errors.push("Name is required");
           if (!field.phone?.trim()) errors.push("Phone is required");
-          if (!/^[0-9]{10,15}$/.test(field.phone)) errors.push("Phone should be 10-15 digits");
+          if (!/^[0-9]{10,15}$/.test(field.phone))
+            errors.push("Phone should be 10-15 digits");
           if (!field.address?.trim()) errors.push("Address is required");
-          
+
           return errors.length > 0 ? { rowIndex: index, errors } : null;
         })
         .filter(Boolean);
@@ -388,30 +685,31 @@ const SalesDashboard = () => {
               <ul>
                 {invalidFields.map((field, idx) => (
                   <li key={idx}>
-                    <strong>Row {field.rowIndex + 1}:</strong> {field.errors.join(', ')}
+                    <strong>Row {field.rowIndex + 1}:</strong>{" "}
+                    {field.errors.join(", ")}
                   </li>
                 ))}
               </ul>
             </div>
           ),
-          duration: 10
+          duration: 10,
         });
         return;
       }
 
-      // Submit each client
       for (const field of kycFields) {
         await axios.post(`${API_BASE_URL}/api/team/client-kyc`, field);
       }
-      
+
       message.success(`${kycFields.length} client(s) added successfully`);
-      setKycFields([{ name: '', phone: '', address: '', gstNo: '' }]);
+      setKycFields([{ name: "", phone: "", address: "", gstNo: "" }]);
       fetchClients();
     } catch (err) {
-      console.error('KYC Error:', err);
-      const errorMsg = err.response?.data?.message || 
-                     err.response?.data?.error || 
-                     'Submission failed';
+      console.error("KYC Error:", err);
+      const errorMsg =
+        err.response?.data?.message ||
+        err.response?.data?.error ||
+        "Submission failed";
       message.error(errorMsg);
     } finally {
       setLoading(false);
@@ -421,13 +719,13 @@ const SalesDashboard = () => {
   const handleOrderSubmit = async () => {
     try {
       setLoading(true);
-      
+
       if (!selectedClient?.uniqueId) {
-        throw new Error('Please select a client');
+        throw new Error("Please select a client");
       }
 
       if (!orderItems || orderItems.length === 0) {
-        throw new Error('Please add at least one order item');
+        throw new Error("Please add at least one order item");
       }
 
       const invalidItems = orderItems
@@ -436,9 +734,10 @@ const SalesDashboard = () => {
           if (!item.styleNo?.trim()) errors.push("Style No is required");
           if (!item.pcs || isNaN(item.pcs)) errors.push("PCS must be a number");
           if (item.pcs < 1) errors.push("PCS must be at least 1");
-          if (!item.amount || isNaN(item.amount)) errors.push("Amount must be a number");
+          if (!item.amount || isNaN(item.amount))
+            errors.push("Amount must be a number");
           if (item.amount <= 0) errors.push("Amount must be greater than 0");
-          
+
           return errors.length > 0 ? { itemIndex: index, errors } : null;
         })
         .filter(Boolean);
@@ -451,20 +750,21 @@ const SalesDashboard = () => {
               <ul>
                 {invalidItems.map((item, idx) => (
                   <li key={idx}>
-                    <strong>Item {item.itemIndex + 1}:</strong> {item.errors.join(', ')}
+                    <strong>Item {item.itemIndex + 1}:</strong>{" "}
+                    {item.errors.join(", ")}
                   </li>
                 ))}
               </ul>
             </div>
           ),
-          duration: 10
+          duration: 10,
         });
         return;
       }
 
       const payload = {
         uniqueId: selectedClient.uniqueId,
-        orderItems: orderItems.map(item => ({
+        orderItems: orderItems.map((item) => ({
           srNo: item.srNo || 0,
           styleNo: item.styleNo.trim(),
           clarity: item.clarity?.trim() || "",
@@ -473,30 +773,33 @@ const SalesDashboard = () => {
           diaWeight: item.diaWeight || 0,
           pcs: item.pcs,
           amount: item.amount,
-          description: item.description?.trim() || ""
-        }))
+          description: item.description?.trim() || "",
+        })),
       };
-      
+
       await axios.post(`${API_BASE_URL}/api/team/clients-order`, payload);
-      
-      message.success('Order created successfully');
+
+      message.success("Order created successfully");
       orderForm.resetFields();
       setOrderItems([{}]);
       setSelectedClient(null);
       fetchClients();
     } catch (err) {
-      console.error('Order Error:', err);
-      
+      console.error("Order Error:", err);
+
       if (err.response) {
         if (err.response.status === 400) {
-          message.error(err.response.data.message || 'Validation failed. Please check your inputs.');
+          message.error(
+            err.response.data.message ||
+              "Validation failed. Please check your inputs."
+          );
         } else if (err.response.status === 404) {
-          message.error(err.response.data.message || 'Client not found');
+          message.error(err.response.data.message || "Client not found");
         } else {
-          message.error(err.response.data.error || 'Order creation failed');
+          message.error(err.response.data.error || "Order creation failed");
         }
       } else {
-        message.error(err.message || 'An error occurred');
+        message.error(err.message || "An error occurred");
       }
     } finally {
       setLoading(false);
@@ -507,20 +810,21 @@ const SalesDashboard = () => {
     try {
       setLoading(true);
       const res = await axios.get(`${API_BASE_URL}/api/team/get-clients`, {
-        params: { uniqueId }
+        params: { uniqueId },
       });
-      
+
       const clientData = res.data?.data || res.data;
-      const historyData = clientData?.orders ? 
-        Array.from(clientData.orders.entries()).map(([orderId, order]) => ({
-          orderId,
-          ...order
-        })) : [];
-      
+      const historyData = clientData?.orders
+        ? Array.from(clientData.orders.entries()).map(([orderId, order]) => ({
+            orderId,
+            ...order,
+          }))
+        : [];
+
       setOrderHistory(historyData);
     } catch (err) {
-      console.error('History Error:', err);
-      message.error('Failed to fetch order history');
+      console.error("History Error:", err);
+      message.error("Failed to fetch order history");
       setOrderHistory([]);
     } finally {
       setLoading(false);
@@ -528,11 +832,11 @@ const SalesDashboard = () => {
   };
 
   const addOrderItem = () => {
-    setOrderItems(prev => [...prev, {}]);
+    setOrderItems((prev) => [...prev, {}]);
   };
 
   const removeOrderItem = (index) => {
-    setOrderItems(prev => {
+    setOrderItems((prev) => {
       const newItems = [...prev];
       newItems.splice(index, 1);
       return newItems;
@@ -540,7 +844,7 @@ const SalesDashboard = () => {
   };
 
   const updateOrderItem = (index, field, value) => {
-    setOrderItems(prev => {
+    setOrderItems((prev) => {
       const newItems = [...prev];
       newItems[index] = { ...newItems[index], [field]: value };
       return newItems;
@@ -548,12 +852,15 @@ const SalesDashboard = () => {
   };
 
   const addKycRow = () => {
-    setKycFields(prev => [...prev, { name: '', phone: '', address: '', gstNo: '' }]);
+    setKycFields((prev) => [
+      ...prev,
+      { name: "", phone: "", address: "", gstNo: "" },
+    ]);
   };
 
   const removeKycRow = (index) => {
     if (kycFields.length <= 1) return;
-    setKycFields(prev => {
+    setKycFields((prev) => {
       const newFields = [...prev];
       newFields.splice(index, 1);
       return newFields;
@@ -561,7 +868,7 @@ const SalesDashboard = () => {
   };
 
   const updateKycField = (index, field, value) => {
-    setKycFields(prev => {
+    setKycFields((prev) => {
       const newFields = [...prev];
       newFields[index] = { ...newFields[index], [field]: value };
       return newFields;
@@ -569,206 +876,278 @@ const SalesDashboard = () => {
   };
 
   const handleClientSelect = (uniqueId) => {
-    const client = clients.find(c => c.uniqueId === uniqueId);
+    const client = clients.find((c) => c.uniqueId === uniqueId);
     setSelectedClient(client || null);
   };
 
   const clientColumns = [
-    { 
-      title: 'Unique ID', 
-      dataIndex: 'uniqueId', 
-      key: 'uniqueId',
-      render: (text) => <span className="font-medium" style={{ color: colors.darkGold }}>{text}</span>
-    },
-    { 
-      title: 'Name', 
-      dataIndex: 'name', 
-      key: 'name',
-      render: (text) => <span style={{ color: colors.velvet }}>{text}</span>
-    },
-    { 
-      title: 'Phone', 
-      dataIndex: 'phone', 
-      key: 'phone',
-      render: (text) => <span className="text-gray-600">{text}</span>
-    },
-    { 
-      title: 'GST No', 
-      dataIndex: 'gstNo', 
-      key: 'gstNo',
-      render: (text) => <span className="text-gray-600">{text || 'N/A'}</span>
-    },
-    { 
-      title: 'Status', 
-      key: 'status',
-      render: (_, client) => {
-        const orders = ordersToArray(client.orders);
-        if (orders.length === 0) return <Tag style={{ backgroundColor: colors.platinum }}>No orders</Tag>;
-        
-        const statuses = orders.map(o => o?.status).filter(Boolean);
-        
-        if (statuses.includes('ongoing')) return <Tag style={{ backgroundColor: '#e6f4ff', color: colors.darkGold }}>Active</Tag>;
-        if (statuses.every(s => s === 'completed')) return <Tag style={{ backgroundColor: '#e6f7ee', color: '#08965b' }}>Completed</Tag>;
-        return <Tag style={{ backgroundColor: '#fff7e6', color: '#d46b08' }}>Mixed</Tag>;
-      }
+    {
+      title: "Unique ID",
+      dataIndex: "uniqueId",
+      key: "uniqueId",
+      render: (text) => (
+        <span className="font-medium" style={{ color: colors.darkGold }}>
+          {text}
+        </span>
+      ),
     },
     {
-      title: 'Action',
-      key: 'action',
+      title: "Name",
+      dataIndex: "name",
+      key: "name",
+      render: (text) => <span style={{ color: colors.velvet }}>{text}</span>,
+    },
+    {
+      title: "Phone",
+      dataIndex: "phone",
+      key: "phone",
+      render: (text) => <span className="text-gray-600">{text}</span>,
+    },
+    {
+      title: "GST No",
+      dataIndex: "gstNo",
+      key: "gstNo",
+      render: (text) => <span className="text-gray-600">{text || "N/A"}</span>,
+    },
+    {
+      title: "Status",
+      key: "status",
+      render: (_, client) => {
+        const orders = ordersToArray(client.orders);
+        if (orders.length === 0)
+          return (
+            <Tag style={{ backgroundColor: colors.platinum }}>No orders</Tag>
+          );
+
+        const statuses = orders.map((o) => o?.status).filter(Boolean);
+
+        if (statuses.includes("ongoing"))
+          return (
+            <Tag style={{ backgroundColor: "#e6f4ff", color: colors.darkGold }}>
+              Active
+            </Tag>
+          );
+        if (statuses.every((s) => s === "completed"))
+          return (
+            <Tag style={{ backgroundColor: "#e6f7ee", color: "#08965b" }}>
+              Completed
+            </Tag>
+          );
+        return (
+          <Tag style={{ backgroundColor: "#fff7e6", color: "#d46b08" }}>
+            Mixed
+          </Tag>
+        );
+      },
+    },
+    {
+      title: "Action",
+      key: "action",
       render: (_, client) => (
-        <Button 
-          size="small" 
-          style={{ 
+        <Button
+          size="small"
+          style={{
             backgroundColor: colors.platinum,
             color: colors.darkGold,
-            borderColor: colors.darkGold
+            borderColor: colors.darkGold,
           }}
           onClick={() => {
-            setSelectedMenu('history');
+            setSelectedMenu("history");
             handleClientSelect(client.uniqueId);
             fetchOrderHistory(client.uniqueId);
           }}
         >
           View Orders
         </Button>
-      )
-    }
+      ),
+    },
   ];
 
   const orderColumns = [
-    { 
-      title: 'Order ID', 
-      dataIndex: 'orderId', 
-      key: 'orderId',
-      render: id => <span className="font-medium" style={{ color: colors.darkGold }}>{id ? id.substring(0, 8) + '...' : 'N/A'}</span>
+    {
+      title: "Order ID",
+      dataIndex: "orderId",
+      key: "orderId",
+      render: (id) => (
+        <span className="font-medium" style={{ color: colors.darkGold }}>
+          {id ? id.substring(0, 8) + "..." : "N/A"}
+        </span>
+      ),
     },
-    { 
-      title: 'Date', 
-      dataIndex: 'orderDate', 
-      key: 'date', 
-      render: date => <span className="text-gray-600">{date ? dayjs(date).format('DD/MM/YYYY') : 'N/A'}</span>
+    {
+      title: "Date",
+      dataIndex: "orderDate",
+      key: "date",
+      render: (date) => (
+        <span className="text-gray-600">
+          {date ? dayjs(date).format("DD/MM/YYYY") : "N/A"}
+        </span>
+      ),
     },
-    { 
-      title: 'Items', 
-      dataIndex: 'orderItems', 
-      key: 'items', 
-      render: items => <span className="font-medium">{items?.length || 0}</span>
+    {
+      title: "Items",
+      dataIndex: "orderItems",
+      key: "items",
+      render: (items) => (
+        <span className="font-medium">{items?.length || 0}</span>
+      ),
     },
-    { 
-      title: 'Status', 
-      dataIndex: 'status', 
-      key: 'status', 
-      render: status => (
-        <Tag className={`${status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}`}>
-          {status ? status.toUpperCase() : 'UNKNOWN'}
+    {
+      title: "Status",
+      dataIndex: "status",
+      key: "status",
+      render: (status) => (
+        <Tag
+          className={`${
+            status === "completed"
+              ? "bg-green-100 text-green-800"
+              : "bg-blue-100 text-blue-800"
+          }`}
+        >
+          {status ? status.toUpperCase() : "UNKNOWN"}
         </Tag>
-      )
+      ),
     },
-    { 
-      title: 'Amount', 
-      key: 'amount', 
+    {
+      title: "Amount",
+      key: "amount",
       render: (_, order) => (
         <span className="font-medium">
-          ₹{order.orderItems?.reduce((sum, item) => sum + (item.amount || 0), 0) || 0}
+          ₹
+          {order.orderItems?.reduce(
+            (sum, item) => sum + (item.amount || 0),
+            0
+          ) || 0}
         </span>
-      )
-    }
+      ),
+    },
   ];
 
   const orderItemColumns = [
-    { 
-      title: 'SR No', 
-      dataIndex: 'srNo', 
-      key: 'srNo',
-      render: (text) => <span className="text-gray-700">{text}</span>
+    {
+      title: "SR No",
+      dataIndex: "srNo",
+      key: "srNo",
+      render: (text) => <span className="text-gray-700">{text}</span>,
     },
-    { 
-      title: 'Style No', 
-      dataIndex: 'styleNo', 
-      key: 'styleNo',
-      render: (text) => <span className="font-medium">{text}</span>
+    {
+      title: "Style No",
+      dataIndex: "styleNo",
+      key: "styleNo",
+      render: (text) => <span className="font-medium">{text}</span>,
     },
-    { 
-      title: 'Clarity', 
-      dataIndex: 'clarity', 
-      key: 'clarity',
-      render: (text) => <span className="text-gray-700">{text}</span>
+    {
+      title: "Clarity",
+      dataIndex: "clarity",
+      key: "clarity",
+      render: (text) => <span className="text-gray-700">{text}</span>,
     },
-    { 
-      title: 'Gross WT', 
-      dataIndex: 'grossWeight', 
-      key: 'grossWeight',
-      render: (text) => <span className="text-gray-700">{text}</span>
+    {
+      title: "Gross WT",
+      dataIndex: "grossWeight",
+      key: "grossWeight",
+      render: (text) => <span className="text-gray-700">{text}</span>,
     },
-    { 
-      title: 'Net WT', 
-      dataIndex: 'netWeight', 
-      key: 'netWeight',
-      render: (text) => <span className="text-gray-700">{text}</span>
+    {
+      title: "Net WT",
+      dataIndex: "netWeight",
+      key: "netWeight",
+      render: (text) => <span className="text-gray-700">{text}</span>,
     },
-    { 
-      title: 'DIA WT', 
-      dataIndex: 'diaWeight', 
-      key: 'diaWeight',
-      render: (text) => <span className="text-gray-700">{text}</span>
+    {
+      title: "DIA WT",
+      dataIndex: "diaWeight",
+      key: "diaWeight",
+      render: (text) => <span className="text-gray-700">{text}</span>,
     },
-    { 
-      title: 'PCS', 
-      dataIndex: 'pcs', 
-      key: 'pcs',
-      render: (text) => <span className="font-medium">{text}</span>
+    {
+      title: "PCS",
+      dataIndex: "pcs",
+      key: "pcs",
+      render: (text) => <span className="font-medium">{text}</span>,
     },
-    { 
-      title: 'Amount', 
-      dataIndex: 'amount', 
-      key: 'amount',
-      render: (text) => <span className="font-medium">₹{text}</span>
+    {
+      title: "Amount",
+      dataIndex: "amount",
+      key: "amount",
+      render: (text) => <span className="font-medium">₹{text}</span>,
     },
-    { 
-      title: 'Description', 
-      dataIndex: 'description', 
-      key: 'description',
-      render: (text) => <span className="text-gray-600">{text}</span>
+    {
+      title: "Description",
+      dataIndex: "description",
+      key: "description",
+      render: (text) => <span className="text-gray-600">{text}</span>,
     },
   ];
 
   const renderDashboard = () => (
     <div className="space-y-6">
-      <h3 className="text-2xl font-semibold" style={{ color: colors.velvet }}>Sales Dashboard</h3>
-      
+      <h3 className="text-2xl font-semibold" style={{ color: colors.velvet }}>
+        Sales Dashboard
+      </h3>
+
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <div className="rounded-lg shadow p-4 border" style={{ backgroundColor: colors.diamond, borderColor: colors.darkGold }}>
-          <Statistic 
-            title={<span className="text-gray-600">Total Clients</span>} 
-            value={stats.totalClients} 
-            valueStyle={{ color: colors.velvet, fontSize: '24px' }}
+        <div
+          className="rounded-lg shadow p-4 border"
+          style={{
+            backgroundColor: colors.diamond,
+            borderColor: colors.darkGold,
+          }}
+        >
+          <Statistic
+            title={<span className="text-gray-600">Total Clients</span>}
+            value={stats.totalClients}
+            valueStyle={{ color: colors.velvet, fontSize: "24px" }}
           />
         </div>
-        <div className="rounded-lg shadow p-4 border" style={{ backgroundColor: colors.diamond, borderColor: colors.roseGold }}>
-          <Statistic 
-            title={<span className="text-gray-600">Active Clients</span>} 
-            value={stats.activeClients} 
-            valueStyle={{ color: colors.roseGold, fontSize: '24px' }}
+        <div
+          className="rounded-lg shadow p-4 border"
+          style={{
+            backgroundColor: colors.diamond,
+            borderColor: colors.roseGold,
+          }}
+        >
+          <Statistic
+            title={<span className="text-gray-600">Active Clients</span>}
+            value={stats.activeClients}
+            valueStyle={{ color: colors.roseGold, fontSize: "24px" }}
           />
         </div>
-        <div className="rounded-lg shadow p-4 border" style={{ backgroundColor: colors.diamond, borderColor: colors.darkGold }}>
-          <Statistic 
-            title={<span className="text-gray-600">Total Orders</span>} 
-            value={stats.totalOrders} 
-            valueStyle={{ color: colors.velvet, fontSize: '24px' }}
+        <div
+          className="rounded-lg shadow p-4 border"
+          style={{
+            backgroundColor: colors.diamond,
+            borderColor: colors.darkGold,
+          }}
+        >
+          <Statistic
+            title={<span className="text-gray-600">Total Orders</span>}
+            value={stats.totalOrders}
+            valueStyle={{ color: colors.velvet, fontSize: "24px" }}
           />
         </div>
       </div>
-      
+
       {/* Clients and Orders Sections */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* All Clients */}
-        <div className="rounded-2xl shadow-sm border p-5" style={{ backgroundColor: colors.diamond, borderColor: colors.darkGold }}>
-          <h2 className="text-lg font-semibold mb-3 border-b pb-2" style={{ color: colors.velvet }}>All Clients</h2>
-          <Table 
-            dataSource={clients} 
-            columns={minimalClientColumns} 
+        <div
+          className="rounded-2xl shadow-sm border p-5"
+          style={{
+            backgroundColor: colors.diamond,
+            borderColor: colors.darkGold,
+          }}
+        >
+          <h2
+            className="text-lg font-semibold mb-3 border-b pb-2"
+            style={{ color: colors.velvet }}
+          >
+            All Clients
+          </h2>
+          <Table
+            dataSource={clients}
+            columns={minimalClientColumns}
             rowKey="uniqueId"
             loading={loading}
             pagination={{ pageSize: 5 }}
@@ -778,18 +1157,29 @@ const SalesDashboard = () => {
             className="custom-table"
             onRow={(record) => ({
               onClick: () => handleClientClick(record),
-              style: { cursor: 'pointer', backgroundColor: colors.light }
+              style: { cursor: "pointer", backgroundColor: colors.light },
             })}
           />
         </div>
 
         {/* Ongoing Orders */}
-        <div className="rounded-2xl shadow-sm border p-5" style={{ backgroundColor: colors.diamond, borderColor: colors.darkGold }}>
-          <h2 className="text-lg font-semibold mb-3 border-b pb-2" style={{ color: colors.velvet }}>Ongoing Orders</h2>
-          <Table 
-            dataSource={clients.filter(client => {
+        <div
+          className="rounded-2xl shadow-sm border p-5"
+          style={{
+            backgroundColor: colors.diamond,
+            borderColor: colors.darkGold,
+          }}
+        >
+          <h2
+            className="text-lg font-semibold mb-3 border-b pb-2"
+            style={{ color: colors.velvet }}
+          >
+            Ongoing Orders
+          </h2>
+          <Table
+            dataSource={clients.filter((client) => {
               const orders = ordersToArray(client.orders);
-              return orders.some(order => order?.status === 'ongoing');
+              return orders.some((order) => order?.status === "ongoing");
             })}
             columns={ongoingClientColumns}
             rowKey="uniqueId"
@@ -803,32 +1193,46 @@ const SalesDashboard = () => {
         </div>
 
         {/* Completed Orders */}
-        <div className="rounded-2xl shadow-sm border p-5" style={{ backgroundColor: colors.diamond, borderColor: colors.darkGold }}>
-          <h2 className="text-lg font-semibold mb-3 border-b pb-2" style={{ color: colors.velvet }}>Completed Orders</h2>
-          <Table 
-            dataSource={clients.flatMap(client => {
+        <div
+          className="rounded-2xl shadow-sm border p-5"
+          style={{
+            backgroundColor: colors.diamond,
+            borderColor: colors.darkGold,
+          }}
+        >
+          <h2
+            className="text-lg font-semibold mb-3 border-b pb-2"
+            style={{ color: colors.velvet }}
+          >
+            Completed Orders
+          </h2>
+          <Table
+            dataSource={clients.flatMap((client) => {
               const orders = ordersToArray(client.orders);
               return orders
-                .filter(order => order?.status === 'completed')
-                .map(order => ({ ...order, clientName: client.name, client }))
-                .sort((a, b) => new Date(b?.orderDate || 0) - new Date(a?.orderDate || 0));
+                .filter((order) => order?.status === "completed")
+                .map((order) => ({ ...order, clientName: client.name, client }))
+                .sort(
+                  (a, b) =>
+                    new Date(b?.orderDate || 0) - new Date(a?.orderDate || 0)
+                );
             })}
             columns={[
-              { 
-                title: 'Client', 
-                dataIndex: 'clientName', 
-                key: 'clientName',
+              {
+                title: "Client",
+                dataIndex: "clientName",
+                key: "clientName",
                 render: (text, record) => (
-                  <span 
+                  <span
                     className="font-medium cursor-pointer hover:text-blue-600 transition-colors"
                     onClick={() => handleClientClick(record.client)}
                     style={{ color: colors.velvet }}
                   >
                     {text}
                   </span>
-                )
+                ),
               },
-              ...orderColumns
+              ...orderColumns,
             ]}
             rowKey="orderId"
             loading={loading}
@@ -839,7 +1243,11 @@ const SalesDashboard = () => {
             locale={{
               emptyText: (
                 <div className="text-gray-500 text-sm flex flex-col items-center justify-center py-10">
-                  <img src="/empty-box-icon.svg" alt="No Data" className="w-12 h-12 mb-2" />
+                  <img
+                    src="/empty-box-icon.svg"
+                    alt="No Data"
+                    className="w-12 h-12 mb-2"
+                  />
                   <p>No completed orders</p>
                 </div>
               ),
@@ -851,54 +1259,59 @@ const SalesDashboard = () => {
 
       {/* Client Modal */}
       <ClientModal client={modalClient} onClose={closeModal} />
-      
+
       {/* Ongoing Order Modal */}
-      <OngoingOrderModal 
-        order={selectedOrder} 
-        visible={ongoingOrderModalVisible} 
-        onClose={closeOrderModal} 
+      <OngoingOrderModal
+        orderId={selectedOrder?.orderId}
+        visible={ongoingOrderModalVisible}
+        onClose={closeOrderModal}
       />
     </div>
   );
 
   const renderKYCForm = () => (
     <div className="space-y-6">
-      <h3 className="text-2xl font-semibold" style={{ color: colors.velvet }}>Client KYC Form</h3>
+      <h3 className="text-2xl font-semibold" style={{ color: colors.velvet }}>
+        Client KYC Form
+      </h3>
 
       {kycFields.map((field, index) => (
         <div
           key={index}
           className="rounded-lg shadow p-4 border space-y-4"
-          style={{ backgroundColor: colors.diamond, borderColor: colors.darkGold }}
+          style={{
+            backgroundColor: colors.diamond,
+            borderColor: colors.darkGold,
+          }}
         >
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <Input
               value={field.name}
-              onChange={e => updateKycField(index, 'name', e.target.value)}
+              onChange={(e) => updateKycField(index, "name", e.target.value)}
               placeholder="Full name *"
-              style={{ borderColor: colors.darkGold, borderRadius: '6px' }}
+              style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
             />
             <Input
               value={field.phone}
-              onChange={e => updateKycField(index, 'phone', e.target.value)}
+              onChange={(e) => updateKycField(index, "phone", e.target.value)}
               placeholder="Phone *"
-              style={{ borderColor: colors.darkGold, borderRadius: '6px' }}
+              style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
             />
             <Input
               value={field.gstNo}
-              onChange={e => updateKycField(index, 'gstNo', e.target.value)}
+              onChange={(e) => updateKycField(index, "gstNo", e.target.value)}
               placeholder="GST No (Optional)"
-              style={{ borderColor: colors.darkGold, borderRadius: '6px' }}
+              style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
             />
             {kycFields.length > 1 && (
               <Button
                 danger
                 icon={<Minus className="h-4 w-4" />}
                 onClick={() => removeKycRow(index)}
-                style={{ 
+                style={{
                   backgroundColor: colors.platinum,
                   color: colors.roseGold,
-                  borderColor: colors.roseGold
+                  borderColor: colors.roseGold,
                 }}
               />
             )}
@@ -906,10 +1319,10 @@ const SalesDashboard = () => {
 
           <Input.TextArea
             value={field.address}
-            onChange={e => updateKycField(index, 'address', e.target.value)}
+            onChange={(e) => updateKycField(index, "address", e.target.value)}
             placeholder="Full address *"
             rows={2}
-            style={{ borderColor: colors.darkGold, borderRadius: '6px' }}
+            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
           />
         </div>
       ))}
@@ -919,10 +1332,10 @@ const SalesDashboard = () => {
           type="dashed"
           onClick={addKycRow}
           icon={<Plus className="h-4 w-4" />}
-          style={{ 
+          style={{
             borderColor: colors.darkGold,
             color: colors.darkGold,
-            borderStyle: 'dashed'
+            borderStyle: "dashed",
           }}
         >
           Add Row
@@ -931,13 +1344,13 @@ const SalesDashboard = () => {
           type="primary"
           onClick={handleKYCSubmit}
           loading={loading}
-          style={{ 
+          style={{
             backgroundColor: colors.darkGold,
             color: colors.light,
-            border: 'none',
-            fontWeight: 'medium',
-            padding: '8px 24px',
-            borderRadius: '6px'
+            border: "none",
+            fontWeight: "medium",
+            padding: "8px 24px",
+            borderRadius: "6px",
           }}
         >
           Submit KYC
@@ -945,8 +1358,19 @@ const SalesDashboard = () => {
       </div>
 
       {/* Client List */}
-      <div className="mt-10 border rounded-lg p-4" style={{ borderColor: colors.darkGold, backgroundColor: colors.diamond }}>
-        <h4 className="text-lg font-medium mb-4" style={{ color: colors.velvet }}>Existing Clients</h4>
+      <div
+        className="mt-10 border rounded-lg p-4"
+        style={{
+          borderColor: colors.darkGold,
+          backgroundColor: colors.diamond,
+        }}
+      >
+        <h4
+          className="text-lg font-medium mb-4"
+          style={{ color: colors.velvet }}
+        >
+          Existing Clients
+        </h4>
         <Table
           dataSource={clients}
           columns={clientColumns}
@@ -962,10 +1386,20 @@ const SalesDashboard = () => {
 
   const renderOrderForm = () => (
     <div>
-      <h3 className="text-2xl font-semibold" style={{ color: colors.velvet }}>Create New Order</h3>
-      <div className="rounded-lg shadow p-6 border" style={{ backgroundColor: colors.diamond, borderColor: colors.darkGold }}>
+      <h3 className="text-2xl font-semibold" style={{ color: colors.velvet }}>
+        Create New Order
+      </h3>
+      <div
+        className="rounded-lg shadow p-6 border"
+        style={{
+          backgroundColor: colors.diamond,
+          borderColor: colors.darkGold,
+        }}
+      >
         <div className="mb-6">
-          <label className="block font-medium mb-2" style={{ color: colors.velvet }}>Client</label>
+          <label className="block font-medium mb-2" style={{ color: colors.velvet }}>
+            Client
+          </label>
           <Select
             showSearch
             placeholder="Select client"
@@ -974,13 +1408,15 @@ const SalesDashboard = () => {
             filterOption={(input, option) =>
               option.children.toLowerCase().includes(input.toLowerCase())
             }
-            style={{ 
-              width: '100%',
-              borderColor: colors.darkGold
+            style={{
+              width: "100%",
+              borderColor: colors.darkGold,
             }}
-            suffixIcon={<ChevronDown className="h-4 w-4" style={{ color: colors.darkGold }} />}
+            suffixIcon={
+              <ChevronDown className="h-4 w-4" style={{ color: colors.darkGold }} />
+            }
           >
-            {clients.map(client => (
+            {clients.map((client) => (
               <Option key={client.uniqueId} value={client.uniqueId}>
                 {client.uniqueId} - {client.name}
               </Option>
@@ -989,202 +1425,402 @@ const SalesDashboard = () => {
         </div>
 
         {selectedClient && (
-          <div className="rounded-lg p-4 mb-6" style={{ backgroundColor: colors.platinum, borderColor: colors.darkGold }}>
-            <table className="w-full">
-              <tbody>
-                <tr>
-                  <td className="font-medium p-1" style={{ color: colors.velvet }}>Client:</td>
-                  <td className="p-1" style={{ color: colors.deepNavy }}>{selectedClient.name}</td>
-                </tr>
-                <tr>
-                  <td className="font-medium p-1" style={{ color: colors.velvet }}>Phone:</td>
-                  <td className="p-1" style={{ color: colors.deepNavy }}>{selectedClient.phone}</td>
-                </tr>
-                <tr>
-                  <td className="font-medium p-1" style={{ color: colors.velvet }}>GST:</td>
-                  <td className="p-1" style={{ color: colors.deepNavy }}>{selectedClient.gstNo || 'N/A'}</td>
-                </tr>
-                <tr>
-                  <td className="font-medium p-1" style={{ color: colors.velvet }}>Address:</td>
-                  <td className="p-1" style={{ color: colors.deepNavy }}>{selectedClient.address}</td>
-                </tr>
-              </tbody>
-            </table>
+          <div
+            className="rounded-lg p-4 mb-6"
+            style={{
+              backgroundColor: colors.platinum,
+              borderColor: colors.darkGold,
+            }}
+          >
+            {isMobile ? (
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="font-medium" style={{ color: colors.velvet }}>Client:</span>
+                  <span style={{ color: colors.deepNavy }}>{selectedClient.name}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-medium" style={{ color: colors.velvet }}>Phone:</span>
+                  <span style={{ color: colors.deepNavy }}>{selectedClient.phone}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-medium" style={{ color: colors.velvet }}>GST:</span>
+                  <span style={{ color: colors.deepNavy }}>{selectedClient.gstNo || "N/A"}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-medium" style={{ color: colors.velvet }}>Address:</span>
+                  <span style={{ color: colors.deepNavy }}>{selectedClient.address}</span>
+                </div>
+              </div>
+            ) : (
+              <table className="w-full">
+                <tbody>
+                  <tr>
+                    <td className="font-medium p-1" style={{ color: colors.velvet }}>
+                      Client:
+                    </td>
+                    <td className="p-1" style={{ color: colors.deepNavy }}>
+                      {selectedClient.name}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="font-medium p-1" style={{ color: colors.velvet }}>
+                      Phone:
+                    </td>
+                    <td className="p-1" style={{ color: colors.deepNavy }}>
+                      {selectedClient.phone}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="font-medium p-1" style={{ color: colors.velvet }}>
+                      GST:
+                    </td>
+                    <td className="p-1" style={{ color: colors.deepNavy }}>
+                      {selectedClient.gstNo || "N/A"}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="font-medium p-1" style={{ color: colors.velvet }}>
+                      Address:
+                    </td>
+                    <td className="p-1" style={{ color: colors.deepNavy }}>
+                      {selectedClient.address}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            )}
           </div>
         )}
 
-        <h4 className="text-lg font-medium mb-4 pb-2" style={{ color: colors.velvet, borderBottom: `1px solid ${colors.darkGold}` }}>
+        <h4
+          className="text-lg font-medium mb-4 pb-2"
+          style={{
+            color: colors.velvet,
+            borderBottom: `1px solid ${colors.darkGold}`,
+          }}
+        >
           Order Items
         </h4>
-        
-        <table className="w-full mb-4" style={{ border: `1px solid ${colors.darkGold}` }}>
-          <thead>
-            <tr style={{ backgroundColor: colors.platinum }}>
-              <th className="p-2 text-left font-medium border" style={{ borderColor: colors.darkGold, color: colors.velvet }}>SR No</th>
-              <th className="p-2 text-left font-medium border" style={{ borderColor: colors.darkGold, color: colors.velvet }}>Style No*</th>
-              <th className="p-2 text-left font-medium border" style={{ borderColor: colors.darkGold, color: colors.velvet }}>Clarity</th>
-              <th className="p-2 text-left font-medium border" style={{ borderColor: colors.darkGold, color: colors.velvet }}>Gross WT</th>
-              <th className="p-2 text-left font-medium border" style={{ borderColor: colors.darkGold, color: colors.velvet }}>Net WT</th>
-              <th className="p-2 text-left font-medium border" style={{ borderColor: colors.darkGold, color: colors.velvet }}>DIA WT</th>
-              <th className="p-2 text-left font-medium border" style={{ borderColor: colors.darkGold, color: colors.velvet }}>PCS*</th>
-              <th className="p-2 text-left font-medium border" style={{ borderColor: colors.darkGold, color: colors.velvet }}>Amount*</th>
-              <th className="p-2 text-left font-medium border" style={{ borderColor: colors.darkGold, color: colors.velvet }}>Action</th>
-            </tr>
-          </thead>
-          <tbody>
+
+        {isMobile ? (
+          <div className="space-y-4">
             {orderItems.map((item, index) => (
-              <tr key={index} className="border" style={{ borderColor: colors.darkGold, backgroundColor: colors.light }}>
-                <td className="p-2 border" style={{ borderColor: colors.darkGold }}>
-                  <InputNumber
-                    value={item.srNo}
-                    onChange={val => updateOrderItem(index, 'srNo', val)}
-                    style={{ 
-                      width: '100%',
-                      borderColor: colors.darkGold
-                    }}
-                    min={0}
-                  />
-                </td>
-                <td className="p-2 border" style={{ borderColor: colors.darkGold }}>
-                  <Input
-                    value={item.styleNo}
-                    onChange={e => updateOrderItem(index, 'styleNo', e.target.value)}
-                    placeholder="Style number"
-                    style={{ 
-                      width: '100%',
-                      borderColor: colors.darkGold
-                    }}
-                  />
-                </td>
-                <td className="p-2 border" style={{ borderColor: colors.darkGold }}>
-                  <Input
-                    value={item.clarity}
-                    onChange={e => updateOrderItem(index, 'clarity', e.target.value)}
-                    style={{ 
-                      width: '100%',
-                      borderColor: colors.darkGold
-                    }}
-                  />
-                </td>
-                <td className="p-2 border" style={{ borderColor: colors.darkGold }}>
-                  <InputNumber
-                    value={item.grossWeight}
-                    onChange={val => updateOrderItem(index, 'grossWeight', val)}
-                    style={{ 
-                      width: '100%',
-                      borderColor: colors.darkGold
-                    }}
-                    min={0}
-                    step={0.01}
-                  />
-                </td>
-                <td className="p-2 border" style={{ borderColor: colors.darkGold }}>
-                  <InputNumber
-                    value={item.netWeight}
-                    onChange={val => updateOrderItem(index, 'netWeight', val)}
-                    style={{ 
-                      width: '100%',
-                      borderColor: colors.darkGold
-                    }}
-                    min={0}
-                    step={0.01}
-                  />
-                </td>
-                <td className="p-2 border" style={{ borderColor: colors.darkGold }}>
-                  <InputNumber
-                    value={item.diaWeight}
-                    onChange={val => updateOrderItem(index, 'diaWeight', val)}
-                    style={{ 
-                      width: '100%',
-                      borderColor: colors.darkGold
-                    }}
-                    min={0}
-                    step={0.01}
-                  />
-                </td>
-                <td className="p-2 border" style={{ borderColor: colors.darkGold }}>
-                  <InputNumber
-                    value={item.pcs}
-                    onChange={val => updateOrderItem(index, 'pcs', val)}
-                    style={{ 
-                      width: '100%',
-                      borderColor: !item.pcs || item.pcs < 1 ? colors.roseGold : colors.darkGold
-                    }}
-                    min={1}
-                  />
-                </td>
-                <td className="p-2 border" style={{ borderColor: colors.darkGold }}>
-                  <InputNumber
-                    value={item.amount}
-                    onChange={val => updateOrderItem(index, 'amount', val)}
-                    style={{ 
-                      width: '100%',
-                      borderColor: !item.amount || item.amount <= 0 ? colors.roseGold : colors.darkGold
-                    }}
-                    min={0}
-                    step={0.01}
-                  />
-                </td>
-                <td className="p-2 border text-center" style={{ borderColor: colors.darkGold }}>
-                  <Button
-                    danger
-                    icon={<Minus className="h-4 w-4" />}
-                    onClick={() => removeOrderItem(index)}
-                    style={{ 
-                      backgroundColor: colors.platinum,
-                      color: colors.roseGold,
-                      borderColor: colors.roseGold
-                    }}
-                  />
-                </td>
-              </tr>
+              <div 
+                key={index} 
+                className="border rounded-lg p-4"
+                style={{ borderColor: colors.darkGold }}
+              >
+                <div className="grid grid-cols-1 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium" style={{ color: colors.velvet }}>SR No</label>
+                    <InputNumber
+                      value={item.srNo}
+                      onChange={(val) => updateOrderItem(index, "srNo", val)}
+                      style={{ width: '100%', borderColor: colors.darkGold }}
+                      min={0}
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium" style={{ color: colors.velvet }}>Style No*</label>
+                    <Input
+                      value={item.styleNo}
+                      onChange={(e) => updateOrderItem(index, "styleNo", e.target.value)}
+                      placeholder="Style number"
+                      style={{ width: '100%', borderColor: colors.darkGold }}
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium" style={{ color: colors.velvet }}>Clarity</label>
+                    <Input
+                      value={item.clarity}
+                      onChange={(e) => updateOrderItem(index, "clarity", e.target.value)}
+                      style={{ width: '100%', borderColor: colors.darkGold }}
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium" style={{ color: colors.velvet }}>Gross WT</label>
+                    <InputNumber
+                      value={item.grossWeight}
+                      onChange={(val) => updateOrderItem(index, "grossWeight", val)}
+                      style={{ width: '100%', borderColor: colors.darkGold }}
+                      min={0}
+                      step={0.01}
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium" style={{ color: colors.velvet }}>Net WT</label>
+                    <InputNumber
+                      value={item.netWeight}
+                      onChange={(val) => updateOrderItem(index, "netWeight", val)}
+                      style={{ width: '100%', borderColor: colors.darkGold }}
+                      min={0}
+                      step={0.01}
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium" style={{ color: colors.velvet }}>DIA WT</label>
+                    <InputNumber
+                      value={item.diaWeight}
+                      onChange={(val) => updateOrderItem(index, "diaWeight", val)}
+                      style={{ width: '100%', borderColor: colors.darkGold }}
+                      min={0}
+                      step={0.01}
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium" style={{ color: colors.velvet }}>PCS*</label>
+                    <InputNumber
+                      value={item.pcs}
+                      onChange={(val) => updateOrderItem(index, "pcs", val)}
+                      style={{
+                        width: '100%',
+                        borderColor: !item.pcs || item.pcs < 1 ? colors.roseGold : colors.darkGold,
+                      }}
+                      min={1}
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium" style={{ color: colors.velvet }}>Amount*</label>
+                    <InputNumber
+                      value={item.amount}
+                      onChange={(val) => updateOrderItem(index, "amount", val)}
+                      style={{
+                        width: '100%',
+                        borderColor: !item.amount || item.amount <= 0 ? colors.roseGold : colors.darkGold,
+                      }}
+                      min={0}
+                      step={0.01}
+                    />
+                  </div>
+                  
+                  <div className="mb-2">
+                    <label className="block text-sm font-medium" style={{ color: colors.velvet }}>Description</label>
+                    <Input.TextArea
+                      value={item.description}
+                      onChange={(e) => updateOrderItem(index, "description", e.target.value)}
+                      rows={2}
+                      style={{ width: '100%', borderColor: colors.darkGold }}
+                      placeholder={`Description for item ${index + 1}`}
+                    />
+                  </div>
+                  
+                  <div className="flex justify-end">
+                    <Button
+                      danger
+                      icon={<Minus className="h-4 w-4" />}
+                      onClick={() => removeOrderItem(index)}
+                      style={{
+                        backgroundColor: colors.platinum,
+                        color: colors.roseGold,
+                        borderColor: colors.roseGold,
+                      }}
+                    >
+                      Remove Item
+                    </Button>
+                  </div>
+                </div>
+              </div>
             ))}
-          </tbody>
-        </table>
+          </div>
+        ) : (
+          <table
+            className="w-full mb-4"
+            style={{ border: `1px solid ${colors.darkGold}` }}
+          >
+            <thead>
+              <tr style={{ backgroundColor: colors.platinum }}>
+                <th className="p-2 text-left font-medium border" style={{ borderColor: colors.darkGold, color: colors.velvet }}>
+                  SR No
+                </th>
+                <th className="p-2 text-left font-medium border" style={{ borderColor: colors.darkGold, color: colors.velvet }}>
+                  Style No*
+                </th>
+                <th className="p-2 text-left font-medium border" style={{ borderColor: colors.darkGold, color: colors.velvet }}>
+                  Clarity
+                </th>
+                <th className="p-2 text-left font-medium border" style={{ borderColor: colors.darkGold, color: colors.velvet }}>
+                  Gross WT
+                </th>
+                <th className="p-2 text-left font-medium border" style={{ borderColor: colors.darkGold, color: colors.velvet }}>
+                  Net WT
+                </th>
+                <th className="p-2 text-left font-medium border" style={{ borderColor: colors.darkGold, color: colors.velvet }}>
+                  DIA WT
+                </th>
+                <th className="p-2 text-left font-medium border" style={{ borderColor: colors.darkGold, color: colors.velvet }}>
+                  PCS*
+                </th>
+                <th className="p-2 text-left font-medium border" style={{ borderColor: colors.darkGold, color: colors.velvet }}>
+                  Amount*
+                </th>
+                <th className="p-2 text-left font-medium border" style={{ borderColor: colors.darkGold, color: colors.velvet }}>
+                  Action
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {orderItems.map((item, index) => (
+                <tr
+                  key={index}
+                  className="border"
+                  style={{
+                    borderColor: colors.darkGold,
+                    backgroundColor: colors.light,
+                  }}
+                >
+                  <td className="p-2 border" style={{ borderColor: colors.darkGold }}>
+                    <InputNumber
+                      value={item.srNo}
+                      onChange={(val) => updateOrderItem(index, "srNo", val)}
+                      style={{
+                        width: "100%",
+                        borderColor: colors.darkGold,
+                      }}
+                      min={0}
+                    />
+                  </td>
+                  <td className="p-2 border" style={{ borderColor: colors.darkGold }}>
+                    <Input
+                      value={item.styleNo}
+                      onChange={(e) =>
+                        updateOrderItem(index, "styleNo", e.target.value)
+                      }
+                      placeholder="Style number"
+                      style={{
+                        width: "100%",
+                        borderColor: colors.darkGold,
+                      }}
+                    />
+                  </td>
+                  <td className="p-2 border" style={{ borderColor: colors.darkGold }}>
+                    <Input
+                      value={item.clarity}
+                      onChange={(e) =>
+                        updateOrderItem(index, "clarity", e.target.value)
+                      }
+                      style={{
+                        width: "100%",
+                        borderColor: colors.darkGold,
+                      }}
+                    />
+                  </td>
+                  <td className="p-2 border" style={{ borderColor: colors.darkGold }}>
+                    <InputNumber
+                      value={item.grossWeight}
+                      onChange={(val) =>
+                        updateOrderItem(index, "grossWeight", val)
+                      }
+                      style={{
+                        width: "100%",
+                        borderColor: colors.darkGold,
+                      }}
+                      min={0}
+                      step={0.01}
+                    />
+                  </td>
+                  <td className="p-2 border" style={{ borderColor: colors.darkGold }}>
+                    <InputNumber
+                      value={item.netWeight}
+                      onChange={(val) => updateOrderItem(index, "netWeight", val)}
+                      style={{
+                        width: "100%",
+                        borderColor: colors.darkGold,
+                      }}
+                      min={0}
+                      step={0.01}
+                    />
+                  </td>
+                  <td className="p-2 border" style={{ borderColor: colors.darkGold }}>
+                    <InputNumber
+                      value={item.diaWeight}
+                      onChange={(val) => updateOrderItem(index, "diaWeight", val)}
+                      style={{
+                        width: "100%",
+                        borderColor: colors.darkGold,
+                      }}
+                      min={0}
+                      step={0.01}
+                    />
+                  </td>
+                  <td className="p-2 border" style={{ borderColor: colors.darkGold }}>
+                    <InputNumber
+                      value={item.pcs}
+                      onChange={(val) => updateOrderItem(index, "pcs", val)}
+                      style={{
+                        width: "100%",
+                        borderColor:
+                          !item.pcs || item.pcs < 1
+                            ? colors.roseGold
+                            : colors.darkGold,
+                      }}
+                      min={1}
+                    />
+                  </td>
+                  <td className="p-2 border" style={{ borderColor: colors.darkGold }}>
+                    <InputNumber
+                      value={item.amount}
+                      onChange={(val) => updateOrderItem(index, "amount", val)}
+                      style={{
+                        width: "100%",
+                        borderColor:
+                          !item.amount || item.amount <= 0
+                            ? colors.roseGold
+                            : colors.darkGold,
+                      }}
+                      min={0}
+                      step={0.01}
+                    />
+                  </td>
+                  <td className="p-2 border text-center" style={{ borderColor: colors.darkGold }}>
+                    <Button
+                      danger
+                      icon={<Minus className="h-4 w-4" />}
+                      onClick={() => removeOrderItem(index)}
+                      style={{
+                        backgroundColor: colors.platinum,
+                        color: colors.roseGold,
+                        borderColor: colors.roseGold,
+                      }}
+                    />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
 
-        <div className="mb-6">
-          <label className="block font-medium mb-2" style={{ color: colors.velvet }}>Description</label>
-          {orderItems.map((item, index) => (
-            <div key={index} className="mb-4">
-              <Input.TextArea
-                value={item.description}
-                onChange={e => updateOrderItem(index, 'description', e.target.value)}
-                rows={2}
-                style={{ 
-                  width: '100%',
-                  borderColor: colors.darkGold
-                }}
-                placeholder={`Description for item ${index + 1}`}
-              />
-            </div>
-          ))}
-        </div>
-
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-center mt-4">
           <Button
             type="dashed"
             onClick={addOrderItem}
             icon={<Plus className="h-4 w-4" />}
-            style={{ 
+            style={{
               borderColor: colors.darkGold,
               color: colors.darkGold,
-              borderStyle: 'dashed'
+              borderStyle: "dashed",
             }}
           >
             Add Item
           </Button>
-          
-          <Button 
-            type="primary" 
+
+          <Button
+            type="primary"
             onClick={handleOrderSubmit}
             loading={loading}
-            style={{ 
+            style={{
               backgroundColor: colors.darkGold,
               color: colors.light,
-              border: 'none',
-              fontWeight: 'medium',
-              padding: '8px 24px',
-              borderRadius: '6px'
+              border: "none",
+              fontWeight: "medium",
+              padding: "8px 24px",
+              borderRadius: "6px",
             }}
           >
             Create Order
@@ -1196,18 +1832,25 @@ const SalesDashboard = () => {
 
   const renderOrderHistory = () => (
     <div className="space-y-6">
-      <h3 className="text-2xl font-semibold" style={{ color: colors.velvet }}>Order History</h3>
-      <div className="rounded-lg shadow p-6 border" style={{ backgroundColor: colors.diamond, borderColor: colors.darkGold }}>
-        {/* Search and Filter Section */}
+      <h3 className="text-2xl font-semibold" style={{ color: colors.velvet }}>
+        Order History
+      </h3>
+      <div
+        className="rounded-lg shadow p-6 border"
+        style={{
+          backgroundColor: colors.diamond,
+          borderColor: colors.darkGold,
+        }}
+      >
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <Select
-            style={{ 
-              width: '100%',
-              borderColor: colors.darkGold
+            style={{
+              width: "100%",
+              borderColor: colors.darkGold,
             }}
             placeholder="Search client by ID"
             value={selectedClient?.uniqueId}
-            onChange={uniqueId => {
+            onChange={(uniqueId) => {
               handleClientSelect(uniqueId);
               fetchOrderHistory(uniqueId);
             }}
@@ -1216,300 +1859,258 @@ const SalesDashboard = () => {
             filterOption={(input, option) =>
               option.children.toLowerCase().includes(input.toLowerCase())
             }
-            suffixIcon={<Search className="h-4 w-4" style={{ color: colors.darkGold }} />}
+            suffixIcon={
+              <Search className="h-4 w-4" style={{ color: colors.darkGold }} />
+            }
           >
-            {clients.map(client => (
+            {clients.map((client) => (
               <Option key={client.uniqueId} value={client.uniqueId}>
-                {client.uniqueId} - {client.name}
+                {client.uniqueId} 
               </Option>
             ))}
           </Select>
-          
-          <RangePicker
-            style={{ 
-              width: '100%',
-              borderColor: colors.darkGold
-            }}
-            value={dateRange}
-            onChange={setDateRange}
-            disabledDate={current => current && current > dayjs().endOf('day')}
-          />
-          
-          <Select
-            style={{ 
-              width: '100%',
-              borderColor: colors.darkGold
-            }}
-            placeholder="Filter by status"
-            allowClear
-            onChange={value => {
-              // You would need to implement status filtering logic
-            }}
-            suffixIcon={<ChevronDown className="h-4 w-4" style={{ color: colors.darkGold }} />}
-          >
-            <Option value="ongoing">Ongoing</Option>
-            <Option value="completed">Completed</Option>
-          </Select>
         </div>
 
-        {/* Client Info Card */}
-        {selectedClient && (
-          <div className="rounded-lg p-4 mb-6" style={{ backgroundColor: colors.platinum, borderColor: colors.darkGold }}>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div>
-                <p className="text-sm" style={{ color: colors.velvet }}>Client ID</p>
-                <p className="font-medium" style={{ color: colors.deepNavy }}>{selectedClient.uniqueId}</p>
-              </div>
-              <div>
-                <p className="text-sm" style={{ color: colors.velvet }}>Name</p>
-                <p className="font-medium" style={{ color: colors.deepNavy }}>{selectedClient.name}</p>
-              </div>
-              <div>
-                <p className="text-sm" style={{ color: colors.velvet }}>Phone</p>
-                <p className="font-medium" style={{ color: colors.deepNavy }}>{selectedClient.phone}</p>
-              </div>
-              <div>
-                <p className="text-sm" style={{ color: colors.velvet }}>Total Orders</p>
-                <p className="font-medium" style={{ color: colors.deepNavy }}>
-                  {selectedClient.orders ? ordersToArray(selectedClient.orders).length : 0}
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Orders Table with Expandable Rows */}
-        <Table
-          columns={[
-            { 
-              title: 'Order ID', 
-              dataIndex: 'orderId', 
-              key: 'orderId',
-              render: (id, record) => (
-                <span 
-                  className="font-medium cursor-pointer hover:underline"
-                  style={{ color: colors.darkGold }}
-                  onClick={() => handleOrderClick(record)}
+        {isMobile ? (
+          <div className="space-y-4">
+            {orderHistory.length > 0 ? (
+              orderHistory.map((order) => (
+                <div 
+                  key={order.orderId} 
+                  className="border rounded-lg p-4"
+                  style={{ borderColor: colors.darkGold }}
                 >
-                  {id ? `${id.substring(0, 8)}...` : 'N/A'}
-                </span>
-              ),
-              sorter: (a, b) => a.orderId.localeCompare(b.orderId)
-            },
-            { 
-              title: 'Date', 
-              dataIndex: 'orderDate', 
-              key: 'date',
-              render: date => (
-                <span className="text-gray-600">
-                  {date ? dayjs(date).format('DD MMM YYYY') : 'N/A'}
-                </span>
-              ),
-              sorter: (a, b) => new Date(a.orderDate) - new Date(b.orderDate)
-            },
-            { 
-              title: 'Status', 
-              dataIndex: 'status', 
-              key: 'status',
-              render: status => (
-                <Tag style={{
-                  backgroundColor: status === 'completed' 
-                    ? '#e6f7ee' 
-                    : status === 'ongoing' 
-                      ? '#e6f4ff' 
-                      : '#fff7e6',
-                  color: status === 'completed' 
-                    ? '#08965b' 
-                    : status === 'ongoing' 
-                      ? colors.darkGold 
-                      : '#d46b08'
-                }}>
-                  {status ? status.toUpperCase() : 'UNKNOWN'}
-                </Tag>
-              ),
-              filters: [
-                { text: 'Ongoing', value: 'ongoing' },
-                { text: 'Completed', value: 'completed' }
-              ],
-              onFilter: (value, record) => record.status === value
-            },
-            { 
-              title: 'Items', 
-              dataIndex: 'orderItems', 
-              key: 'items',
-              render: items => (
-                <span className="font-medium">
-                  {items?.length || 0}
-                </span>
-              ),
-              sorter: (a, b) => (a.orderItems?.length || 0) - (b.orderItems?.length || 0)
-            },
-            { 
-              title: 'Amount (₹)', 
-              key: 'amount',
-              render: (_, order) => (
-                <span className="font-medium">
-                  {order.orderItems?.reduce((sum, item) => sum + (item.amount || 0), 0) || 0}
-                </span>
-              ),
-              sorter: (a, b) => {
-                const aAmount = a.orderItems?.reduce((sum, item) => sum + (item.amount || 0), 0) || 0;
-                const bAmount = b.orderItems?.reduce((sum, item) => sum + (item.amount || 0), 0) || 0;
-                return aAmount - bAmount;
-              }
-            }
-          ]}
-          dataSource={orderHistory}
-          rowKey="orderId"
-          loading={loading}
-          expandable={{
-            expandedRowRender: order => (
-              <div className="p-4 rounded-lg" style={{ backgroundColor: colors.platinum }}>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                  <div>
-                    <h4 className="font-medium mb-2" style={{ color: colors.velvet }}>Order Details</h4>
-                    <div className="space-y-2">
-                      <p><span className="font-medium">Order ID:</span> {order.orderId}</p>
-                      <p><span className="font-medium">Date:</span> {dayjs(order.orderDate).format('DD MMM YYYY')}</p>
-                      <p><span className="font-medium">Status:</span> 
-                        <Tag style={{ 
-                          backgroundColor: order.status === 'completed' ? '#e6f7ee' : '#e6f4ff',
-                          color: order.status === 'completed' ? '#08965b' : colors.darkGold,
-                          marginLeft: '8px'
-                        }}>
-                          {order.status?.toUpperCase() || 'UNKNOWN'}
-                        </Tag>
-                      </p>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="font-medium">Order ID:</span>
+                      <span>{order.orderId.slice(0, 8)}...</span>
                     </div>
-                  </div>
-                  <div>
-                    <h4 className="font-medium mb-2" style={{ color: colors.velvet }}>Client Details</h4>
-                    <div className="space-y-2">
-                      <p><span className="font-medium">Name:</span> {order.client?.name || selectedClient?.name || 'N/A'}</p>
-                      <p><span className="font-medium">Phone:</span> {order.client?.phone || selectedClient?.phone || 'N/A'}</p>
-                      <p><span className="font-medium">GST:</span> {order.client?.gstNo || selectedClient?.gstNo || 'N/A'}</p>
+                    <div className="flex justify-between">
+                      <span className="font-medium">Date:</span>
+                      <span>{dayjs(order.orderDate).format("DD MMM YYYY")}</span>
                     </div>
+                    <div className="flex justify-between">
+                      <span className="font-medium">Status:</span>
+                      <Tag
+                        style={{ 
+                          backgroundColor: order.status === "completed" ? "#e6f7ee" : "#e6f4ff",
+                          color: order.status === "completed" ? "#08965b" : colors.darkGold
+                        }}
+                      >
+                        {order.status?.toUpperCase() || "UNKNOWN"}
+                      </Tag>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="font-medium">Items:</span>
+                      <span>{order.orderItems?.length || 0}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="font-medium">Total Amount:</span>
+                      <span>
+                        ₹{order.orderItems?.reduce((sum, i) => sum + (i.amount || 0), 0) || 0}
+                      </span>
+                    </div>
+                    <Button
+                      type="link"
+                      onClick={() => handleOrderClick(order)}
+                      style={{ 
+                        color: colors.darkGold,
+                        padding: 0,
+                        textAlign: 'right'
+                      }}
+                    >
+                      View Details
+                    </Button>
                   </div>
                 </div>
-
-                <Divider style={{ borderColor: colors.darkGold }}>Order Items</Divider>
-
-                <Table
-                  columns={[
-                    { 
-                      title: 'SR No', 
-                      dataIndex: 'srNo', 
-                      key: 'srNo',
-                      render: text => <span className="text-gray-700">{text}</span>
-                    },
-                    { 
-                      title: 'Style No', 
-                      dataIndex: 'styleNo', 
-                      key: 'styleNo',
-                      render: text => <span className="font-medium">{text}</span>
-                    },
-                    { 
-                      title: 'Clarity', 
-                      dataIndex: 'clarity', 
-                      key: 'clarity',
-                      render: text => <span className="text-gray-600">{text || 'N/A'}</span>
-                    },
-                    { 
-                      title: 'Gross WT', 
-                      dataIndex: 'grossWeight', 
-                      key: 'grossWeight',
-                      render: text => <span className="text-gray-600">{text}</span>
-                    },
-                    { 
-                      title: 'Net WT', 
-                      dataIndex: 'netWeight', 
-                      key: 'netWeight',
-                      render: text => <span className="text-gray-600">{text}</span>
-                    },
-                    { 
-                      title: 'DIA WT', 
-                      dataIndex: 'diaWeight', 
-                      key: 'diaWeight',
-                      render: text => <span className="text-gray-600">{text}</span>
-                    },
-                    { 
-                      title: 'PCS', 
-                      dataIndex: 'pcs', 
-                      key: 'pcs',
-                      render: text => <span className="font-medium">{text}</span>
-                    },
-                    { 
-                      title: 'Amount', 
-                      dataIndex: 'amount', 
-                      key: 'amount',
-                      render: text => <span className="font-medium">₹{text}</span>
-                    },
-                    { 
-                      title: 'Description', 
-                      dataIndex: 'description', 
-                      key: 'description',
-                      render: text => <span className="text-gray-600">{text || 'N/A'}</span>
-                    }
-                  ]}
-                  dataSource={order.orderItems || []}
-                  rowKey={(orders) => `${orders.srNo}-${orders.styleNo}`}
-                  pagination={false}
-                  size="small"
-                  bordered
-                />
+              ))
+            ) : (
+              <div className="text-center py-4">
+                <p>No orders found</p>
               </div>
-            ),
-            expandIcon: ({ expanded, onExpand, orders }) =>
-              expanded ? (
-                <ChevronDown 
-                  className="h-4 w-4 cursor-pointer" 
-                  onClick={e => onExpand(orders, e)}
-                  style={{ color: colors.darkGold }}
-                />
-              ) : (
-                <ChevronRight 
-                  className="h-4 w-4 cursor-pointer" 
-                  onClick={e => onExpand(orders, e)}
-                  style={{ color: colors.darkGold }}
-                />
+            )}
+          </div>
+        ) : (
+          <Table
+            bordered
+            dataSource={ordersToArray(selectedClient?.orders || [])}
+            rowKey="orderId"
+            size="middle"
+            pagination={{ pageSize: 5 }}
+            style={{ marginTop: "1.5rem" }}
+            columns={[
+              {
+                title: "Order ID",
+                dataIndex: "orderId",
+                key: "orderId",
+                render: (id) => (
+                  <span style={{ color: colors.darkGold, fontWeight: 600 }}>
+                    {id.slice(0, 8)}...
+                  </span>
+                ),
+              },
+              {
+                title: "Date",
+                dataIndex: "orderDate",
+                key: "orderDate",
+                render: (date) => dayjs(date).format("DD MMM YYYY"),
+              },
+              {
+                title: "Status",
+                dataIndex: "status",
+                key: "status",
+                render: (status) => (
+                  <Tag
+                    style={{ 
+                      backgroundColor: status === "completed" ? "#e6f7ee" : "#e6f4ff",
+                      color: status === "completed" ? "#08965b" : colors.darkGold
+                    }}
+                  >
+                    {status?.toUpperCase() || "UNKNOWN"}
+                  </Tag>
+                ),
+              },
+              {
+                title: "Items",
+                dataIndex: "orderItems",
+                key: "items",
+                render: (items) => items?.length || 0,
+              },
+              {
+                title: "Total Amount (₹)",
+                key: "amount",
+                render: (_, record) =>
+                  record.orderItems?.reduce(
+                    (sum, i) => sum + (i.amount || 0),
+                    0
+                  ) || 0,
+              },
+              {
+                title: "SR No",
+                key: "srNo",
+                render: (_, record) => {
+                  const first = record.orderItems?.[0]?.srNo;
+                  return first || "N/A";
+                },
+              },
+            ]}
+            expandable={{
+              expandedRowRender: (order) => (
+                <div>
+                  <h4 className="font-semibold mb-2" style={{ color: colors.velvet }}>
+                    Order Items
+                  </h4>
+                  <Table
+                    bordered
+                    dataSource={order.orderItems || []}
+                    rowKey={(item, i) => `${order.orderId}-${i}`}
+                    pagination={false}
+                    size="small"
+                    columns={[
+                      {
+                        title: "SR No",
+                        dataIndex: "srNo",
+                        key: "srNo",
+                        render: (text) => (
+                          <input value={text} readOnly style={cellStyle} />
+                        ),
+                      },
+                      {
+                        title: "Style No",
+                        dataIndex: "styleNo",
+                        key: "styleNo",
+                        render: (text) => (
+                          <input value={text} readOnly style={cellStyle} />
+                        ),
+                      },
+                      {
+                        title: "Clarity",
+                        dataIndex: "clarity",
+                        key: "clarity",
+                        render: (text) => (
+                          <input value={text} readOnly style={cellStyle} />
+                        ),
+                      },
+                      {
+                        title: "Gross WT",
+                        dataIndex: "grossWeight",
+                        key: "grossWeight",
+                        render: (text) => (
+                          <input value={text} readOnly style={cellStyle} />
+                        ),
+                      },
+                      {
+                        title: "Net WT",
+                        dataIndex: "netWeight",
+                        key: "netWeight",
+                        render: (text) => (
+                          <input value={text} readOnly style={cellStyle} />
+                        ),
+                      },
+                      {
+                        title: "DIA WT",
+                        dataIndex: "diaWeight",
+                        key: "diaWeight",
+                        render: (text) => (
+                          <input value={text} readOnly style={cellStyle} />
+                        ),
+                      },
+                      {
+                        title: "PCS",
+                        dataIndex: "pcs",
+                        key: "pcs",
+                        render: (text) => (
+                          <input value={text} readOnly style={cellStyle} />
+                        ),
+                      },
+                      {
+                        title: "Amount",
+                        dataIndex: "amount",
+                        key: "amount",
+                        render: (text) => (
+                          <input
+                            value={`₹${text}`}
+                            readOnly
+                            style={cellStyle}
+                          />
+                        ),
+                      },
+                      {
+                        title: "Description",
+                        dataIndex: "description",
+                        key: "description",
+                        render: (text) => (
+                          <textarea
+                            value={text}
+                            readOnly
+                            style={{ ...cellStyle, width: "100%" }}
+                          />
+                        ),
+                      },
+                    ]}
+                  />
+                </div>
               ),
-            rowExpandable: order => order.orderItems?.length > 0
-          }}
-          pagination={{
-            pageSize: 10,
-            showSizeChanger: true,
-            pageSizeOptions: ['10', '20', '50']
-          }}
-          locale={{
-            emptyText: (
-              <div className="text-center py-8">
-                <img 
-                  src="/empty-box-icon.svg" 
-                  alt="No orders" 
-                  className="mx-auto h-16 w-16 mb-4"
-                  style={{ color: colors.darkGold }}
-                />
-                <p style={{ color: colors.velvet }}>
-                  {selectedClient 
-                    ? 'No orders found for this client' 
-                    : 'Select a client to view their order history'}
-                </p>
-              </div>
-            )
-          }}
-          className="custom-table"
-        />
+              rowExpandable: (order) => order.orderItems?.length > 0,
+            }}
+          />
+        )}
       </div>
     </div>
   );
 
   const renderContent = () => {
-    switch(selectedMenu) {
-      case 'dashboard': return renderDashboard();
-      case 'kyc': return renderKYCForm();
-      case 'order': return renderOrderForm();
-      case 'history': return renderOrderHistory();
-      default: return renderDashboard();
+    switch (selectedMenu) {
+      case "dashboard":
+        return renderDashboard();
+      case "kyc":
+        return renderKYCForm();
+      case "order":
+        return renderOrderForm();
+      case "history":
+        return renderOrderHistory();
+      default:
+        return renderDashboard();
     }
   };
 
@@ -1520,26 +2121,35 @@ const SalesDashboard = () => {
   return (
     <div className="min-h-screen flex bg-gray-50">
       {/* Desktop Sidebar */}
-      <div 
+      <div
         className="w-64 text-white flex-shrink-0 hidden md:block"
         style={{ backgroundColor: colors.deepNavy }}
       >
-        <div className="h-16 flex items-center justify-center border-b" style={{ borderColor: colors.darkGold }}>
-          <span className="text-xl font-bold" style={{ color: colors.gold }}>JEWELRY SALES</span>
+        <div
+          className="h-16 flex items-center justify-center border-b"
+          style={{ borderColor: colors.darkGold }}
+        >
+          <span className="text-xl font-bold" style={{ color: colors.gold }}>
+            SONALIKA JEWELLERS
+          </span>
         </div>
         <nav className="p-4">
           <ul className="space-y-2">
             <li>
               <button
-                onClick={() => setSelectedMenu('dashboard')}
+                onClick={() => setSelectedMenu("dashboard")}
                 className={`w-full flex items-center p-3 rounded-lg transition-colors ${
-                  selectedMenu === 'dashboard' 
-                    ? 'bg-opacity-20' 
-                    : 'text-gray-300 hover:bg-opacity-10'
+                  selectedMenu === "dashboard"
+                    ? "bg-opacity-20"
+                    : "text-gray-300 hover:bg-opacity-10"
                 }`}
-                style={{ 
-                  backgroundColor: selectedMenu === 'dashboard' ? colors.gold : 'transparent',
-                  color: selectedMenu === 'dashboard' ? colors.deepNavy : colors.platinum
+                style={{
+                  backgroundColor:
+                    selectedMenu === "dashboard" ? colors.gold : "transparent",
+                  color:
+                    selectedMenu === "dashboard"
+                      ? colors.deepNavy
+                      : colors.platinum,
                 }}
               >
                 <LayoutDashboard className="h-5 w-5 mr-3" />
@@ -1548,15 +2158,17 @@ const SalesDashboard = () => {
             </li>
             <li>
               <button
-                onClick={() => setSelectedMenu('kyc')}
+                onClick={() => setSelectedMenu("kyc")}
                 className={`w-full flex items-center p-3 rounded-lg transition-colors ${
-                  selectedMenu === 'kyc' 
-                    ? 'bg-opacity-20' 
-                    : 'text-gray-300 hover:bg-opacity-10'
+                  selectedMenu === "kyc"
+                    ? "bg-opacity-20"
+                    : "text-gray-300 hover:bg-opacity-10"
                 }`}
-                style={{ 
-                  backgroundColor: selectedMenu === 'kyc' ? colors.gold : 'transparent',
-                  color: selectedMenu === 'kyc' ? colors.deepNavy : colors.platinum
+                style={{
+                  backgroundColor:
+                    selectedMenu === "kyc" ? colors.gold : "transparent",
+                  color:
+                    selectedMenu === "kyc" ? colors.deepNavy : colors.platinum,
                 }}
               >
                 <User className="h-5 w-5 mr-3" />
@@ -1565,15 +2177,19 @@ const SalesDashboard = () => {
             </li>
             <li>
               <button
-                onClick={() => setSelectedMenu('order')}
+                onClick={() => setSelectedMenu("order")}
                 className={`w-full flex items-center p-3 rounded-lg transition-colors ${
-                  selectedMenu === 'order' 
-                    ? 'bg-opacity-20' 
-                    : 'text-gray-300 hover:bg-opacity-10'
+                  selectedMenu === "order"
+                    ? "bg-opacity-20"
+                    : "text-gray-300 hover:bg-opacity-10"
                 }`}
-                style={{ 
-                  backgroundColor: selectedMenu === 'order' ? colors.gold : 'transparent',
-                  color: selectedMenu === 'order' ? colors.deepNavy : colors.platinum
+                style={{
+                  backgroundColor:
+                    selectedMenu === "order" ? colors.gold : "transparent",
+                  color:
+                    selectedMenu === "order"
+                      ? colors.deepNavy
+                      : colors.platinum,
                 }}
               >
                 <ShoppingCart className="h-5 w-5 mr-3" />
@@ -1582,15 +2198,19 @@ const SalesDashboard = () => {
             </li>
             <li>
               <button
-                onClick={() => setSelectedMenu('history')}
+                onClick={() => setSelectedMenu("history")}
                 className={`w-full flex items-center p-3 rounded-lg transition-colors ${
-                  selectedMenu === 'history' 
-                    ? 'bg-opacity-20' 
-                    : 'text-gray-300 hover:bg-opacity-10'
+                  selectedMenu === "history"
+                    ? "bg-opacity-20"
+                    : "text-gray-300 hover:bg-opacity-10"
                 }`}
-                style={{ 
-                  backgroundColor: selectedMenu === 'history' ? colors.gold : 'transparent',
-                  color: selectedMenu === 'history' ? colors.deepNavy : colors.platinum
+                style={{
+                  backgroundColor:
+                    selectedMenu === "history" ? colors.gold : "transparent",
+                  color:
+                    selectedMenu === "history"
+                      ? colors.deepNavy
+                      : colors.platinum,
                 }}
               >
                 <History className="h-5 w-5 mr-3" />
@@ -1600,14 +2220,16 @@ const SalesDashboard = () => {
           </ul>
         </nav>
       </div>
-      
+
       {/* Mobile Header with Hamburger */}
       <div className="md:hidden fixed top-0 left-0 right-0 z-50">
-        <header 
+        <header
           className="shadow-sm h-16 flex items-center justify-between px-4"
           style={{ backgroundColor: colors.deepNavy }}
         >
-          <h4 className="text-lg font-semibold" style={{ color: colors.gold }}>Jewelry Sales</h4>
+          <h4 className="text-lg font-semibold" style={{ color: colors.gold }}>
+            Jewelry Sales
+          </h4>
           <button
             onClick={toggleMobileMenu}
             className="text-white p-2 rounded-md focus:outline-none"
@@ -1620,11 +2242,11 @@ const SalesDashboard = () => {
       {/* Mobile Sidebar */}
       {mobileMenuVisible && (
         <div className="md:hidden fixed inset-0 z-40 mt-16">
-          <div 
-            className="absolute inset-0 bg-black bg-opacity-50" 
+          <div
+            className="absolute inset-0 bg-black bg-opacity-50"
             onClick={toggleMobileMenu}
           ></div>
-          <div 
+          <div
             className="absolute left-0 top-0 bottom-0 w-64"
             style={{ backgroundColor: colors.deepNavy }}
           >
@@ -1633,17 +2255,23 @@ const SalesDashboard = () => {
                 <li>
                   <button
                     onClick={() => {
-                      setSelectedMenu('dashboard');
+                      setSelectedMenu("dashboard");
                       toggleMobileMenu();
                     }}
                     className={`w-full flex items-center p-3 rounded-lg transition-colors ${
-                      selectedMenu === 'dashboard' 
-                        ? 'bg-opacity-20' 
-                        : 'text-gray-300 hover:bg-opacity-10'
+                      selectedMenu === "dashboard"
+                        ? "bg-opacity-20"
+                        : "text-gray-300 hover:bg-opacity-10"
                     }`}
-                    style={{ 
-                      backgroundColor: selectedMenu === 'dashboard' ? colors.gold : 'transparent',
-                      color: selectedMenu === 'dashboard' ? colors.deepNavy : colors.platinum
+                    style={{
+                      backgroundColor:
+                        selectedMenu === "dashboard"
+                          ? colors.gold
+                          : "transparent",
+                      color:
+                        selectedMenu === "dashboard"
+                          ? colors.deepNavy
+                          : colors.platinum,
                     }}
                   >
                     <LayoutDashboard className="h-5 w-5 mr-3" />
@@ -1653,17 +2281,21 @@ const SalesDashboard = () => {
                 <li>
                   <button
                     onClick={() => {
-                      setSelectedMenu('kyc');
+                      setSelectedMenu("kyc");
                       toggleMobileMenu();
                     }}
                     className={`w-full flex items-center p-3 rounded-lg transition-colors ${
-                      selectedMenu === 'kyc' 
-                        ? 'bg-opacity-20' 
-                        : 'text-gray-300 hover:bg-opacity-10'
+                      selectedMenu === "kyc"
+                        ? "bg-opacity-20"
+                        : "text-gray-300 hover:bg-opacity-10"
                     }`}
-                    style={{ 
-                      backgroundColor: selectedMenu === 'kyc' ? colors.gold : 'transparent',
-                      color: selectedMenu === 'kyc' ? colors.deepNavy : colors.platinum
+                    style={{
+                      backgroundColor:
+                        selectedMenu === "kyc" ? colors.gold : "transparent",
+                      color:
+                        selectedMenu === "kyc"
+                          ? colors.deepNavy
+                          : colors.platinum,
                     }}
                   >
                     <User className="h-5 w-5 mr-3" />
@@ -1673,17 +2305,21 @@ const SalesDashboard = () => {
                 <li>
                   <button
                     onClick={() => {
-                      setSelectedMenu('order');
+                      setSelectedMenu("order");
                       toggleMobileMenu();
                     }}
                     className={`w-full flex items-center p-3 rounded-lg transition-colors ${
-                      selectedMenu === 'order' 
-                        ? 'bg-opacity-20' 
-                        : 'text-gray-300 hover:bg-opacity-10'
+                      selectedMenu === "order"
+                        ? "bg-opacity-20"
+                        : "text-gray-300 hover:bg-opacity-10"
                     }`}
-                    style={{ 
-                      backgroundColor: selectedMenu === 'order' ? colors.gold : 'transparent',
-                      color: selectedMenu === 'order' ? colors.deepNavy : colors.platinum
+                    style={{
+                      backgroundColor:
+                        selectedMenu === "order" ? colors.gold : "transparent",
+                      color:
+                        selectedMenu === "order"
+                          ? colors.deepNavy
+                          : colors.platinum,
                     }}
                   >
                     <ShoppingCart className="h-5 w-5 mr-3" />
@@ -1693,17 +2329,23 @@ const SalesDashboard = () => {
                 <li>
                   <button
                     onClick={() => {
-                      setSelectedMenu('history');
+                      setSelectedMenu("history");
                       toggleMobileMenu();
                     }}
                     className={`w-full flex items-center p-3 rounded-lg transition-colors ${
-                      selectedMenu === 'history' 
-                        ? 'bg-opacity-20' 
-                        : 'text-gray-300 hover:bg-opacity-10'
+                      selectedMenu === "history"
+                        ? "bg-opacity-20"
+                        : "text-gray-300 hover:bg-opacity-10"
                     }`}
-                    style={{ 
-                      backgroundColor: selectedMenu === 'history' ? colors.gold : 'transparent',
-                      color: selectedMenu === 'history' ? colors.deepNavy : colors.platinum
+                    style={{
+                      backgroundColor:
+                        selectedMenu === "history"
+                          ? colors.gold
+                          : "transparent",
+                      color:
+                        selectedMenu === "history"
+                          ? colors.deepNavy
+                          : colors.platinum,
                     }}
                   >
                     <History className="h-5 w-5 mr-3" />
@@ -1715,38 +2357,46 @@ const SalesDashboard = () => {
           </div>
         </div>
       )}
-      
+
       <div className="flex-1 flex flex-col overflow-hidden md:mt-0 mt-16">
         {/* Desktop Header */}
-        <header 
+        <header
           className="shadow-sm z-10 border-b hidden md:block"
-          style={{ 
+          style={{
             backgroundColor: colors.diamond,
-            borderColor: colors.darkGold
+            borderColor: colors.darkGold,
           }}
         >
-          <div className="flex items-center justify-between h-16 px-6">
-            <h4 className="text-lg font-semibold" style={{ color: colors.velvet }}>Sales Dashboard</h4>
+          <div className="flex items-center justify-between bg-[#050d3f] h-16 px-6">
+            <h4
+              className="text-lg font-semibold"
+              style={{ color: colors.velvet  }}
+            >
+              Sales Dashboard
+            </h4>
             <div className="flex items-center space-x-4">
               <span style={{ color: colors.velvet }}>
-                {dayjs().format('DD MMM YYYY')}
+                {dayjs().format("DD MMM YYYY")}
               </span>
             </div>
           </div>
         </header>
-        
+
         {/* Content */}
-        <main className="flex-1 overflow-y-auto p-4 md:p-6" style={{ backgroundColor: colors.light }}>
-          <div 
+        <main
+          className="flex-1 overflow-y-auto p-4 md:p-6"
+          style={{ backgroundColor: colors.light }}
+        >
+          <div
             className="rounded-lg shadow p-4 md:p-6 min-h-[calc(100vh-8rem)] border"
-            style={{ 
+            style={{
               backgroundColor: colors.diamond,
-              borderColor: colors.darkGold
+              borderColor: colors.darkGold,
             }}
           >
             {loading ? (
               <div className="flex justify-center items-center h-full">
-                <div 
+                <div
                   className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2"
                   style={{ borderColor: colors.darkGold }}
                 ></div>
@@ -1762,10 +2412,10 @@ const SalesDashboard = () => {
       <ClientModal client={modalClient} onClose={closeModal} />
 
       {/* Ongoing Order Modal */}
-      <OngoingOrderModal 
-        order={selectedOrder} 
-        visible={ongoingOrderModalVisible} 
-        onClose={closeOrderModal} 
+      <OngoingOrderModal
+        orderId={selectedOrder?.orderId}
+        visible={ongoingOrderModalVisible}
+        onClose={closeOrderModal}
       />
 
       {/* Custom Table Styling */}
@@ -1789,10 +2439,16 @@ const SalesDashboard = () => {
         .ant-table-expanded-row .custom-table .ant-table-tbody > tr > td {
           background-color: ${colors.platinum} !important;
         }
-        .ant-picker, .ant-input, .ant-input-number, .ant-select-selector {
+        .ant-picker,
+        .ant-input,
+        .ant-input-number,
+        .ant-select-selector {
           border-color: ${colors.darkGold} !important;
         }
-        .ant-picker:hover, .ant-input:hover, .ant-input-number:hover, .ant-select-selector:hover {
+        .ant-picker:hover,
+        .ant-input:hover,
+        .ant-input-number:hover,
+        .ant-select-selector:hover {
           border-color: ${colors.roseGold} !important;
         }
         .ant-btn-primary {

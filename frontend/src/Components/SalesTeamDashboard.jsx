@@ -878,6 +878,9 @@ const SalesDashboard = () => {
   const handleClientSelect = (uniqueId) => {
     const client = clients.find((c) => c.uniqueId === uniqueId);
     setSelectedClient(client || null);
+    if (selectedMenu === "history") {
+      fetchOrderHistory(uniqueId);
+    }
   };
 
   const clientColumns = [
@@ -954,7 +957,6 @@ const SalesDashboard = () => {
           onClick={() => {
             setSelectedMenu("history");
             handleClientSelect(client.uniqueId);
-            fetchOrderHistory(client.uniqueId);
           }}
         >
           View Orders
@@ -1852,7 +1854,6 @@ const SalesDashboard = () => {
             value={selectedClient?.uniqueId}
             onChange={(uniqueId) => {
               handleClientSelect(uniqueId);
-              fetchOrderHistory(uniqueId);
             }}
             showSearch
             optionFilterProp="children"
@@ -1865,235 +1866,241 @@ const SalesDashboard = () => {
           >
             {clients.map((client) => (
               <Option key={client.uniqueId} value={client.uniqueId}>
-                {client.uniqueId} 
+                {client.uniqueId} - {client.name}
               </Option>
             ))}
           </Select>
         </div>
 
-        {isMobile ? (
-          <div className="space-y-4">
-            {orderHistory.length > 0 ? (
-              orderHistory.map((order) => (
-                <div 
-                  key={order.orderId} 
-                  className="border rounded-lg p-4"
-                  style={{ borderColor: colors.darkGold }}
-                >
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="font-medium">Order ID:</span>
-                      <span>{order.orderId.slice(0, 8)}...</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="font-medium">Date:</span>
-                      <span>{dayjs(order.orderDate).format("DD MMM YYYY")}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="font-medium">Status:</span>
-                      <Tag
+        {selectedClient ? (
+          isMobile ? (
+            <div className="space-y-4">
+              {orderHistory.length > 0 ? (
+                orderHistory.map((order) => (
+                  <div 
+                    key={order.orderId} 
+                    className="border rounded-lg p-4"
+                    style={{ borderColor: colors.darkGold }}
+                  >
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span className="font-medium">Order ID:</span>
+                        <span>{order.orderId.slice(0, 8)}...</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="font-medium">Date:</span>
+                        <span>{dayjs(order.orderDate).format("DD MMM YYYY")}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="font-medium">Status:</span>
+                        <Tag
+                          style={{ 
+                            backgroundColor: order.status === "completed" ? "#e6f7ee" : "#e6f4ff",
+                            color: order.status === "completed" ? "#08965b" : colors.darkGold
+                          }}
+                        >
+                          {order.status?.toUpperCase() || "UNKNOWN"}
+                        </Tag>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="font-medium">Items:</span>
+                        <span>{order.orderItems?.length || 0}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="font-medium">Total Amount:</span>
+                        <span>
+                          ₹{order.orderItems?.reduce((sum, i) => sum + (i.amount || 0), 0) || 0}
+                        </span>
+                      </div>
+                      <Button
+                        type="link"
+                        onClick={() => handleOrderClick(order)}
                         style={{ 
-                          backgroundColor: order.status === "completed" ? "#e6f7ee" : "#e6f4ff",
-                          color: order.status === "completed" ? "#08965b" : colors.darkGold
+                          color: colors.darkGold,
+                          padding: 0,
+                          textAlign: 'right'
                         }}
                       >
-                        {order.status?.toUpperCase() || "UNKNOWN"}
-                      </Tag>
+                        View Details
+                      </Button>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="font-medium">Items:</span>
-                      <span>{order.orderItems?.length || 0}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="font-medium">Total Amount:</span>
-                      <span>
-                        ₹{order.orderItems?.reduce((sum, i) => sum + (i.amount || 0), 0) || 0}
-                      </span>
-                    </div>
-                    <Button
-                      type="link"
-                      onClick={() => handleOrderClick(order)}
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-4">
+                  <p>No orders found for this client</p>
+                </div>
+              )}
+            </div>
+          ) : (
+            <Table
+              bordered
+              dataSource={orderHistory}
+              rowKey="orderId"
+              size="middle"
+              pagination={{ pageSize: 5 }}
+              style={{ marginTop: "1.5rem" }}
+              columns={[
+                {
+                  title: "Order ID",
+                  dataIndex: "orderId",
+                  key: "orderId",
+                  render: (id) => (
+                    <span style={{ color: colors.darkGold, fontWeight: 600 }}>
+                      {id.slice(0, 8)}...
+                    </span>
+                  ),
+                },
+                {
+                  title: "Date",
+                  dataIndex: "orderDate",
+                  key: "orderDate",
+                  render: (date) => dayjs(date).format("DD MMM YYYY"),
+                },
+                {
+                  title: "Status",
+                  dataIndex: "status",
+                  key: "status",
+                  render: (status) => (
+                    <Tag
                       style={{ 
-                        color: colors.darkGold,
-                        padding: 0,
-                        textAlign: 'right'
+                        backgroundColor: status === "completed" ? "#e6f7ee" : "#e6f4ff",
+                        color: status === "completed" ? "#08965b" : colors.darkGold
                       }}
                     >
-                      View Details
-                    </Button>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="text-center py-4">
-                <p>No orders found</p>
-              </div>
-            )}
-          </div>
-        ) : (
-          <Table
-            bordered
-            dataSource={ordersToArray(selectedClient?.orders || [])}
-            rowKey="orderId"
-            size="middle"
-            pagination={{ pageSize: 5 }}
-            style={{ marginTop: "1.5rem" }}
-            columns={[
-              {
-                title: "Order ID",
-                dataIndex: "orderId",
-                key: "orderId",
-                render: (id) => (
-                  <span style={{ color: colors.darkGold, fontWeight: 600 }}>
-                    {id.slice(0, 8)}...
-                  </span>
-                ),
-              },
-              {
-                title: "Date",
-                dataIndex: "orderDate",
-                key: "orderDate",
-                render: (date) => dayjs(date).format("DD MMM YYYY"),
-              },
-              {
-                title: "Status",
-                dataIndex: "status",
-                key: "status",
-                render: (status) => (
-                  <Tag
-                    style={{ 
-                      backgroundColor: status === "completed" ? "#e6f7ee" : "#e6f4ff",
-                      color: status === "completed" ? "#08965b" : colors.darkGold
-                    }}
-                  >
-                    {status?.toUpperCase() || "UNKNOWN"}
-                  </Tag>
-                ),
-              },
-              {
-                title: "Items",
-                dataIndex: "orderItems",
-                key: "items",
-                render: (items) => items?.length || 0,
-              },
-              {
-                title: "Total Amount (₹)",
-                key: "amount",
-                render: (_, record) =>
-                  record.orderItems?.reduce(
-                    (sum, i) => sum + (i.amount || 0),
-                    0
-                  ) || 0,
-              },
-              {
-                title: "SR No",
-                key: "srNo",
-                render: (_, record) => {
-                  const first = record.orderItems?.[0]?.srNo;
-                  return first || "N/A";
+                      {status?.toUpperCase() || "UNKNOWN"}
+                    </Tag>
+                  ),
                 },
-              },
-            ]}
-            expandable={{
-              expandedRowRender: (order) => (
-                <div>
-                  <h4 className="font-semibold mb-2" style={{ color: colors.velvet }}>
-                    Order Items
-                  </h4>
-                  <Table
-                    bordered
-                    dataSource={order.orderItems || []}
-                    rowKey={(item, i) => `${order.orderId}-${i}`}
-                    pagination={false}
-                    size="small"
-                    columns={[
-                      {
-                        title: "SR No",
-                        dataIndex: "srNo",
-                        key: "srNo",
-                        render: (text) => (
-                          <input value={text} readOnly style={cellStyle} />
-                        ),
-                      },
-                      {
-                        title: "Style No",
-                        dataIndex: "styleNo",
-                        key: "styleNo",
-                        render: (text) => (
-                          <input value={text} readOnly style={cellStyle} />
-                        ),
-                      },
-                      {
-                        title: "Clarity",
-                        dataIndex: "clarity",
-                        key: "clarity",
-                        render: (text) => (
-                          <input value={text} readOnly style={cellStyle} />
-                        ),
-                      },
-                      {
-                        title: "Gross WT",
-                        dataIndex: "grossWeight",
-                        key: "grossWeight",
-                        render: (text) => (
-                          <input value={text} readOnly style={cellStyle} />
-                        ),
-                      },
-                      {
-                        title: "Net WT",
-                        dataIndex: "netWeight",
-                        key: "netWeight",
-                        render: (text) => (
-                          <input value={text} readOnly style={cellStyle} />
-                        ),
-                      },
-                      {
-                        title: "DIA WT",
-                        dataIndex: "diaWeight",
-                        key: "diaWeight",
-                        render: (text) => (
-                          <input value={text} readOnly style={cellStyle} />
-                        ),
-                      },
-                      {
-                        title: "PCS",
-                        dataIndex: "pcs",
-                        key: "pcs",
-                        render: (text) => (
-                          <input value={text} readOnly style={cellStyle} />
-                        ),
-                      },
-                      {
-                        title: "Amount",
-                        dataIndex: "amount",
-                        key: "amount",
-                        render: (text) => (
-                          <input
-                            value={`₹${text}`}
-                            readOnly
-                            style={cellStyle}
-                          />
-                        ),
-                      },
-                      {
-                        title: "Description",
-                        dataIndex: "description",
-                        key: "description",
-                        render: (text) => (
-                          <textarea
-                            value={text}
-                            readOnly
-                            style={{ ...cellStyle, width: "100%" }}
-                          />
-                        ),
-                      },
-                    ]}
-                  />
-                </div>
-              ),
-              rowExpandable: (order) => order.orderItems?.length > 0,
-            }}
-          />
+                {
+                  title: "Items",
+                  dataIndex: "orderItems",
+                  key: "items",
+                  render: (items) => items?.length || 0,
+                },
+                {
+                  title: "Total Amount (₹)",
+                  key: "amount",
+                  render: (_, record) =>
+                    record.orderItems?.reduce(
+                      (sum, i) => sum + (i.amount || 0),
+                      0
+                    ) || 0,
+                },
+                {
+                  title: "SR No",
+                  key: "srNo",
+                  render: (_, record) => {
+                    const first = record.orderItems?.[0]?.srNo;
+                    return first || "N/A";
+                  },
+                },
+              ]}
+              expandable={{
+                expandedRowRender: (order) => (
+                  <div>
+                    <h4 className="font-semibold mb-2" style={{ color: colors.velvet }}>
+                      Order Items
+                    </h4>
+                    <Table
+                      bordered
+                      dataSource={order.orderItems || []}
+                      rowKey={(item, i) => `${order.orderId}-${i}`}
+                      pagination={false}
+                      size="small"
+                      columns={[
+                        {
+                          title: "SR No",
+                          dataIndex: "srNo",
+                          key: "srNo",
+                          render: (text) => (
+                            <input value={text} readOnly style={cellStyle} />
+                          ),
+                        },
+                        {
+                          title: "Style No",
+                          dataIndex: "styleNo",
+                          key: "styleNo",
+                          render: (text) => (
+                            <input value={text} readOnly style={cellStyle} />
+                          ),
+                        },
+                        {
+                          title: "Clarity",
+                          dataIndex: "clarity",
+                          key: "clarity",
+                          render: (text) => (
+                            <input value={text} readOnly style={cellStyle} />
+                          ),
+                        },
+                        {
+                          title: "Gross WT",
+                          dataIndex: "grossWeight",
+                          key: "grossWeight",
+                          render: (text) => (
+                            <input value={text} readOnly style={cellStyle} />
+                          ),
+                        },
+                        {
+                          title: "Net WT",
+                          dataIndex: "netWeight",
+                          key: "netWeight",
+                          render: (text) => (
+                            <input value={text} readOnly style={cellStyle} />
+                          ),
+                        },
+                        {
+                          title: "DIA WT",
+                          dataIndex: "diaWeight",
+                          key: "diaWeight",
+                          render: (text) => (
+                            <input value={text} readOnly style={cellStyle} />
+                          ),
+                        },
+                        {
+                          title: "PCS",
+                          dataIndex: "pcs",
+                          key: "pcs",
+                          render: (text) => (
+                            <input value={text} readOnly style={cellStyle} />
+                          ),
+                        },
+                        {
+                          title: "Amount",
+                          dataIndex: "amount",
+                          key: "amount",
+                          render: (text) => (
+                            <input
+                              value={`₹${text}`}
+                              readOnly
+                              style={cellStyle}
+                            />
+                          ),
+                        },
+                        {
+                          title: "Description",
+                          dataIndex: "description",
+                          key: "description",
+                          render: (text) => (
+                            <textarea
+                              value={text}
+                              readOnly
+                              style={{ ...cellStyle, width: "100%" }}
+                            />
+                          ),
+                        },
+                      ]}
+                    />
+                  </div>
+                ),
+                rowExpandable: (order) => order.orderItems?.length > 0,
+              }}
+            />
+          )
+        ) : (
+          <div className="text-center py-4">
+            <p>Please select a client to view order history</p>
+          </div>
         )}
       </div>
     </div>

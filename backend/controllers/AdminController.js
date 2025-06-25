@@ -46,12 +46,3 @@ exports.logout = (req, res) => {
 };
 
 
-exports.login = async (req, res) => {
-  try {
-    const admin = await adminService.loginAdmin(req.body);
-    req.session.admin = admin._id;
-    res.status(200).json({ message: 'Login successful' });
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-};

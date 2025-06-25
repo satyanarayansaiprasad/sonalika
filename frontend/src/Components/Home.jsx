@@ -69,10 +69,16 @@ const Home = () => {
       }
 
       const res = await axios.post(
-        `${import.meta.env.VITE_BASE_URL}${endpoint}`,
-        requestData,
-        { withCredentials: true }
-      );
+  `${import.meta.env.VITE_BASE_URL}${endpoint}`,
+  requestData,
+  { withCredentials: true }
+);
+
+// ✅ Save token to sessionStorage (for future API use if needed)
+if (res.data.token) {
+  sessionStorage.setItem("authToken", res.data.token);
+}
+
 
       // On successful login
       if (loginType === "admin") {

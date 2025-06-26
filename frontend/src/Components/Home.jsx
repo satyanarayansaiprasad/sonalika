@@ -390,9 +390,9 @@ if (res.data.token) {
         className="absolute right-5 top-3/4 transform -translate-y-1/2 cursor-pointer"
       >
         {showPassword ? (
-          <EyeOff size={20} color={colors.gold} />
+          <EyeOff size={20} color={colors.deepNavy} />
         ) : (
-          <Eye size={20} color={colors.gold} />
+          <Eye size={20} color={colors.deepNavy} />
         )}
       </div>
     </div>

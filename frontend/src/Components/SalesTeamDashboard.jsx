@@ -1302,7 +1302,7 @@ const SalesDashboard = () => {
             <Input
               value={field.gstNo}
               onChange={(e) => updateKycField(index, "gstNo", e.target.value)}
-              placeholder="GST No (Optional)"
+              placeholder="GST No "
               style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
             />
             {kycFields.length > 1 && (

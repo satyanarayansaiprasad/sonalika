@@ -11,7 +11,18 @@ const App = () => {
   return (
     <Routes>
       <Route path="/" element={<Home />} />
-      <Route  path='/spteamlogin'  element={
+      {/* <Route  path='/spteamlogin'  element={
+          <ProtectedRoute allowedRoles={["team"]}>
+            <TeamLogin />
+          </ProtectedRoute>
+        }/> */}
+
+        <Route  path='/spteamlogin'  element={
+          <ProtectedRoute allowedRoles={["team"]}>
+            <TeamLogin />
+          </ProtectedRoute>
+        }/>
+        <Route  path='/spteamlogin'  element={
           <ProtectedRoute allowedRoles={["team"]}>
             <TeamLogin />
           </ProtectedRoute>

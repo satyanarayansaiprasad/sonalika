@@ -16,10 +16,15 @@ const App = () => {
             <TeamLogin />
           </ProtectedRoute>
         }/>
-      <Route path='/admindashboard'  element={
+      {/* <Route path='/admindashboard'  element={
           <ProtectedRoute allowedRoles={["admin"]}>
             <AdminDashboard />
           </ProtectedRoute>
+        }/> */}
+         <Route path='/admindashboard'  element={
+          
+            <AdminDashboard />
+         
         }/>
       <Route  path='/salesteamdashboard' element={<SalesTeamDashboard/>}/>
       <Route  path='/productiondashboard' element={<ProductionTeam/>}/>

@@ -211,7 +211,7 @@ const SalesDashboard = () => {
     return (
       <AnimatePresence>
         <motion.div
-          className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4"
+          className="fixed inset-0  bg-opacity-40 flex items-center justify-center z-50 p-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -807,30 +807,40 @@ const SalesDashboard = () => {
   };
 
   const fetchOrderHistory = async (uniqueId) => {
-    try {
-      setLoading(true);
-      const res = await axios.get(`${API_BASE_URL}/api/team/get-clients`, {
-        params: { uniqueId },
-      });
+  try {
+    setLoading(true);
+    
+    // First fetch the client data
+    const clientRes = await axios.get(`${API_BASE_URL}/api/team/get-clients`, {
+      params: { uniqueId }
+    });
 
-      const clientData = res.data?.data || res.data;
-      const historyData = clientData?.orders
-        ? Array.from(clientData.orders.entries()).map(([orderId, order]) => ({
-            orderId,
-            ...order,
-          }))
-        : [];
-
-      setOrderHistory(historyData);
-    } catch (err) {
-      console.error("History Error:", err);
-      message.error("Failed to fetch order history");
-      setOrderHistory([]);
-    } finally {
-      setLoading(false);
+    const clientData = clientRes.data?.data || clientRes.data;
+    
+    if (!clientData) {
+      message.error("Client not found");
+      return;
     }
-  };
 
+    // Get orders from client data
+    const orders = ordersToArray(clientData.orders);
+    
+    // Format the order history
+    const formattedHistory = orders.map(order => ({
+      ...order,
+      orderId: order.orderId || order._id || Math.random().toString(36).substring(7),
+      orderDate: order.orderDate || order.createdAt || new Date().toISOString()
+    }));
+
+    setOrderHistory(formattedHistory);
+  } catch (err) {
+    console.error("History Error:", err);
+    message.error("Failed to fetch order history");
+    setOrderHistory([]);
+  } finally {
+    setLoading(false);
+  }
+};
   const addOrderItem = () => {
     setOrderItems((prev) => [...prev, {}]);
   };
@@ -1302,7 +1312,7 @@ const SalesDashboard = () => {
             <Input
               value={field.gstNo}
               onChange={(e) => updateKycField(index, "gstNo", e.target.value)}
-              placeholder="GST No "
+              placeholder="GST No (Optional)"
               style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
             />
             {kycFields.length > 1 && (
@@ -1881,11 +1891,12 @@ const SalesDashboard = () => {
                     key={order.orderId} 
                     className="border rounded-lg p-4"
                     style={{ borderColor: colors.darkGold }}
+                    onClick={() => handleOrderClick(order)}
                   >
                     <div className="space-y-2">
                       <div className="flex justify-between">
                         <span className="font-medium">Order ID:</span>
-                        <span>{order.orderId.slice(0, 8)}...</span>
+                        <span>{order.orderId?.slice(0, 8)}...</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="font-medium">Date:</span>
@@ -1912,17 +1923,6 @@ const SalesDashboard = () => {
                           ₹{order.orderItems?.reduce((sum, i) => sum + (i.amount || 0), 0) || 0}
                         </span>
                       </div>
-                      <Button
-                        type="link"
-                        onClick={() => handleOrderClick(order)}
-                        style={{ 
-                          color: colors.darkGold,
-                          padding: 0,
-                          textAlign: 'right'
-                        }}
-                      >
-                        View Details
-                      </Button>
                     </div>
                   </div>
                 ))
@@ -1940,6 +1940,9 @@ const SalesDashboard = () => {
               size="middle"
               pagination={{ pageSize: 5 }}
               style={{ marginTop: "1.5rem" }}
+              onRow={(record) => ({
+                onClick: () => handleOrderClick(record),
+              })}
               columns={[
                 {
                   title: "Order ID",
@@ -1947,7 +1950,7 @@ const SalesDashboard = () => {
                   key: "orderId",
                   render: (id) => (
                     <span style={{ color: colors.darkGold, fontWeight: 600 }}>
-                      {id.slice(0, 8)}...
+                      {id?.slice(0, 8)}...
                     </span>
                   ),
                 },
@@ -1988,113 +1991,19 @@ const SalesDashboard = () => {
                     ) || 0,
                 },
                 {
-                  title: "SR No",
-                  key: "srNo",
-                  render: (_, record) => {
-                    const first = record.orderItems?.[0]?.srNo;
-                    return first || "N/A";
-                  },
+                  title: "Action",
+                  key: "action",
+                  render: (_, record) => (
+                    <Button
+                      type="link"
+                      onClick={() => handleOrderClick(record)}
+                      style={{ color: colors.darkGold }}
+                    >
+                      View Details
+                    </Button>
+                  ),
                 },
               ]}
-              expandable={{
-                expandedRowRender: (order) => (
-                  <div>
-                    <h4 className="font-semibold mb-2" style={{ color: colors.velvet }}>
-                      Order Items
-                    </h4>
-                    <Table
-                      bordered
-                      dataSource={order.orderItems || []}
-                      rowKey={(item, i) => `${order.orderId}-${i}`}
-                      pagination={false}
-                      size="small"
-                      columns={[
-                        {
-                          title: "SR No",
-                          dataIndex: "srNo",
-                          key: "srNo",
-                          render: (text) => (
-                            <input value={text} readOnly style={cellStyle} />
-                          ),
-                        },
-                        {
-                          title: "Style No",
-                          dataIndex: "styleNo",
-                          key: "styleNo",
-                          render: (text) => (
-                            <input value={text} readOnly style={cellStyle} />
-                          ),
-                        },
-                        {
-                          title: "Clarity",
-                          dataIndex: "clarity",
-                          key: "clarity",
-                          render: (text) => (
-                            <input value={text} readOnly style={cellStyle} />
-                          ),
-                        },
-                        {
-                          title: "Gross WT",
-                          dataIndex: "grossWeight",
-                          key: "grossWeight",
-                          render: (text) => (
-                            <input value={text} readOnly style={cellStyle} />
-                          ),
-                        },
-                        {
-                          title: "Net WT",
-                          dataIndex: "netWeight",
-                          key: "netWeight",
-                          render: (text) => (
-                            <input value={text} readOnly style={cellStyle} />
-                          ),
-                        },
-                        {
-                          title: "DIA WT",
-                          dataIndex: "diaWeight",
-                          key: "diaWeight",
-                          render: (text) => (
-                            <input value={text} readOnly style={cellStyle} />
-                          ),
-                        },
-                        {
-                          title: "PCS",
-                          dataIndex: "pcs",
-                          key: "pcs",
-                          render: (text) => (
-                            <input value={text} readOnly style={cellStyle} />
-                          ),
-                        },
-                        {
-                          title: "Amount",
-                          dataIndex: "amount",
-                          key: "amount",
-                          render: (text) => (
-                            <input
-                              value={`₹${text}`}
-                              readOnly
-                              style={cellStyle}
-                            />
-                          ),
-                        },
-                        {
-                          title: "Description",
-                          dataIndex: "description",
-                          key: "description",
-                          render: (text) => (
-                            <textarea
-                              value={text}
-                              readOnly
-                              style={{ ...cellStyle, width: "100%" }}
-                            />
-                          ),
-                        },
-                      ]}
-                    />
-                  </div>
-                ),
-                rowExpandable: (order) => order.orderItems?.length > 0,
-              }}
             />
           )
         ) : (

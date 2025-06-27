@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+
 const clientSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -11,33 +12,109 @@ const clientSchema = new mongoose.Schema({
     unique: true,
     trim: true
   },
+  // Contact Information
   phone: String,
+  mobile: String,//alternate phone
+  officePhone: String,
+  landline: String,
+  email: String,
+  officeEmail: String,
+  
+  // Address Information
   address: String,
+  billingAddress: String,
+  shippingAddress: String,
+  
+  // Government Identifiers (all optional)
   gstNo: String,
-  orders: {
-  type: Map,
-  of: {
-    orderDate: Date,
-    status: String,
-    orderItems: [
-      {
-        srNo: Number,
-        styleNo: String,
-        clarity: String,
-        grossWeight: Number,
-        netWeight: Number,
-        diaWeight: Number,
-        pcs: Number,
-        amount: Number,
-        description: String
-      }
-    ]
+  companyPAN: String,
+  ownerPAN: String,
+  aadharNumber: {  // Aadhar card number (12 digits)
+    type: String,
+    trim: true,
+    match: [/^\d{12}$/, 'Aadhar number must be 12 digits'] // Optional validation
   },
-  default: new Map()
-}
-
+  importExportCode: String,
+  
+  // Additional Details
+  companyType: String,
+  website: String,
+  
+  orders: {
+    type: Map,
+    of: {
+      orderDate: Date,
+      status: String,
+      orderItems: [
+        {
+          srNo: Number,
+          styleNo: String,
+          clarity: String,
+          grossWeight: Number,
+          netWeight: Number,
+          diaWeight: Number,
+          pcs: Number,
+          amount: Number,
+          description: String
+        }
+      ]
+    },
+    default: new Map()
+  }
 }, { timestamps: true });
+
 module.exports = mongoose.model("Clients", clientSchema);
+
+
+
+
+
+
+
+
+
+
+// const mongoose = require("mongoose");
+// const clientSchema = new mongoose.Schema({
+//   name: {
+//     type: String,
+//     required: true,
+//     trim: true
+//   },
+//   uniqueId: {
+//     type: String,
+//     required: true,
+//     unique: true,
+//     trim: true
+//   },
+//   phone: String,
+//   address: String,
+//   gstNo: String,
+
+//   orders: {
+//   type: Map,
+//   of: {
+//     orderDate: Date,
+//     status: String,
+//     orderItems: [
+//       {
+//         srNo: Number,
+//         styleNo: String,
+//         clarity: String,
+//         grossWeight: Number,
+//         netWeight: Number,
+//         diaWeight: Number,
+//         pcs: Number,
+//         amount: Number,
+//         description: String
+//       }
+//     ]
+//   },
+//   default: new Map()
+// }
+
+// }, { timestamps: true });
+// module.exports = mongoose.model("Clients", clientSchema);
 
 
 

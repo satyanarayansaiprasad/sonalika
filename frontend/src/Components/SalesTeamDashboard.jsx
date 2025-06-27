@@ -81,17 +81,30 @@ const SalesDashboard = () => {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileMenuVisible, setMobileMenuVisible] = useState(false);
   const [selectedMenu, setSelectedMenu] = useState("dashboard");
-  const [clienttsses, setUsers] = useState([]);
+  const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(false);
   const [kycForm] = Form.useForm();
   const [orderForm] = Form.useForm();
-  const [orderItems, setOrderItems] = useState([{}]);
+  const [orderItems, setOrderItems] = useState([{ 
+    srNo: 1,
+    styleNo: "",
+    diamondClarity: "",
+    diamondColor: "",
+    quantity: 1,
+    grossWeight: 0,
+    netWeight: 0,
+    diaWeight: 0,
+    pcs: 1,
+    amount: 0,
+    description: ""
+  }]);
   const [orderHistory, setOrderHistory] = useState([]);
   const [selectedClient, setSelectedClient] = useState(null);
   const [stats, setStats] = useState({
     totalClients: 0,
     activeClients: 0,
     totalOrders: 0,
+    totalRevenue: 0,
   });
   
   const [modalClient, setModalClient] = useState(null);
@@ -103,7 +116,6 @@ const SalesDashboard = () => {
     try {
       setLoading(true);
       
-      // Prepare the payload
       const payload = {
         name: values.name,
         phone: values.phone,
@@ -119,13 +131,12 @@ const SalesDashboard = () => {
         importExportCode: values.importExportCode
       };
 
-      // Make API call
       const response = await axios.post(`${API_BASE_URL}/api/team/create-client`, payload);
 
       if (response.data.success) {
         message.success("Client KYC submitted successfully");
         kycForm.resetFields();
-        fetchClients(); // Refresh the client list
+        fetchClients();
       } else {
         message.error(response.data.message || "Failed to submit KYC");
       }
@@ -178,68 +189,89 @@ const SalesDashboard = () => {
 
   // Fetch clients from API
   const fetchClients = async () => {
-  setLoading(true);
-  try {
-    const res = await axios.get(`${API_BASE_URL}/api/team/get-clients`);
-    if (res.data.success) {
-      const clienttssesData = res.data.clienttsses || [];
-      setUsers(clienttssesData);
-      calculateStats(clienttssesData);
-    } else {
-      message.error(res.data.message);
-      setUsers([]);
-    }
-  } catch (err) {
-    console.error("Fetch error:", err);
-    message.error(err.response?.data?.message || "Failed to fetch clients");
-    setUsers([]);
-  } finally {
-    setLoading(false);
-  }
-};
+    setLoading(true);
+    try {
+      const res = await axios.get(`${API_BASE_URL}/api/team/get-clients`);
+      
+      if (!res.data.success) {
+        throw new Error(res.data.message || 'Failed to fetch clients');
+      }
 
-  const calculateStats = (clienttssesData) => {
+      const clientData = res.data.clients.map(client => ({
+        _id: client._id,
+        name: client.name || 'No Name',
+        uniqueId: client.uniqueId || '',
+        phone: client.phone || '',
+        mobile: client.mobile || '',
+        officePhone: client.officePhone || '',
+        landline: client.landline || '',
+        email: client.email || '',
+        address: client.address || '',
+        gstNo: client.gstNo || '',
+        companyPAN: client.companyPAN || '',
+        ownerPAN: client.ownerPAN || '',
+        aadharNumber: client.aadharNumber || '',
+        importExportCode: client.importExportCode || '',
+        orders: client.orders ? client.orders.map(order => ({
+          ...order,
+          orderDate: order.orderDate ? new Date(order.orderDate) : null,
+          orderItems: order.orderItems.map(item => ({
+            srNo: item.srNo || 0,
+            styleNo: item.styleNo || '',
+            diamondClarity: item.diamondClarity || '',
+            diamondColor: item.diamondColor || '',
+            quantity: item.quantity || 0,
+            grossWeight: item.grossWeight || 0,
+            netWeight: item.netWeight || 0,
+            diaWeight: item.diaWeight || 0,
+            pcs: item.pcs || 0,
+            amount: item.amount || 0,
+            description: item.description || ''
+          }))
+        })) : [],
+        createdAt: client.createdAt,
+        updatedAt: client.updatedAt
+      }));
+
+      setClients(clientData);
+      calculateStats(clientData);
+    } catch (err) {
+      console.error("Fetch error:", err);
+      message.error(err.message || "Failed to fetch clients");
+      setClients([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const calculateStats = (clientData) => {
     let totalOrders = 0;
+    let totalRevenue = 0;
     const activeClients = new Set();
 
-    clienttssesData.forEach((clienttsses) => {
-      const orders = ordersToArray(clienttsses.orders);
-
+    clientData.forEach((client) => {
+      const orders = client.orders || [];
       orders.forEach((order) => {
         totalOrders++;
+        const orderTotal = order.orderItems.reduce((sum, item) => sum + (item.amount || 0), 0);
+        totalRevenue += orderTotal;
+        
         if (order.status === "ongoing") {
-          activeClients.add(clienttsses.uniqueId);
+          activeClients.add(client._id);
         }
       });
     });
 
     setStats({
-      totalClients: clienttssesData.length,
+      totalClients: clientData.length,
       activeClients: activeClients.size,
       totalOrders,
+      totalRevenue,
     });
   };
 
-  const ordersToArray = (orders) => {
-    if (!orders) return [];
-    if (Array.isArray(orders)) return orders;
-    if (orders instanceof Map) {
-      return Array.from(orders.entries()).map(([orderId, order]) => ({
-        orderId,
-        ...order,
-      }));
-    }
-    if (typeof orders === "object" && orders !== null) {
-      return Object.entries(orders).map(([orderId, order]) => ({
-        orderId,
-        ...order,
-      }));
-    }
-    return [];
-  };
-
-  const handleClientClick = (clienttsses) => {
-    setModalClient(clienttsses);
+  const handleClientClick = (client) => {
+    setModalClient(client);
   };
 
   const handleOrderClick = (order) => {
@@ -260,12 +292,14 @@ const SalesDashboard = () => {
     try {
       setLoading(true);
 
-      if (!selectedClient?.uniqueId) {
-        throw new Error("Please select a client");
+      if (!selectedClient) {
+        message.error("Please select a client");
+        return;
       }
 
       if (!orderItems || orderItems.length === 0) {
-        throw new Error("Please add at least one order item");
+        message.error("Please add at least one order item");
+        return;
       }
 
       const invalidItems = orderItems
@@ -303,11 +337,13 @@ const SalesDashboard = () => {
       }
 
       const payload = {
-        uniqueId: selectedClient.uniqueId,
+        clientId: selectedClient._id,
         orderItems: orderItems.map((item) => ({
           srNo: item.srNo || 0,
           styleNo: item.styleNo.trim(),
-          clarity: item.clarity?.trim() || "",
+          diamondClarity: item.diamondClarity?.trim() || "",
+          diamondColor: item.diamondColor?.trim() || "",
+          quantity: item.quantity || 1,
           grossWeight: item.grossWeight || 0,
           netWeight: item.netWeight || 0,
           diaWeight: item.diaWeight || 0,
@@ -317,16 +353,31 @@ const SalesDashboard = () => {
         })),
       };
 
-      await axios.post(`${API_BASE_URL}/api/team/clients-order`, payload);
+      const response = await axios.post(`${API_BASE_URL}/api/team/clients-order`, payload);
 
-      message.success("Order created successfully");
-      orderForm.resetFields();
-      setOrderItems([{}]);
-      setSelectedClient(null);
-      fetchClients();
+      if (response.data.success) {
+        message.success("Order created successfully");
+        orderForm.resetFields();
+        setOrderItems([{ 
+          srNo: 1,
+          styleNo: "",
+          diamondClarity: "",
+          diamondColor: "",
+          quantity: 1,
+          grossWeight: 0,
+          netWeight: 0,
+          diaWeight: 0,
+          pcs: 1,
+          amount: 0,
+          description: ""
+        }]);
+        fetchClients();
+      } else {
+        message.error(response.data.message || "Failed to create order");
+      }
     } catch (err) {
       console.error("Order Error:", err);
-
+      
       if (err.response) {
         if (err.response.status === 400) {
           message.error(
@@ -346,29 +397,27 @@ const SalesDashboard = () => {
     }
   };
 
-  const fetchOrderHistory = async (uniqueId) => {
+  const fetchOrderHistory = async (clientId) => {
     try {
       setLoading(true);
-      const clientRes = await axios.get(`${API_BASE_URL}/api/team/get-clients`, {
-        params: { uniqueId }
-      });
-
-      const clienttssesData = clientRes.data?.data || clientRes.data;
+      const response = await axios.get(`${API_BASE_URL}/api/team/client-orders/${clientId}`);
       
-      if (!clienttssesData) {
-        message.error("Client not found");
-        return;
+      if (response.data.success) {
+        const formattedHistory = response.data.orders.map(order => ({
+          ...order,
+          orderId: order._id,
+          orderDate: order.createdAt,
+          client: {
+            name: selectedClient.name,
+            phone: selectedClient.phone,
+            gstNo: selectedClient.gstNo
+          }
+        }));
+        
+        setOrderHistory(formattedHistory);
+      } else {
+        throw new Error(response.data.message || "Failed to fetch orders");
       }
-
-      const orders = ordersToArray(clienttssesData.orders);
-      
-      const formattedHistory = orders.map(order => ({
-        ...order,
-        orderId: order.orderId || order._id || Math.random().toString(36).substring(7),
-        orderDate: order.orderDate || order.createdAt || new Date().toISOString()
-      }));
-
-      setOrderHistory(formattedHistory);
     } catch (err) {
       console.error("History Error:", err);
       message.error("Failed to fetch order history");
@@ -379,14 +428,35 @@ const SalesDashboard = () => {
   };
 
   const addOrderItem = () => {
-    setOrderItems((prev) => [...prev, {}]);
+    setOrderItems((prev) => [
+      ...prev, 
+      { 
+        srNo: prev.length + 1,
+        styleNo: "",
+        diamondClarity: "",
+        diamondColor: "",
+        quantity: 1,
+        grossWeight: 0,
+        netWeight: 0,
+        diaWeight: 0,
+        pcs: 1,
+        amount: 0,
+        description: ""
+      }
+    ]);
   };
 
   const removeOrderItem = (index) => {
+    if (orderItems.length <= 1) {
+      message.warning("At least one order item is required");
+      return;
+    }
+    
     setOrderItems((prev) => {
       const newItems = [...prev];
       newItems.splice(index, 1);
-      return newItems;
+      // Reassign serial numbers
+      return newItems.map((item, idx) => ({ ...item, srNo: idx + 1 }));
     });
   };
 
@@ -394,15 +464,23 @@ const SalesDashboard = () => {
     setOrderItems((prev) => {
       const newItems = [...prev];
       newItems[index] = { ...newItems[index], [field]: value };
+      
+      // Auto-calculate amount if quantity or pcs changes
+      if (field === 'quantity' || field === 'pcs') {
+        const quantity = newItems[index].quantity || 1;
+        const pcs = newItems[index].pcs || 1;
+        newItems[index].amount = quantity * pcs;
+      }
+      
       return newItems;
     });
   };
 
-  const handleClientSelect = (uniqueId) => {
-    const client = clienttsses.find((c) => c.uniqueId === uniqueId);
+  const handleClientSelect = (clientId) => {
+    const client = clients.find((c) => c._id === clientId);
     setSelectedClient(client || null);
-    if (selectedMenu === "history") {
-      fetchOrderHistory(uniqueId);
+    if (selectedMenu === "history" && client) {
+      fetchOrderHistory(client._id);
     }
   };
 
@@ -410,8 +488,8 @@ const SalesDashboard = () => {
     fetchClients();
   }, []);
 
-  const ClientModal = ({ clienttsses, onClose }) => {
-    if (!clienttsses) return null;
+  const ClientModal = ({ client, onClose }) => {
+    if (!client) return null;
 
     return (
       <AnimatePresence>
@@ -433,10 +511,10 @@ const SalesDashboard = () => {
             <div className="flex justify-between items-start mb-4">
               <div>
                 <h3 className="text-xl font-bold" style={{ color: colors.velvet }}>
-                  {clienttsses.name}
+                  {client.name}
                 </h3>
                 <p className="text-sm" style={{ color: colors.darkGold }}>
-                  {clienttsses.uniqueId}
+                  {client.uniqueId}
                 </p>
               </div>
               <button
@@ -476,7 +554,7 @@ const SalesDashboard = () => {
                     d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
                   />
                 </svg>
-                <span className="text-gray-700">{clienttsses.phone}</span>
+                <span className="text-gray-700">{client.phone}</span>
               </div>
 
               <div className="flex items-start">
@@ -500,10 +578,10 @@ const SalesDashboard = () => {
                     d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
                   />
                 </svg>
-                <span className="text-gray-700">{clienttsses.address}</span>
+                <span className="text-gray-700">{client.address}</span>
               </div>
 
-              {clienttsses.gstNo && (
+              {client.gstNo && (
                 <div className="flex items-center">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -519,7 +597,7 @@ const SalesDashboard = () => {
                       d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
                     />
                   </svg>
-                  <span className="text-gray-700">GST: {clienttsses.gstNo}</span>
+                  <span className="text-gray-700">GST: {client.gstNo}</span>
                 </div>
               )}
             </div>
@@ -533,7 +611,7 @@ const SalesDashboard = () => {
                 >
                   <p className="text-sm text-gray-600">Total Orders</p>
                   <p className="text-lg font-bold" style={{ color: colors.velvet }}>
-                    {clienttsses.orders ? ordersToArray(clienttsses.orders).length : 0}
+                    {client.orders ? client.orders.length : 0}
                   </p>
                 </div>
                 <div
@@ -542,10 +620,8 @@ const SalesDashboard = () => {
                 >
                   <p className="text-sm text-gray-600">Active Orders</p>
                   <p className="text-lg font-bold" style={{ color: colors.light }}>
-                    {clienttsses.orders
-                      ? ordersToArray(clienttsses.orders).filter(
-                          (o) => o.status === "ongoing"
-                        ).length
+                    {client.orders
+                      ? client.orders.filter(o => o.status === "ongoing").length
                       : 0}
                   </p>
                 </div>
@@ -570,8 +646,12 @@ const SalesDashboard = () => {
     const fetchOrderDetails = async (id) => {
       setLoading(true);
       try {
-        const response = await axios.get(`${API_BASE_URL}/api/orders/${id}`);
-        setOrder(response.data);
+        const response = await axios.get(`${API_BASE_URL}/api/team/order-details/${id}`);
+        if (response.data.success) {
+          setOrder(response.data.order);
+        } else {
+          throw new Error(response.data.message || "Failed to load order");
+        }
       } catch (error) {
         console.error("Error fetching order:", error);
         message.error("Failed to load order details");
@@ -584,7 +664,7 @@ const SalesDashboard = () => {
 
     return (
       <Modal
-        title={order ? `Order Details` : "Order Details"}
+        title={`Order Details - ${orderId.substring(0, 8)}...`}
         visible={visible}
         onCancel={onClose}
         footer={null}
@@ -602,9 +682,9 @@ const SalesDashboard = () => {
                 <div className="border rounded-lg p-4">
                   <h4 className="font-medium mb-2">Client Information</h4>
                   <div className="space-y-2">
-                    <p><span className="font-medium">Name:</span> {order.clienttsses?.name || "N/A"}</p>
-                    <p><span className="font-medium">Phone:</span> {order.clienttsses?.phone || "N/A"}</p>
-                    <p><span className="font-medium">GST:</span> {order.clienttsses?.gstNo || "N/A"}</p>
+                    <p><span className="font-medium">Name:</span> {order.client?.name || "N/A"}</p>
+                    <p><span className="font-medium">Phone:</span> {order.client?.phone || "N/A"}</p>
+                    <p><span className="font-medium">GST:</span> {order.client?.gstNo || "N/A"}</p>
                   </div>
                 </div>
                 
@@ -638,6 +718,9 @@ const SalesDashboard = () => {
                           <div className="grid grid-cols-2 gap-2">
                             <p><span className="font-medium">SR No:</span> {item.srNo}</p>
                             <p><span className="font-medium">Style No:</span> {item.styleNo}</p>
+                            <p><span className="font-medium">Clarity:</span> {item.diamondClarity || "N/A"}</p>
+                            <p><span className="font-medium">Color:</span> {item.diamondColor || "N/A"}</p>
+                            <p><span className="font-medium">Quantity:</span> {item.quantity}</p>
                             <p><span className="font-medium">PCS:</span> {item.pcs}</p>
                             <p><span className="font-medium">Amount:</span> ₹{item.amount}</p>
                           </div>
@@ -661,15 +744,15 @@ const SalesDashboard = () => {
                   <div className="space-y-2">
                     <p>
                       <span className="font-medium">Name:</span>{" "}
-                      {order.clienttsses?.name || "N/A"}
+                      {order.client?.name || "N/A"}
                     </p>
                     <p>
                       <span className="font-medium">Phone:</span>{" "}
-                      {order.clienttsses?.phone || "N/A"}
+                      {order.client?.phone || "N/A"}
                     </p>
                     <p>
                       <span className="font-medium">GST:</span>{" "}
-                      {order.clienttsses?.gstNo || "N/A"}
+                      {order.client?.gstNo || "N/A"}
                     </p>
                   </div>
                 </div>
@@ -679,7 +762,7 @@ const SalesDashboard = () => {
                   </h4>
                   <div className="space-y-2">
                     <p>
-                      <span className="font-medium">Order ID:</span> {orderId}
+                      <span className="font-medium">Order ID:</span> {orderId.substring(0, 8)}...
                     </p>
                     <p>
                       <span className="font-medium">Date:</span>{" "}
@@ -732,6 +815,30 @@ const SalesDashboard = () => {
                         title: "Style No",
                         dataIndex: "styleNo",
                         key: "styleNo",
+                        render: (text) => (
+                          <span className="font-medium">{text}</span>
+                        ),
+                      },
+                      {
+                        title: "Clarity",
+                        dataIndex: "diamondClarity",
+                        key: "clarity",
+                        render: (text) => (
+                          <span className="text-gray-600">{text || "N/A"}</span>
+                        ),
+                      },
+                      {
+                        title: "Color",
+                        dataIndex: "diamondColor",
+                        key: "color",
+                        render: (text) => (
+                          <span className="text-gray-600">{text || "N/A"}</span>
+                        ),
+                      },
+                      {
+                        title: "Quantity",
+                        dataIndex: "quantity",
+                        key: "quantity",
                         render: (text) => (
                           <span className="font-medium">{text}</span>
                         ),
@@ -793,7 +900,7 @@ const SalesDashboard = () => {
       </h3>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div
           className="rounded-lg shadow p-4 border"
           style={{
@@ -833,6 +940,20 @@ const SalesDashboard = () => {
             valueStyle={{ color: colors.velvet, fontSize: "24px" }}
           />
         </div>
+        <div
+          className="rounded-lg shadow p-4 border"
+          style={{
+            backgroundColor: colors.diamond,
+            borderColor: colors.roseGold,
+          }}
+        >
+          <Statistic
+            title={<span className="text-gray-600">Total Revenue</span>}
+            value={stats.totalRevenue}
+            prefix="₹"
+            valueStyle={{ color: colors.roseGold, fontSize: "24px" }}
+          />
+        </div>
       </div>
 
       {/* Clients and Orders Sections */}
@@ -852,7 +973,7 @@ const SalesDashboard = () => {
             All Clients
           </h2>
           <Table
-            dataSource={clienttsses}
+            dataSource={clients}
             columns={[
               {
                 title: "Unique ID",
@@ -882,7 +1003,7 @@ const SalesDashboard = () => {
                 ),
               },
             ]}
-            rowKey="uniqueId"
+            rowKey="_id"
             loading={loading}
             pagination={{ pageSize: 5 }}
             scroll={{ y: 280 }}
@@ -911,62 +1032,67 @@ const SalesDashboard = () => {
             Ongoing Orders
           </h2>
           <Table
-            dataSource={clienttsses.filter((clienttsses) => {
-              const orders = ordersToArray(clienttsses.orders);
-              return orders.some((order) => order?.status === "ongoing");
+            dataSource={clients.flatMap(client => {
+              const ongoingOrders = (client.orders || []).filter(order => order.status === "ongoing");
+              return ongoingOrders.map(order => ({
+                ...order,
+                clientName: client.name,
+                client
+              }));
             })}
             columns={[
               {
-                title: "Unique ID",
-                dataIndex: "uniqueId",
-                key: "uniqueId",
-                render: (text) => (
+                title: "Client",
+                dataIndex: "clientName",
+                key: "clientName",
+                render: (text, record) => (
                   <span
-                    className="font-mono font-semibold"
-                    style={{ color: colors.darkGold }}
+                    className="font-medium cursor-pointer hover:text-blue-600 transition-colors"
+                    onClick={() => handleClientClick(record.client)}
+                    style={{ color: colors.velvet }}
                   >
                     {text}
                   </span>
                 ),
               },
               {
+                title: "Order ID",
+                dataIndex: "_id",
+                key: "orderId",
+                render: (id) => (
+                  <span className="font-medium" style={{ color: colors.darkGold }}>
+                    {id ? id.substring(0, 8) + "..." : "N/A"}
+                  </span>
+                ),
+              },
+              {
+                title: "Date",
+                dataIndex: "createdAt",
+                key: "date",
+                render: (date) => (
+                  <span className="text-gray-600">
+                    {date ? dayjs(date).format("DD/MM/YYYY") : "N/A"}
+                  </span>
+                ),
+              },
+              {
                 title: "Status",
                 key: "status",
-                render: (_, clienttsses) => {
-                  const orders = ordersToArray(clienttsses.orders);
-                  if (!orders.length) {
-                    return <Tag className="bg-gray-100 text-gray-700">No Orders</Tag>;
-                  }
-
-                  const latestOrder = orders
-                    .filter((order) => order?.orderDate)
-                    .sort((a, b) => new Date(b.orderDate) - new Date(a.orderDate))[0];
-
-                  if (latestOrder?.status === "completed") {
-                    return (
-                      <Tag style={{ backgroundColor: "#e6f7ee", color: "#08965b" }}>
-                        Completed
-                      </Tag>
-                    );
-                  } else if (latestOrder?.status === "ongoing") {
-                    return (
-                      <Tag style={{ backgroundColor: "#e6f4ff", color: colors.darkGold }}>
-                        Ongoing
-                      </Tag>
-                    );
-                  } else {
-                    return (
-                      <Tag style={{ backgroundColor: "#fff7e6", color: "#d46b08" }}>
-                        Pending
-                      </Tag>
-                    );
-                  }
-                },
+                render: (_, record) => (
+                  <Tag
+                    style={{ 
+                      backgroundColor: "#e6f4ff",
+                      color: colors.darkGold
+                    }}
+                  >
+                    ONGOING
+                  </Tag>
+                ),
               },
               {
                 title: "Action",
                 key: "action",
-                render: (_, clienttsses) => (
+                render: (_, record) => (
                   <Button
                     size="small"
                     style={{
@@ -974,14 +1100,14 @@ const SalesDashboard = () => {
                       color: colors.darkGold,
                       borderColor: colors.darkGold,
                     }}
-                    onClick={() => handleClientClick(clienttsses)}
+                    onClick={() => handleOrderClick(record)}
                   >
                     View Details
                   </Button>
                 ),
               },
             ]}
-            rowKey="uniqueId"
+            rowKey="_id"
             loading={loading}
             pagination={{ pageSize: 5 }}
             scroll={{ y: 280 }}
@@ -1006,15 +1132,13 @@ const SalesDashboard = () => {
             Completed Orders
           </h2>
           <Table
-            dataSource={clienttsses.flatMap((clienttsses) => {
-              const orders = ordersToArray(clienttsses.orders);
-              return orders
-                .filter((order) => order?.status === "completed")
-                .map((order) => ({ ...order, clientName: clienttsses.name, clienttsses }))
-                .sort(
-                  (a, b) =>
-                    new Date(b?.orderDate || 0) - new Date(a?.orderDate || 0)
-                );
+            dataSource={clients.flatMap(client => {
+              const completedOrders = (client.orders || []).filter(order => order.status === "completed");
+              return completedOrders.map(order => ({
+                ...order,
+                clientName: client.name,
+                client
+              }));
             })}
             columns={[
               {
@@ -1024,7 +1148,7 @@ const SalesDashboard = () => {
                 render: (text, record) => (
                   <span
                     className="font-medium cursor-pointer hover:text-blue-600 transition-colors"
-                    onClick={() => handleClientClick(record.clienttsses)}
+                    onClick={() => handleClientClick(record.client)}
                     style={{ color: colors.velvet }}
                   >
                     {text}
@@ -1033,7 +1157,7 @@ const SalesDashboard = () => {
               },
               {
                 title: "Order ID",
-                dataIndex: "orderId",
+                dataIndex: "_id",
                 key: "orderId",
                 render: (id) => (
                   <span className="font-medium" style={{ color: colors.darkGold }}>
@@ -1043,7 +1167,7 @@ const SalesDashboard = () => {
               },
               {
                 title: "Date",
-                dataIndex: "orderDate",
+                dataIndex: "createdAt",
                 key: "date",
                 render: (date) => (
                   <span className="text-gray-600">
@@ -1060,36 +1184,37 @@ const SalesDashboard = () => {
                 ),
               },
               {
-                title: "Status",
-                dataIndex: "status",
-                key: "status",
-                render: (status) => (
-                  <Tag
-                    className={`${
-                      status === "completed"
-                        ? "bg-green-100 text-green-800"
-                        : "bg-blue-100 text-blue-800"
-                    }`}
-                  >
-                    {status ? status.toUpperCase() : "UNKNOWN"}
-                  </Tag>
-                ),
-              },
-              {
                 title: "Amount",
                 key: "amount",
-                render: (_, order) => (
+                render: (_, record) => (
                   <span className="font-medium">
                     ₹
-                    {order.orderItems?.reduce(
+                    {record.orderItems?.reduce(
                       (sum, item) => sum + (item.amount || 0),
                       0
                     ) || 0}
                   </span>
                 ),
               },
+              {
+                title: "Action",
+                key: "action",
+                render: (_, record) => (
+                  <Button
+                    size="small"
+                    style={{
+                      backgroundColor: colors.platinum,
+                      color: colors.darkGold,
+                      borderColor: colors.darkGold,
+                    }}
+                    onClick={() => handleOrderClick(record)}
+                  >
+                    View Details
+                  </Button>
+                ),
+              },
             ]}
-            rowKey="orderId"
+            rowKey="_id"
             loading={loading}
             pagination={{ pageSize: 5 }}
             scroll={{ y: 280 }}
@@ -1113,11 +1238,11 @@ const SalesDashboard = () => {
       </div>
 
       {/* Client Modal */}
-      <ClientModal clienttsses={modalClient} onClose={closeModal} />
+      <ClientModal client={modalClient} onClose={closeModal} />
 
       {/* Ongoing Order Modal */}
       <OngoingOrderModal
-        orderId={selectedOrder?.orderId}
+        orderId={selectedOrder?._id}
         visible={ongoingOrderModalVisible}
         onClose={closeOrderModal}
       />
@@ -1140,7 +1265,7 @@ const SalesDashboard = () => {
           borderColor: colors.darkGold,
         }}
       >
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 p-6 gap-6">
           {/* Name (Required) */}
           <Form.Item
             label="Full Name"
@@ -1301,7 +1426,7 @@ const SalesDashboard = () => {
           </Form.Item>
         </div>
 
-        <div className="flex justify-end mt-6">
+        <div className="flex justify-end p-5">
           <Button
             type="primary"
             htmlType="submit"
@@ -1325,7 +1450,7 @@ const SalesDashboard = () => {
           Existing Clients
         </h4>
         <Table
-          dataSource={clienttsses}
+          dataSource={clients}
           columns={[
             {
               title: "Unique ID",
@@ -1358,14 +1483,14 @@ const SalesDashboard = () => {
             {
               title: "Status",
               key: "status",
-              render: (_, clienttsses) => {
-                const orders = ordersToArray(clienttsses.orders);
+              render: (_, client) => {
+                const orders = client.orders || [];
                 if (orders.length === 0)
                   return (
                     <Tag style={{ backgroundColor: colors.platinum }}>No orders</Tag>
                   );
 
-                const statuses = orders.map((o) => o?.status).filter(Boolean);
+                const statuses = orders.map(o => o?.status).filter(Boolean);
 
                 if (statuses.includes("ongoing"))
                   return (
@@ -1373,7 +1498,7 @@ const SalesDashboard = () => {
                       Active
                     </Tag>
                   );
-                if (statuses.every((s) => s === "completed"))
+                if (statuses.every(s => s === "completed"))
                   return (
                     <Tag style={{ backgroundColor: "#e6f7ee", color: "#08965b" }}>
                       Completed
@@ -1389,7 +1514,7 @@ const SalesDashboard = () => {
             {
               title: "Action",
               key: "action",
-              render: (_, clienttsses) => (
+              render: (_, client) => (
                 <Button
                   size="small"
                   style={{
@@ -1399,7 +1524,7 @@ const SalesDashboard = () => {
                   }}
                   onClick={() => {
                     setSelectedMenu("history");
-                    handleClientSelect(clienttsses.uniqueId);
+                    handleClientSelect(client._id);
                   }}
                 >
                   View Orders
@@ -1407,7 +1532,7 @@ const SalesDashboard = () => {
               ),
             },
           ]}
-          rowKey="uniqueId"
+          rowKey="_id"
           loading={loading}
           scroll={{ x: true }}
           pagination={{ pageSize: 5 }}
@@ -1437,6 +1562,7 @@ const SalesDashboard = () => {
             placeholder="Select client"
             optionFilterProp="children"
             onChange={handleClientSelect}
+            value={selectedClient?._id}
             filterOption={(input, option) =>
               option.children.toLowerCase().includes(input.toLowerCase())
             }
@@ -1448,9 +1574,9 @@ const SalesDashboard = () => {
               <ChevronDown className="h-4 w-4" style={{ color: colors.darkGold }} />
             }
           >
-            {clienttsses.map((clienttsses) => (
-              <Option key={clienttsses.uniqueId} value={clienttsses.uniqueId}>
-                {clienttsses.uniqueId} - {clienttsses.name}
+            {clients.map((client) => (
+              <Option key={client._id} value={client._id}>
+                {client.uniqueId} - {client.name}
               </Option>
             ))}
           </Select>
@@ -1549,7 +1675,7 @@ const SalesDashboard = () => {
                       value={item.srNo}
                       onChange={(val) => updateOrderItem(index, "srNo", val)}
                       style={{ width: '100%', borderColor: colors.darkGold }}
-                      min={0}
+                      min={1}
                     />
                   </div>
                   
@@ -1564,11 +1690,30 @@ const SalesDashboard = () => {
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium" style={{ color: colors.velvet }}>Clarity</label>
+                    <label className="block text-sm font-medium" style={{ color: colors.velvet }}>Diamond Clarity</label>
                     <Input
-                      value={item.clarity}
-                      onChange={(e) => updateOrderItem(index, "clarity", e.target.value)}
+                      value={item.diamondClarity}
+                      onChange={(e) => updateOrderItem(index, "diamondClarity", e.target.value)}
                       style={{ width: '100%', borderColor: colors.darkGold }}
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium" style={{ color: colors.velvet }}>Diamond Color</label>
+                    <Input
+                      value={item.diamondColor}
+                      onChange={(e) => updateOrderItem(index, "diamondColor", e.target.value)}
+                      style={{ width: '100%', borderColor: colors.darkGold }}
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium" style={{ color: colors.velvet }}>Quantity</label>
+                    <InputNumber
+                      value={item.quantity}
+                      onChange={(val) => updateOrderItem(index, "quantity", val)}
+                      style={{ width: '100%', borderColor: colors.darkGold }}
+                      min={1}
                     />
                   </div>
                   
@@ -1675,7 +1820,13 @@ const SalesDashboard = () => {
                   Style No*
                 </th>
                 <th className="p-2 text-left font-medium border" style={{ borderColor: colors.darkGold, color: colors.velvet }}>
-                  Clarity
+                 Diamond Clarity
+                </th>
+                <th className="p-2 text-left font-medium border" style={{ borderColor: colors.darkGold, color: colors.velvet }}>
+                 Diamond Color
+                </th>
+                <th className="p-2 text-left font-medium border" style={{ borderColor: colors.darkGold, color: colors.velvet }}>
+                  Quantity
                 </th>
                 <th className="p-2 text-left font-medium border" style={{ borderColor: colors.darkGold, color: colors.velvet }}>
                   Gross WT
@@ -1691,6 +1842,9 @@ const SalesDashboard = () => {
                 </th>
                 <th className="p-2 text-left font-medium border" style={{ borderColor: colors.darkGold, color: colors.velvet }}>
                   Amount*
+                </th>
+                <th className="p-2 text-left font-medium border" style={{ borderColor: colors.darkGold, color: colors.velvet }}>
+                  Description
                 </th>
                 <th className="p-2 text-left font-medium border" style={{ borderColor: colors.darkGold, color: colors.velvet }}>
                   Action
@@ -1715,7 +1869,7 @@ const SalesDashboard = () => {
                         width: "100%",
                         borderColor: colors.darkGold,
                       }}
-                      min={0}
+                      min={1}
                     />
                   </td>
                   <td className="p-2 border" style={{ borderColor: colors.darkGold }}>
@@ -1733,14 +1887,39 @@ const SalesDashboard = () => {
                   </td>
                   <td className="p-2 border" style={{ borderColor: colors.darkGold }}>
                     <Input
-                      value={item.clarity}
+                      value={item.diamondClarity}
                       onChange={(e) =>
-                        updateOrderItem(index, "clarity", e.target.value)
+                        updateOrderItem(index, "diamondClarity", e.target.value)
                       }
                       style={{
                         width: "100%",
                         borderColor: colors.darkGold,
                       }}
+                    />
+                  </td>
+                  <td className="p-2 border" style={{ borderColor: colors.darkGold }}>
+                    <Input
+                      value={item.diamondColor}
+                      onChange={(e) =>
+                        updateOrderItem(index, "diamondColor", e.target.value)
+                      }
+                      style={{
+                        width: "100%",
+                        borderColor: colors.darkGold,
+                      }}
+                    />
+                  </td>
+                  <td className="p-2 border" style={{ borderColor: colors.darkGold }}>
+                    <InputNumber
+                      value={item.quantity}
+                      onChange={(val) =>
+                        updateOrderItem(index, "quantity", val)
+                      }
+                      style={{
+                        width: "100%",
+                        borderColor: colors.darkGold,
+                      }}
+                      min={1}
                     />
                   </td>
                   <td className="p-2 border" style={{ borderColor: colors.darkGold }}>
@@ -1808,6 +1987,15 @@ const SalesDashboard = () => {
                       }}
                       min={0}
                       step={0.01}
+                    />
+                  </td>
+                  <td className="p-2 border" style={{ borderColor: colors.darkGold }}>
+                    <Input.TextArea
+                      value={item.description}
+                      onChange={(e) => updateOrderItem(index, "description", e.target.value)}
+                      rows={2}
+                      style={{ width: "100%", borderColor: colors.darkGold }}
+                      placeholder={`Description for item ${index + 1}`}
                     />
                   </td>
                   <td className="p-2 border text-center" style={{ borderColor: colors.darkGold }}>
@@ -1880,10 +2068,10 @@ const SalesDashboard = () => {
               width: "100%",
               borderColor: colors.darkGold,
             }}
-            placeholder="Search client by ID"
-            value={selectedClient?.uniqueId}
-            onChange={(uniqueId) => {
-              handleClientSelect(uniqueId);
+            placeholder="Search client"
+            value={selectedClient?._id}
+            onChange={(clientId) => {
+              handleClientSelect(clientId);
             }}
             showSearch
             optionFilterProp="children"
@@ -1894,9 +2082,9 @@ const SalesDashboard = () => {
               <Search className="h-4 w-4" style={{ color: colors.darkGold }} />
             }
           >
-            {clienttsses.map((clienttsses) => (
-              <Option key={clienttsses.uniqueId} value={clienttsses.uniqueId}>
-                {clienttsses.uniqueId} - {clienttsses.name}
+            {clients.map((client) => (
+              <Option key={client._id} value={client._id}>
+                {client.uniqueId} - {client.name}
               </Option>
             ))}
           </Select>
@@ -1908,7 +2096,7 @@ const SalesDashboard = () => {
               {orderHistory.length > 0 ? (
                 orderHistory.map((order) => (
                   <div 
-                    key={order.orderId} 
+                    key={order._id} 
                     className="border rounded-lg p-4"
                     style={{ borderColor: colors.darkGold }}
                     onClick={() => handleOrderClick(order)}
@@ -1916,7 +2104,7 @@ const SalesDashboard = () => {
                     <div className="space-y-2">
                       <div className="flex justify-between">
                         <span className="font-medium">Order ID:</span>
-                        <span>{order.orderId?.slice(0, 8)}...</span>
+                        <span>{order._id?.slice(0, 8)}...</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="font-medium">Date:</span>
@@ -1956,7 +2144,7 @@ const SalesDashboard = () => {
             <Table
               bordered
               dataSource={orderHistory}
-              rowKey="orderId"
+              rowKey="_id"
               size="middle"
               pagination={{ pageSize: 5 }}
               style={{ marginTop: "1.5rem" }}
@@ -1966,7 +2154,7 @@ const SalesDashboard = () => {
               columns={[
                 {
                   title: "Order ID",
-                  dataIndex: "orderId",
+                  dataIndex: "_id",
                   key: "orderId",
                   render: (id) => (
                     <span style={{ color: colors.darkGold, fontWeight: 600 }}>
@@ -2292,8 +2480,8 @@ const SalesDashboard = () => {
             </nav>
           </div>
         </div>
-      )}
-
+      )
+    }
       <div className="flex-1 flex flex-col overflow-hidden md:mt-0 mt-16">
         {/* Desktop Header */}
         <header
@@ -2345,11 +2533,11 @@ const SalesDashboard = () => {
       </div>
 
       {/* Client Modal */}
-      <ClientModal clienttsses={modalClient} onClose={closeModal} />
+      <ClientModal client={modalClient} onClose={closeModal} />
 
       {/* Ongoing Order Modal */}
       <OngoingOrderModal
-        orderId={selectedOrder?.orderId}
+        orderId={selectedOrder?._id}
         visible={ongoingOrderModalVisible}
         onClose={closeOrderModal}
       />

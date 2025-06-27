@@ -399,33 +399,63 @@ exports.createUser = async (req, res) => {
 
 
 
+//recent
+// exports.getAllClients = async (req, res) => {
+//   try {
+//     const clients = await Clienttss.find({});
+
+//     const formattedClients = clients.map(client => {
+//       const clientData = client.toObject();
+
+//       // Convert Map to Array (for orders)
+//       if (clientData.orders instanceof Map || clientData.orders?.constructor.name === 'Object') {
+//         clientData.orders = Object.entries(clientData.orders || {}).map(([orderId, orderData]) => ({
+//           orderId,
+//           ...orderData
+//         }));
+//       }
+
+//       return clientData;
+//     });
+
+//     res.json({ success: true, clients: formattedClients });
+//   } catch (err) {
+//     console.error("Error fetching clients:", err);
+//     res.status(500).json({ success: false, message: err.message });
+//   }
+// };
+
+
+
 
 exports.getAllClients = async (req, res) => {
   try {
-    const clients = await Clienttss.find({});
-
+    const clients = await Clienttss.find({}).lean(); // Using lean() for better performance
+    
     const formattedClients = clients.map(client => {
-      const clientData = client.toObject();
-
-      // Convert Map to Array (for orders)
-      if (clientData.orders instanceof Map || clientData.orders?.constructor.name === 'Object') {
-        clientData.orders = Object.entries(clientData.orders || {}).map(([orderId, orderData]) => ({
-          orderId,
-          ...orderData
-        }));
-      }
-
-      return clientData;
+      // Convert orders Map to array of objects
+      const ordersArray = client.orders ? Array.from(client.orders.entries()).map(([orderId, order]) => ({
+        orderId,
+        ...order,
+        orderItems: order.orderItems || [] // Ensure orderItems exists
+      })) : [];
+      
+      return {
+        ...client,
+        orders: ordersArray
+      };
     });
 
     res.json({ success: true, clients: formattedClients });
   } catch (err) {
     console.error("Error fetching clients:", err);
-    res.status(500).json({ success: false, message: err.message });
+    res.status(500).json({ 
+      success: false, 
+      message: err.message,
+      error: process.env.NODE_ENV === 'development' ? err.stack : undefined
+    });
   }
 };
-
-
 
 
 
@@ -454,6 +484,8 @@ exports.getAllClients = async (req, res) => {
 //     res.status(500).json({ error: err.message });
 //   }
 // };
+
+
 
 
 

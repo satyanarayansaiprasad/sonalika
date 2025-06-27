@@ -377,10 +377,10 @@ exports.createUser = async (req, res) => {
 
 exports.getClients = async (req, res) => {
   try {
-    const clients = await Clients.find({});
+    const clienttss = await Clienttss.find({});
     
     // Convert to plain objects and handle the Map
-    const formattedClients = clients.map(client => {
+    const formattedClients = clienttss.map(client => {
       const clientData = client.toObject();
       
       // Convert orders Map to array if it exists

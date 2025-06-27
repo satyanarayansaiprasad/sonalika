@@ -62,13 +62,14 @@ const clienttssSchema = new mongoose.Schema({
 }
 
 }, { timestamps: true });
- const Clienttss=mongoose('Clienttss',clienttssSchema)
+ const Clienttss=mongoose.model('Clienttss',clienttssSchema)
 module.exports =Clienttss;
 
 
 
 
-
+// const Team = mongoose.model('Team', TeamSchema);
+// module.exports=Team;
 
 
 

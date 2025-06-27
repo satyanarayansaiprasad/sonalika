@@ -374,66 +374,62 @@ exports.createUser = async (req, res) => {
 };
 
 
-exports.getClienttss = async (req, res) => {
+
+
+
+// exports.getAllClients = async (req, res) => {
+//   try {
+//     const clients = await Clienttss.find({});
+//     const formattedClients = clients.map(client => {
+//       const clientData = client.toObject();
+//       if (clientData.orders instanceof Map) {
+//         clientData.orders = Array.from(clientData.orders.entries()).map(([id, order]) => ({
+//           orderId: id,
+//           ...order
+//         }));
+//       }
+//       return clientData;
+//     });
+//     res.json({ success: true, clients: formattedClients });
+//   } catch (err) {
+//     res.status(500).json({ success: false, message: err.message });
+//   }
+// };
+
+
+
+
+
+exports.getAllClients = async (req, res) => {
   try {
-    // You can add query parameters for filtering (optional)
-    const { search, page = 1, limit = 10 } = req.query;
-    
-    // Build the query
-    const query = {};
-    
-    // Add search functionality (optional)
-    if (search) {
-      query.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { uniqueId: { $regex: search, $options: 'i' } },
-        { phone: { $regex: search, $options: 'i' } },
-        { email: { $regex: search, $options: 'i' } }
-      ];
-    }
+    const clients = await Clienttss.find({});
 
-    // Get paginated results
-    const clients = await Clienttss.find(query)
-      .sort({ createdAt: -1 }) // Sort by newest first
-      .skip((page - 1) * limit)
-      .limit(limit)
-      .lean(); // Convert to plain objects
-
-    // Convert orders Map to array for each client
     const formattedClients = clients.map(client => {
-      if (client.orders && client.orders instanceof Map) {
-        client.orders = Array.from(client.orders.entries()).map(([id, order]) => ({
-          orderId: id,
-          ...order
+      const clientData = client.toObject();
+
+      // Convert Map to Array (for orders)
+      if (clientData.orders instanceof Map || clientData.orders?.constructor.name === 'Object') {
+        clientData.orders = Object.entries(clientData.orders || {}).map(([orderId, orderData]) => ({
+          orderId,
+          ...orderData
         }));
       }
-      return client;
+
+      return clientData;
     });
 
-    // Get total count for pagination info
-    const total = await Clienttss.countDocuments(query);
-
-    return res.status(200).json({
-      success: true,
-      message: "Clients retrieved successfully",
-      data: formattedClients,
-      pagination: {
-        total,
-        page: Number(page),
-        limit: Number(limit),
-        totalPages: Math.ceil(total / limit)
-      }
-    });
-
-  } catch (error) {
-    console.error("Error fetching clients:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Internal server error",
-      error: error.message
-    });
+    res.json({ success: true, clients: formattedClients });
+  } catch (err) {
+    console.error("Error fetching clients:", err);
+    res.status(500).json({ success: false, message: err.message });
   }
 };
+
+
+
+
+
+
 // exports.getClienttss = async (req, res) => {
 //   try {
 //     const clienttss = await Clienttss.find({});

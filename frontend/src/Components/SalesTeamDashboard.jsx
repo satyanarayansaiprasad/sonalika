@@ -81,7 +81,7 @@ const SalesDashboard = () => {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileMenuVisible, setMobileMenuVisible] = useState(false);
   const [selectedMenu, setSelectedMenu] = useState("dashboard");
-  const [users, setUsers] = useState([]);
+  const [clienttsses, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [kycForm] = Form.useForm();
   const [orderForm] = Form.useForm();
@@ -182,9 +182,9 @@ const SalesDashboard = () => {
   try {
     const res = await axios.get(`${API_BASE_URL}/api/team/get-clients`);
     if (res.data.success) {
-      const usersData = res.data.users || [];
-      setUsers(usersData);
-      calculateStats(usersData);
+      const clienttssesData = res.data.clienttsses || [];
+      setUsers(clienttssesData);
+      calculateStats(clienttssesData);
     } else {
       message.error(res.data.message);
       setUsers([]);
@@ -198,23 +198,23 @@ const SalesDashboard = () => {
   }
 };
 
-  const calculateStats = (usersData) => {
+  const calculateStats = (clienttssesData) => {
     let totalOrders = 0;
     const activeClients = new Set();
 
-    usersData.forEach((users) => {
-      const orders = ordersToArray(users.orders);
+    clienttssesData.forEach((clienttsses) => {
+      const orders = ordersToArray(clienttsses.orders);
 
       orders.forEach((order) => {
         totalOrders++;
         if (order.status === "ongoing") {
-          activeClients.add(users.uniqueId);
+          activeClients.add(clienttsses.uniqueId);
         }
       });
     });
 
     setStats({
-      totalClients: usersData.length,
+      totalClients: clienttssesData.length,
       activeClients: activeClients.size,
       totalOrders,
     });
@@ -238,8 +238,8 @@ const SalesDashboard = () => {
     return [];
   };
 
-  const handleClientClick = (users) => {
-    setModalClient(users);
+  const handleClientClick = (clienttsses) => {
+    setModalClient(clienttsses);
   };
 
   const handleOrderClick = (order) => {
@@ -353,14 +353,14 @@ const SalesDashboard = () => {
         params: { uniqueId }
       });
 
-      const usersData = clientRes.data?.data || clientRes.data;
+      const clienttssesData = clientRes.data?.data || clientRes.data;
       
-      if (!usersData) {
+      if (!clienttssesData) {
         message.error("Client not found");
         return;
       }
 
-      const orders = ordersToArray(usersData.orders);
+      const orders = ordersToArray(clienttssesData.orders);
       
       const formattedHistory = orders.map(order => ({
         ...order,
@@ -399,7 +399,7 @@ const SalesDashboard = () => {
   };
 
   const handleClientSelect = (uniqueId) => {
-    const client = users.find((c) => c.uniqueId === uniqueId);
+    const client = clienttsses.find((c) => c.uniqueId === uniqueId);
     setSelectedClient(client || null);
     if (selectedMenu === "history") {
       fetchOrderHistory(uniqueId);
@@ -410,8 +410,8 @@ const SalesDashboard = () => {
     fetchClients();
   }, []);
 
-  const ClientModal = ({ users, onClose }) => {
-    if (!users) return null;
+  const ClientModal = ({ clienttsses, onClose }) => {
+    if (!clienttsses) return null;
 
     return (
       <AnimatePresence>
@@ -433,10 +433,10 @@ const SalesDashboard = () => {
             <div className="flex justify-between items-start mb-4">
               <div>
                 <h3 className="text-xl font-bold" style={{ color: colors.velvet }}>
-                  {users.name}
+                  {clienttsses.name}
                 </h3>
                 <p className="text-sm" style={{ color: colors.darkGold }}>
-                  {users.uniqueId}
+                  {clienttsses.uniqueId}
                 </p>
               </div>
               <button
@@ -476,7 +476,7 @@ const SalesDashboard = () => {
                     d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
                   />
                 </svg>
-                <span className="text-gray-700">{users.phone}</span>
+                <span className="text-gray-700">{clienttsses.phone}</span>
               </div>
 
               <div className="flex items-start">
@@ -500,10 +500,10 @@ const SalesDashboard = () => {
                     d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
                   />
                 </svg>
-                <span className="text-gray-700">{users.address}</span>
+                <span className="text-gray-700">{clienttsses.address}</span>
               </div>
 
-              {users.gstNo && (
+              {clienttsses.gstNo && (
                 <div className="flex items-center">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -519,7 +519,7 @@ const SalesDashboard = () => {
                       d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
                     />
                   </svg>
-                  <span className="text-gray-700">GST: {users.gstNo}</span>
+                  <span className="text-gray-700">GST: {clienttsses.gstNo}</span>
                 </div>
               )}
             </div>
@@ -533,7 +533,7 @@ const SalesDashboard = () => {
                 >
                   <p className="text-sm text-gray-600">Total Orders</p>
                   <p className="text-lg font-bold" style={{ color: colors.velvet }}>
-                    {users.orders ? ordersToArray(users.orders).length : 0}
+                    {clienttsses.orders ? ordersToArray(clienttsses.orders).length : 0}
                   </p>
                 </div>
                 <div
@@ -542,8 +542,8 @@ const SalesDashboard = () => {
                 >
                   <p className="text-sm text-gray-600">Active Orders</p>
                   <p className="text-lg font-bold" style={{ color: colors.light }}>
-                    {users.orders
-                      ? ordersToArray(users.orders).filter(
+                    {clienttsses.orders
+                      ? ordersToArray(clienttsses.orders).filter(
                           (o) => o.status === "ongoing"
                         ).length
                       : 0}
@@ -602,9 +602,9 @@ const SalesDashboard = () => {
                 <div className="border rounded-lg p-4">
                   <h4 className="font-medium mb-2">Client Information</h4>
                   <div className="space-y-2">
-                    <p><span className="font-medium">Name:</span> {order.users?.name || "N/A"}</p>
-                    <p><span className="font-medium">Phone:</span> {order.users?.phone || "N/A"}</p>
-                    <p><span className="font-medium">GST:</span> {order.users?.gstNo || "N/A"}</p>
+                    <p><span className="font-medium">Name:</span> {order.clienttsses?.name || "N/A"}</p>
+                    <p><span className="font-medium">Phone:</span> {order.clienttsses?.phone || "N/A"}</p>
+                    <p><span className="font-medium">GST:</span> {order.clienttsses?.gstNo || "N/A"}</p>
                   </div>
                 </div>
                 
@@ -661,15 +661,15 @@ const SalesDashboard = () => {
                   <div className="space-y-2">
                     <p>
                       <span className="font-medium">Name:</span>{" "}
-                      {order.users?.name || "N/A"}
+                      {order.clienttsses?.name || "N/A"}
                     </p>
                     <p>
                       <span className="font-medium">Phone:</span>{" "}
-                      {order.users?.phone || "N/A"}
+                      {order.clienttsses?.phone || "N/A"}
                     </p>
                     <p>
                       <span className="font-medium">GST:</span>{" "}
-                      {order.users?.gstNo || "N/A"}
+                      {order.clienttsses?.gstNo || "N/A"}
                     </p>
                   </div>
                 </div>
@@ -852,7 +852,7 @@ const SalesDashboard = () => {
             All Clients
           </h2>
           <Table
-            dataSource={users}
+            dataSource={clienttsses}
             columns={[
               {
                 title: "Unique ID",
@@ -911,8 +911,8 @@ const SalesDashboard = () => {
             Ongoing Orders
           </h2>
           <Table
-            dataSource={users.filter((users) => {
-              const orders = ordersToArray(users.orders);
+            dataSource={clienttsses.filter((clienttsses) => {
+              const orders = ordersToArray(clienttsses.orders);
               return orders.some((order) => order?.status === "ongoing");
             })}
             columns={[
@@ -932,8 +932,8 @@ const SalesDashboard = () => {
               {
                 title: "Status",
                 key: "status",
-                render: (_, users) => {
-                  const orders = ordersToArray(users.orders);
+                render: (_, clienttsses) => {
+                  const orders = ordersToArray(clienttsses.orders);
                   if (!orders.length) {
                     return <Tag className="bg-gray-100 text-gray-700">No Orders</Tag>;
                   }
@@ -966,7 +966,7 @@ const SalesDashboard = () => {
               {
                 title: "Action",
                 key: "action",
-                render: (_, users) => (
+                render: (_, clienttsses) => (
                   <Button
                     size="small"
                     style={{
@@ -974,7 +974,7 @@ const SalesDashboard = () => {
                       color: colors.darkGold,
                       borderColor: colors.darkGold,
                     }}
-                    onClick={() => handleClientClick(users)}
+                    onClick={() => handleClientClick(clienttsses)}
                   >
                     View Details
                   </Button>
@@ -1006,11 +1006,11 @@ const SalesDashboard = () => {
             Completed Orders
           </h2>
           <Table
-            dataSource={users.flatMap((users) => {
-              const orders = ordersToArray(users.orders);
+            dataSource={clienttsses.flatMap((clienttsses) => {
+              const orders = ordersToArray(clienttsses.orders);
               return orders
                 .filter((order) => order?.status === "completed")
-                .map((order) => ({ ...order, clientName: users.name, users }))
+                .map((order) => ({ ...order, clientName: clienttsses.name, clienttsses }))
                 .sort(
                   (a, b) =>
                     new Date(b?.orderDate || 0) - new Date(a?.orderDate || 0)
@@ -1024,7 +1024,7 @@ const SalesDashboard = () => {
                 render: (text, record) => (
                   <span
                     className="font-medium cursor-pointer hover:text-blue-600 transition-colors"
-                    onClick={() => handleClientClick(record.users)}
+                    onClick={() => handleClientClick(record.clienttsses)}
                     style={{ color: colors.velvet }}
                   >
                     {text}
@@ -1113,7 +1113,7 @@ const SalesDashboard = () => {
       </div>
 
       {/* Client Modal */}
-      <ClientModal users={modalClient} onClose={closeModal} />
+      <ClientModal clienttsses={modalClient} onClose={closeModal} />
 
       {/* Ongoing Order Modal */}
       <OngoingOrderModal
@@ -1325,7 +1325,7 @@ const SalesDashboard = () => {
           Existing Clients
         </h4>
         <Table
-          dataSource={users}
+          dataSource={clienttsses}
           columns={[
             {
               title: "Unique ID",
@@ -1358,8 +1358,8 @@ const SalesDashboard = () => {
             {
               title: "Status",
               key: "status",
-              render: (_, users) => {
-                const orders = ordersToArray(users.orders);
+              render: (_, clienttsses) => {
+                const orders = ordersToArray(clienttsses.orders);
                 if (orders.length === 0)
                   return (
                     <Tag style={{ backgroundColor: colors.platinum }}>No orders</Tag>
@@ -1389,7 +1389,7 @@ const SalesDashboard = () => {
             {
               title: "Action",
               key: "action",
-              render: (_, users) => (
+              render: (_, clienttsses) => (
                 <Button
                   size="small"
                   style={{
@@ -1399,7 +1399,7 @@ const SalesDashboard = () => {
                   }}
                   onClick={() => {
                     setSelectedMenu("history");
-                    handleClientSelect(users.uniqueId);
+                    handleClientSelect(clienttsses.uniqueId);
                   }}
                 >
                   View Orders
@@ -1448,9 +1448,9 @@ const SalesDashboard = () => {
               <ChevronDown className="h-4 w-4" style={{ color: colors.darkGold }} />
             }
           >
-            {users.map((users) => (
-              <Option key={users.uniqueId} value={users.uniqueId}>
-                {users.uniqueId} - {users.name}
+            {clienttsses.map((clienttsses) => (
+              <Option key={clienttsses.uniqueId} value={clienttsses.uniqueId}>
+                {clienttsses.uniqueId} - {clienttsses.name}
               </Option>
             ))}
           </Select>
@@ -1894,9 +1894,9 @@ const SalesDashboard = () => {
               <Search className="h-4 w-4" style={{ color: colors.darkGold }} />
             }
           >
-            {users.map((users) => (
-              <Option key={users.uniqueId} value={users.uniqueId}>
-                {users.uniqueId} - {users.name}
+            {clienttsses.map((clienttsses) => (
+              <Option key={clienttsses.uniqueId} value={clienttsses.uniqueId}>
+                {clienttsses.uniqueId} - {clienttsses.name}
               </Option>
             ))}
           </Select>
@@ -2345,7 +2345,7 @@ const SalesDashboard = () => {
       </div>
 
       {/* Client Modal */}
-      <ClientModal users={modalClient} onClose={closeModal} />
+      <ClientModal clienttsses={modalClient} onClose={closeModal} />
 
       {/* Ongoing Order Modal */}
       <OngoingOrderModal

@@ -1282,76 +1282,200 @@ const SalesDashboard = () => {
   );
 
   const renderKYCForm = () => (
-    <div className="space-y-6">
-      <h3 className="text-2xl font-semibold" style={{ color: colors.velvet }}>
-        Client KYC Form
-      </h3>
+  <div className="space-y-6">
+    <h3 className="text-2xl font-semibold" style={{ color: colors.velvet }}>
+      Client KYC Form
+    </h3>
 
-      {kycFields.map((field, index) => (
-        <div
-          key={index}
-          className="rounded-lg shadow p-4 border space-y-4"
-          style={{
-            backgroundColor: colors.diamond,
-            borderColor: colors.darkGold,
-          }}
-        >
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Input
-              value={field.name}
-              onChange={(e) => updateKycField(index, "name", e.target.value)}
-              placeholder="Full name *"
-              style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
-            />
-            <Input
-              value={field.phone}
-              onChange={(e) => updateKycField(index, "phone", e.target.value)}
-              placeholder="Phone *"
-              style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
-            />
-            <Input
-              value={field.gstNo}
-              onChange={(e) => updateKycField(index, "gstNo", e.target.value)}
-              placeholder="GST No (Optional)"
-              style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
-            />
-            {kycFields.length > 1 && (
-              <Button
-                danger
-                icon={<Minus className="h-4 w-4" />}
-                onClick={() => removeKycRow(index)}
-                style={{
-                  backgroundColor: colors.platinum,
-                  color: colors.roseGold,
-                  borderColor: colors.roseGold,
-                }}
-              />
-            )}
-          </div>
+    <div className="rounded-lg shadow p-6 border" style={{
+      backgroundColor: colors.diamond,
+      borderColor: colors.darkGold,
+    }}>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Required Fields */}
+        <div>
+          <label className="block font-medium mb-1" style={{ color: colors.velvet }}>
+            Full Name <span className="text-red-500">*</span>
+          </label>
+          <Input
+            value={kycFields[0].name}
+            onChange={(e) => updateKycField(0, "name", e.target.value)}
+            placeholder="Enter full name"
+            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
+          />
+        </div>
 
+        <div>
+          <label className="block font-medium mb-1" style={{ color: colors.velvet }}>
+            Phone Number <span className="text-red-500">*</span>
+          </label>
+          <Input
+            value={kycFields[0].phone}
+            onChange={(e) => updateKycField(0, "phone", e.target.value)}
+            placeholder="10-15 digits"
+            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
+          />
+        </div>
+
+        {/* Optional Fields */}
+        <div>
+          <label className="block font-medium mb-1" style={{ color: colors.velvet }}>
+            Mobile Number (Optional)
+          </label>
+          <Input
+            value={kycFields[0].mobile}
+            onChange={(e) => updateKycField(0, "mobile", e.target.value)}
+            placeholder="Alternative phone"
+            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
+          />
+        </div>
+
+        <div>
+          <label className="block font-medium mb-1" style={{ color: colors.velvet }}>
+            Email (Optional)
+          </label>
+          <Input
+            value={kycFields[0].email}
+            onChange={(e) => updateKycField(0, "email", e.target.value)}
+            placeholder="client@example.com"
+            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
+          />
+        </div>
+
+        <div>
+          <label className="block font-medium mb-1" style={{ color: colors.velvet }}>
+            GST Number (Optional)
+          </label>
+          <Input
+            value={kycFields[0].gstNo}
+            onChange={(e) => updateKycField(0, "gstNo", e.target.value)}
+            placeholder="22AAAAA0000A1Z5"
+            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
+          />
+        </div>
+
+        <div>
+          <label className="block font-medium mb-1" style={{ color: colors.velvet }}>
+            Company PAN (Optional)
+          </label>
+          <Input
+            value={kycFields[0].companyPAN}
+            onChange={(e) => updateKycField(0, "companyPAN", e.target.value)}
+            placeholder="ABCDE1234F"
+            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
+          />
+        </div>
+
+        <div>
+          <label className="block font-medium mb-1" style={{ color: colors.velvet }}>
+            Owner PAN (Optional)
+          </label>
+          <Input
+            value={kycFields[0].ownerPAN}
+            onChange={(e) => updateKycField(0, "ownerPAN", e.target.value)}
+            placeholder="ABCDE1234F"
+            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
+          />
+        </div>
+
+        <div>
+          <label className="block font-medium mb-1" style={{ color: colors.velvet }}>
+            Aadhar Number (Optional)
+          </label>
+          <Input
+            value={kycFields[0].aadharNumber}
+            onChange={(e) => updateKycField(0, "aadharNumber", e.target.value)}
+            placeholder="12-digit number"
+            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
+          />
+        </div>
+
+        {/* Address Section */}
+        <div className="md:col-span-2">
+          <label className="block font-medium mb-1" style={{ color: colors.velvet }}>
+            Complete Address <span className="text-red-500">*</span>
+          </label>
           <Input.TextArea
-            value={field.address}
-            onChange={(e) => updateKycField(index, "address", e.target.value)}
-            placeholder="Full address *"
+            value={kycFields[0].address}
+            onChange={(e) => updateKycField(0, "address", e.target.value)}
+            placeholder="Full address with city, state, and pincode"
+            rows={3}
+            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
+          />
+        </div>
+
+        {/* Optional Address Fields */}
+        <div>
+          <label className="block font-medium mb-1" style={{ color: colors.velvet }}>
+            Billing Address (Optional)
+          </label>
+          <Input.TextArea
+            value={kycFields[0].billingAddress}
+            onChange={(e) => updateKycField(0, "billingAddress", e.target.value)}
+            placeholder="If different from main address"
             rows={2}
             style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
           />
         </div>
-      ))}
 
-      <div className="flex justify-between items-center">
-        <Button
-          type="dashed"
-          onClick={addKycRow}
-          icon={<Plus className="h-4 w-4" />}
-          style={{
-            borderColor: colors.darkGold,
-            color: colors.darkGold,
-            borderStyle: "dashed",
-          }}
-        >
-          Add Row
-        </Button>
+        <div>
+          <label className="block font-medium mb-1" style={{ color: colors.velvet }}>
+            Shipping Address (Optional)
+          </label>
+          <Input.TextArea
+            value={kycFields[0].shippingAddress}
+            onChange={(e) => updateKycField(0, "shippingAddress", e.target.value)}
+            placeholder="If different from main address"
+            rows={2}
+            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
+          />
+        </div>
+
+        {/* Additional Optional Fields */}
+        <div>
+          <label className="block font-medium mb-1" style={{ color: colors.velvet }}>
+            Import/Export Code (Optional)
+          </label>
+          <Input
+            value={kycFields[0].importExportCode}
+            onChange={(e) => updateKycField(0, "importExportCode", e.target.value)}
+            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
+          />
+        </div>
+
+        <div>
+          <label className="block font-medium mb-1" style={{ color: colors.velvet }}>
+            Company Type (Optional)
+          </label>
+          <Select
+            value={kycFields[0].companyType}
+            onChange={(value) => updateKycField(0, "companyType", value)}
+            style={{ width: '100%', borderColor: colors.darkGold }}
+            placeholder="Select company type"
+          >
+            <Option value="Proprietorship">Proprietorship</Option>
+            <Option value="Partnership">Partnership</Option>
+            <Option value="LLP">LLP</Option>
+            <Option value="Private Limited">Private Limited</Option>
+            <Option value="Public Limited">Public Limited</Option>
+            <Option value="Individual">Individual</Option>
+          </Select>
+        </div>
+
+        <div>
+          <label className="block font-medium mb-1" style={{ color: colors.velvet }}>
+            Website (Optional)
+          </label>
+          <Input
+            value={kycFields[0].website}
+            onChange={(e) => updateKycField(0, "website", e.target.value)}
+            placeholder="https://example.com"
+            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
+          />
+        </div>
+      </div>
+
+      <div className="flex justify-end mt-6">
         <Button
           type="primary"
           onClick={handleKYCSubmit}
@@ -1359,42 +1483,32 @@ const SalesDashboard = () => {
           style={{
             backgroundColor: colors.darkGold,
             color: colors.light,
-            border: "none",
-            fontWeight: "medium",
-            padding: "8px 24px",
-            borderRadius: "6px",
+            padding: '8px 24px',
+            borderRadius: '6px',
+            fontWeight: 'medium'
           }}
         >
           Submit KYC
         </Button>
       </div>
-
-      {/* Client List */}
-      <div
-        className="mt-10 border rounded-lg p-4"
-        style={{
-          borderColor: colors.darkGold,
-          backgroundColor: colors.diamond,
-        }}
-      >
-        <h4
-          className="text-lg font-medium mb-4"
-          style={{ color: colors.velvet }}
-        >
-          Existing Clients
-        </h4>
-        <Table
-          dataSource={clients}
-          columns={clientColumns}
-          rowKey="uniqueId"
-          loading={loading}
-          pagination={{ pageSize: 5 }}
-          scroll={{ x: true }}
-          className="w-full custom-table"
-        />
-      </div>
     </div>
-  );
+
+    {/* Client List Table */}
+    <div className="mt-8">
+      <h4 className="text-lg font-semibold mb-4" style={{ color: colors.velvet }}>
+        Existing Clients
+      </h4>
+      <Table
+        dataSource={clients}
+        columns={clientColumns}
+        rowKey="uniqueId"
+        loading={loading}
+        scroll={{ x: true }}
+        pagination={{ pageSize: 5 }}
+      />
+    </div>
+  </div>
+);
 
   const renderOrderForm = () => (
     <div>

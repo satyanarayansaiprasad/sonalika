@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-const clientSchema = new mongoose.Schema({
+const clienttssSchema = new mongoose.Schema({
   name: {
     type: String,
     required: true,
@@ -63,7 +63,8 @@ const clientSchema = new mongoose.Schema({
 
 }, { timestamps: true });
 
-module.exports = mongoose.model("Clients", clientSchema);
+module.exports = mongoose.model("Clienttss", clienttssSchema);
+
 
 
 

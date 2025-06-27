@@ -81,7 +81,7 @@ const SalesDashboard = () => {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileMenuVisible, setMobileMenuVisible] = useState(false);
   const [selectedMenu, setSelectedMenu] = useState("dashboard");
-  const [clients, setClients] = useState([]);
+  const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [kycForm] = Form.useForm();
   const [orderForm] = Form.useForm();
@@ -93,120 +93,320 @@ const SalesDashboard = () => {
     activeClients: 0,
     totalOrders: 0,
   });
-  const [kycFields, setKycFields] = useState([
-    { name: "", phone: "", address: "", gstNo: "", officePhone: "", landline: "", email: "", companyPAN: "", ownerPAN: "", aadharNumber: "", importExportCode: "" }
-  ]);
+  
   const [modalClient, setModalClient] = useState(null);
   const [ongoingOrderModalVisible, setOngoingOrderModalVisible] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
 
-  const cellStyle = {
-    border: "1px solid #c49b0d",
-    borderRadius: "6px",
-    padding: "4px 8px",
-    width: "100%",
-    backgroundColor: "white",
-  };
+  // KYC Form Submit Handler
+  const handleKYCSubmit = async (values) => {
+    try {
+      setLoading(true);
+      
+      // Prepare the payload
+      const payload = {
+        name: values.name,
+        phone: values.phone,
+        mobile: values.mobile,
+        officePhone: values.officePhone,
+        landline: values.landline,
+        email: values.email,
+        address: values.address,
+        gstNo: values.gstNo,
+        companyPAN: values.companyPAN,
+        ownerPAN: values.ownerPAN,
+        aadharNumber: values.aadharNumber,
+        importExportCode: values.importExportCode
+      };
 
-  const minimalClientColumns = [
-    {
-      title: "Unique ID",
-      dataIndex: "uniqueId",
-      key: "uniqueId",
-      render: (text) => (
-        <span
-          className="font-mono font-semibold"
-          style={{ color: colors.darkGold }}
-        >
-          {text}
-        </span>
-      ),
-    },
-    {
-      title: "Name",
-      dataIndex: "name",
-      key: "name",
-      render: (_, record) => (
-        <span
-          className="text-gray-800 font-medium cursor-pointer hover:text-blue-600 transition-colors"
-          onClick={() => handleClientClick(record)}
-          style={{ color: colors.velvet }}
-        >
-          {record.name}
-        </span>
-      ),
-    },
-  ];
+      // Make API call
+      const response = await axios.post(`${API_BASE_URL}/api/team/create-client`, payload);
 
-  const ongoingClientColumns = [
-    {
-      title: "Unique ID",
-      dataIndex: "uniqueId",
-      key: "uniqueId",
-      render: (text) => (
-        <span
-          className="font-mono font-semibold"
-          style={{ color: colors.darkGold }}
-        >
-          {text}
-        </span>
-      ),
-    },
-    {
-      title: "Status",
-      key: "status",
-      render: (_, client) => {
-        const orders = ordersToArray(client.orders);
-        if (!orders.length) {
-          return <Tag className="bg-gray-100 text-gray-700">No Orders</Tag>;
-        }
-
-        const latestOrder = orders
-          .filter((order) => order?.orderDate)
-          .sort((a, b) => new Date(b.orderDate) - new Date(a.orderDate))[0];
-
-        if (latestOrder?.status === "completed") {
-          return (
-            <Tag style={{ backgroundColor: "#e6f7ee", color: "#08965b" }}>
-              Completed
-            </Tag>
-          );
-        } else if (latestOrder?.status === "ongoing") {
-          return (
-            <Tag style={{ backgroundColor: "#e6f4ff", color: colors.darkGold }}>
-              Ongoing
-            </Tag>
+      if (response.data.success) {
+        message.success("Client KYC submitted successfully");
+        kycForm.resetFields();
+        fetchClients(); // Refresh the client list
+      } else {
+        message.error(response.data.message || "Failed to submit KYC");
+      }
+    } catch (error) {
+      console.error("KYC Submission Error:", error);
+      
+      if (error.response) {
+        if (error.response.status === 400) {
+          message.error(
+            error.response.data.message ||
+              "Validation failed. Please check your inputs."
           );
         } else {
-          return (
-            <Tag style={{ backgroundColor: "#fff7e6", color: "#d46b08" }}>
-              Pending
-            </Tag>
-          );
+          message.error(error.response.data.error || "KYC submission failed");
         }
-      },
-    },
-    {
-      title: "Action",
-      key: "action",
-      render: (_, client) => (
-        <Button
-          size="small"
-          style={{
-            backgroundColor: colors.platinum,
-            color: colors.darkGold,
-            borderColor: colors.darkGold,
-          }}
-          onClick={() => handleClientClick(client)}
-        >
-          View Details
-        </Button>
-      ),
-    },
-  ];
+      } else {
+        message.error(error.message || "An error occurred");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const ClientModal = ({ client, onClose }) => {
-    if (!client) return null;
+  // Validate Aadhar Number
+  const validateAadhar = (_, value) => {
+    if (!value) return Promise.resolve();
+    if (/^\d{12}$/.test(value)) {
+      return Promise.resolve();
+    }
+    return Promise.reject(new Error('Aadhar number must be 12 digits'));
+  };
+
+  // Validate GST Number
+  const validateGST = (_, value) => {
+    if (!value) return Promise.resolve();
+    if (/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(value)) {
+      return Promise.resolve();
+    }
+    return Promise.reject(new Error('Invalid GST number format'));
+  };
+
+  // Validate PAN Number
+  const validatePAN = (_, value) => {
+    if (!value) return Promise.resolve();
+    if (/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(value)) {
+      return Promise.resolve();
+    }
+    return Promise.reject(new Error('Invalid PAN format (e.g. ABCDE1234F)'));
+  };
+
+  // Fetch clients from API
+  const fetchClients = async () => {
+    setLoading(true);
+    try {
+      const res = await axios.get(`${API_BASE_URL}/api/team/get-clients`);
+      const usersData = res.data?.users || res.data?.data || [];
+      setUsers(usersData);
+      calculateStats(usersData);
+    } catch (err) {
+      console.error("Fetch error:", err);
+      message.error("Failed to fetch clients");
+      setUsers([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const calculateStats = (usersData) => {
+    let totalOrders = 0;
+    const activeClients = new Set();
+
+    usersData.forEach((users) => {
+      const orders = ordersToArray(users.orders);
+
+      orders.forEach((order) => {
+        totalOrders++;
+        if (order.status === "ongoing") {
+          activeClients.add(users.uniqueId);
+        }
+      });
+    });
+
+    setStats({
+      totalClients: usersData.length,
+      activeClients: activeClients.size,
+      totalOrders,
+    });
+  };
+
+  const ordersToArray = (orders) => {
+    if (!orders) return [];
+    if (Array.isArray(orders)) return orders;
+    if (orders instanceof Map) {
+      return Array.from(orders.entries()).map(([orderId, order]) => ({
+        orderId,
+        ...order,
+      }));
+    }
+    if (typeof orders === "object" && orders !== null) {
+      return Object.entries(orders).map(([orderId, order]) => ({
+        orderId,
+        ...order,
+      }));
+    }
+    return [];
+  };
+
+  const handleClientClick = (users) => {
+    setModalClient(users);
+  };
+
+  const handleOrderClick = (order) => {
+    setSelectedOrder(order);
+    setOngoingOrderModalVisible(true);
+  };
+
+  const closeModal = () => {
+    setModalClient(null);
+  };
+
+  const closeOrderModal = () => {
+    setOngoingOrderModalVisible(false);
+    setSelectedOrder(null);
+  };
+
+  const handleOrderSubmit = async () => {
+    try {
+      setLoading(true);
+
+      if (!selectedClient?.uniqueId) {
+        throw new Error("Please select a client");
+      }
+
+      if (!orderItems || orderItems.length === 0) {
+        throw new Error("Please add at least one order item");
+      }
+
+      const invalidItems = orderItems
+        .map((item, index) => {
+          const errors = [];
+          if (!item.styleNo?.trim()) errors.push("Style No is required");
+          if (!item.pcs || isNaN(item.pcs)) errors.push("PCS must be a number");
+          if (item.pcs < 1) errors.push("PCS must be at least 1");
+          if (!item.amount || isNaN(item.amount))
+            errors.push("Amount must be a number");
+          if (item.amount <= 0) errors.push("Amount must be greater than 0");
+
+          return errors.length > 0 ? { itemIndex: index, errors } : null;
+        })
+        .filter(Boolean);
+
+      if (invalidItems.length > 0) {
+        message.error({
+          content: (
+            <div>
+              <p>Please fix the following errors:</p>
+              <ul>
+                {invalidItems.map((item, idx) => (
+                  <li key={idx}>
+                    <strong>Item {item.itemIndex + 1}:</strong>{" "}
+                    {item.errors.join(", ")}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ),
+          duration: 10,
+        });
+        return;
+      }
+
+      const payload = {
+        uniqueId: selectedClient.uniqueId,
+        orderItems: orderItems.map((item) => ({
+          srNo: item.srNo || 0,
+          styleNo: item.styleNo.trim(),
+          clarity: item.clarity?.trim() || "",
+          grossWeight: item.grossWeight || 0,
+          netWeight: item.netWeight || 0,
+          diaWeight: item.diaWeight || 0,
+          pcs: item.pcs,
+          amount: item.amount,
+          description: item.description?.trim() || "",
+        })),
+      };
+
+      await axios.post(`${API_BASE_URL}/api/team/clients-order`, payload);
+
+      message.success("Order created successfully");
+      orderForm.resetFields();
+      setOrderItems([{}]);
+      setSelectedClient(null);
+      fetchClients();
+    } catch (err) {
+      console.error("Order Error:", err);
+
+      if (err.response) {
+        if (err.response.status === 400) {
+          message.error(
+            err.response.data.message ||
+              "Validation failed. Please check your inputs."
+          );
+        } else if (err.response.status === 404) {
+          message.error(err.response.data.message || "Client not found");
+        } else {
+          message.error(err.response.data.error || "Order creation failed");
+        }
+      } else {
+        message.error(err.message || "An error occurred");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchOrderHistory = async (uniqueId) => {
+    try {
+      setLoading(true);
+      const clientRes = await axios.get(`${API_BASE_URL}/api/team/get-clients`, {
+        params: { uniqueId }
+      });
+
+      const usersData = clientRes.data?.data || clientRes.data;
+      
+      if (!usersData) {
+        message.error("Client not found");
+        return;
+      }
+
+      const orders = ordersToArray(usersData.orders);
+      
+      const formattedHistory = orders.map(order => ({
+        ...order,
+        orderId: order.orderId || order._id || Math.random().toString(36).substring(7),
+        orderDate: order.orderDate || order.createdAt || new Date().toISOString()
+      }));
+
+      setOrderHistory(formattedHistory);
+    } catch (err) {
+      console.error("History Error:", err);
+      message.error("Failed to fetch order history");
+      setOrderHistory([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const addOrderItem = () => {
+    setOrderItems((prev) => [...prev, {}]);
+  };
+
+  const removeOrderItem = (index) => {
+    setOrderItems((prev) => {
+      const newItems = [...prev];
+      newItems.splice(index, 1);
+      return newItems;
+    });
+  };
+
+  const updateOrderItem = (index, field, value) => {
+    setOrderItems((prev) => {
+      const newItems = [...prev];
+      newItems[index] = { ...newItems[index], [field]: value };
+      return newItems;
+    });
+  };
+
+  const handleClientSelect = (uniqueId) => {
+    const client = users.find((c) => c.uniqueId === uniqueId);
+    setSelectedClient(client || null);
+    if (selectedMenu === "history") {
+      fetchOrderHistory(uniqueId);
+    }
+  };
+
+  useEffect(() => {
+    fetchClients();
+  }, []);
+
+  const ClientModal = ({ users, onClose }) => {
+    if (!users) return null;
 
     return (
       <AnimatePresence>
@@ -228,10 +428,10 @@ const SalesDashboard = () => {
             <div className="flex justify-between items-start mb-4">
               <div>
                 <h3 className="text-xl font-bold" style={{ color: colors.velvet }}>
-                  {client.name}
+                  {users.name}
                 </h3>
                 <p className="text-sm" style={{ color: colors.darkGold }}>
-                  {client.uniqueId}
+                  {users.uniqueId}
                 </p>
               </div>
               <button
@@ -271,7 +471,7 @@ const SalesDashboard = () => {
                     d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
                   />
                 </svg>
-                <span className="text-gray-700">{client.phone}</span>
+                <span className="text-gray-700">{users.phone}</span>
               </div>
 
               <div className="flex items-start">
@@ -295,10 +495,10 @@ const SalesDashboard = () => {
                     d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
                   />
                 </svg>
-                <span className="text-gray-700">{client.address}</span>
+                <span className="text-gray-700">{users.address}</span>
               </div>
 
-              {client.gstNo && (
+              {users.gstNo && (
                 <div className="flex items-center">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -314,7 +514,7 @@ const SalesDashboard = () => {
                       d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
                     />
                   </svg>
-                  <span className="text-gray-700">GST: {client.gstNo}</span>
+                  <span className="text-gray-700">GST: {users.gstNo}</span>
                 </div>
               )}
             </div>
@@ -328,7 +528,7 @@ const SalesDashboard = () => {
                 >
                   <p className="text-sm text-gray-600">Total Orders</p>
                   <p className="text-lg font-bold" style={{ color: colors.velvet }}>
-                    {client.orders ? ordersToArray(client.orders).length : 0}
+                    {users.orders ? ordersToArray(users.orders).length : 0}
                   </p>
                 </div>
                 <div
@@ -337,8 +537,8 @@ const SalesDashboard = () => {
                 >
                   <p className="text-sm text-gray-600">Active Orders</p>
                   <p className="text-lg font-bold" style={{ color: colors.light }}>
-                    {client.orders
-                      ? ordersToArray(client.orders).filter(
+                    {users.orders
+                      ? ordersToArray(users.orders).filter(
                           (o) => o.status === "ongoing"
                         ).length
                       : 0}
@@ -397,9 +597,9 @@ const SalesDashboard = () => {
                 <div className="border rounded-lg p-4">
                   <h4 className="font-medium mb-2">Client Information</h4>
                   <div className="space-y-2">
-                    <p><span className="font-medium">Name:</span> {order.client?.name || "N/A"}</p>
-                    <p><span className="font-medium">Phone:</span> {order.client?.phone || "N/A"}</p>
-                    <p><span className="font-medium">GST:</span> {order.client?.gstNo || "N/A"}</p>
+                    <p><span className="font-medium">Name:</span> {order.users?.name || "N/A"}</p>
+                    <p><span className="font-medium">Phone:</span> {order.users?.phone || "N/A"}</p>
+                    <p><span className="font-medium">GST:</span> {order.users?.gstNo || "N/A"}</p>
                   </div>
                 </div>
                 
@@ -456,15 +656,15 @@ const SalesDashboard = () => {
                   <div className="space-y-2">
                     <p>
                       <span className="font-medium">Name:</span>{" "}
-                      {order.client?.name || "N/A"}
+                      {order.users?.name || "N/A"}
                     </p>
                     <p>
                       <span className="font-medium">Phone:</span>{" "}
-                      {order.client?.phone || "N/A"}
+                      {order.users?.phone || "N/A"}
                     </p>
                     <p>
                       <span className="font-medium">GST:</span>{" "}
-                      {order.client?.gstNo || "N/A"}
+                      {order.users?.gstNo || "N/A"}
                     </p>
                   </div>
                 </div>
@@ -581,521 +781,6 @@ const SalesDashboard = () => {
     );
   };
 
-  const handleClientClick = (client) => {
-    setModalClient(client);
-  };
-
-  const handleOrderClick = (order) => {
-    setSelectedOrder(order);
-    setOngoingOrderModalVisible(true);
-  };
-
-  const closeModal = () => {
-    setModalClient(null);
-  };
-
-  const closeOrderModal = () => {
-    setOngoingOrderModalVisible(false);
-    setSelectedOrder(null);
-  };
-
-  const ordersToArray = (orders) => {
-    if (!orders) return [];
-
-    if (Array.isArray(orders)) return orders;
-
-    if (orders instanceof Map) {
-      return Array.from(orders.entries()).map(([orderId, order]) => ({
-        orderId,
-        ...order,
-      }));
-    }
-
-    if (typeof orders === "object" && orders !== null) {
-      return Object.entries(orders).map(([orderId, order]) => ({
-        orderId,
-        ...order,
-      }));
-    }
-
-    return [];
-  };
-
-  const fetchClients = async () => {
-    setLoading(true);
-    try {
-      const res = await axios.get(`${API_BASE_URL}/api/team/get-clients`);
-      const clientsData = res.data?.clients || res.data?.data || [];
-      setClients(clientsData);
-      calculateStats(clientsData);
-    } catch (err) {
-      console.error("Fetch error:", err);
-      message.error("Failed to fetch clients");
-      setClients([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const calculateStats = (clientsData) => {
-    let totalOrders = 0;
-    const activeClients = new Set();
-
-    clientsData.forEach((client) => {
-      const orders = ordersToArray(client.orders);
-
-      orders.forEach((order) => {
-        totalOrders++;
-        if (order.status === "ongoing") {
-          activeClients.add(client.uniqueId);
-        }
-      });
-    });
-
-    setStats({
-      totalClients: clientsData.length,
-      activeClients: activeClients.size,
-      totalOrders,
-    });
-  };
-
-  useEffect(() => {
-    fetchClients();
-  }, []);
-
-  const handleKYCSubmit = async () => {
-    try {
-      setLoading(true);
-
-      const invalidFields = kycFields
-        .map((field, index) => {
-          const errors = [];
-          if (!field.name?.trim()) errors.push("Name is required");
-          if (!field.phone?.trim()) errors.push("Phone is required");
-          if (!/^[0-9]{10,15}$/.test(field.phone))
-            errors.push("Phone should be 10-15 digits");
-          if (!field.address?.trim()) errors.push("Address is required");
-
-          return errors.length > 0 ? { rowIndex: index, errors } : null;
-        })
-        .filter(Boolean);
-
-      if (invalidFields.length > 0) {
-        message.error({
-          content: (
-            <div>
-              <p>Please fix the following errors:</p>
-              <ul>
-                {invalidFields.map((field, idx) => (
-                  <li key={idx}>
-                    <strong>Row {field.rowIndex + 1}:</strong>{" "}
-                    {field.errors.join(", ")}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ),
-          duration: 10,
-        });
-        return;
-      }
-
-      for (const field of kycFields) {
-        await axios.post(`${API_BASE_URL}/api/team/client-kyc`, field);
-      }
-
-      message.success(`${kycFields.length} client(s) added successfully`);
-      setKycFields([{ name: "", phone: "", address: "", gstNo: "", officePhone: "", landline: "", email: "", companyPAN: "", ownerPAN: "", aadharNumber: "", importExportCode: "" }]);
-      fetchClients();
-    } catch (err) {
-      console.error("KYC Error:", err);
-      const errorMsg =
-        err.response?.data?.message ||
-        err.response?.data?.error ||
-        "Submission failed";
-      message.error(errorMsg);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleOrderSubmit = async () => {
-    try {
-      setLoading(true);
-
-      if (!selectedClient?.uniqueId) {
-        throw new Error("Please select a client");
-      }
-
-      if (!orderItems || orderItems.length === 0) {
-        throw new Error("Please add at least one order item");
-      }
-
-      const invalidItems = orderItems
-        .map((item, index) => {
-          const errors = [];
-          if (!item.styleNo?.trim()) errors.push("Style No is required");
-          if (!item.pcs || isNaN(item.pcs)) errors.push("PCS must be a number");
-          if (item.pcs < 1) errors.push("PCS must be at least 1");
-          if (!item.amount || isNaN(item.amount))
-            errors.push("Amount must be a number");
-          if (item.amount <= 0) errors.push("Amount must be greater than 0");
-
-          return errors.length > 0 ? { itemIndex: index, errors } : null;
-        })
-        .filter(Boolean);
-
-      if (invalidItems.length > 0) {
-        message.error({
-          content: (
-            <div>
-              <p>Please fix the following errors:</p>
-              <ul>
-                {invalidItems.map((item, idx) => (
-                  <li key={idx}>
-                    <strong>Item {item.itemIndex + 1}:</strong>{" "}
-                    {item.errors.join(", ")}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ),
-          duration: 10,
-        });
-        return;
-      }
-
-      const payload = {
-        uniqueId: selectedClient.uniqueId,
-        orderItems: orderItems.map((item) => ({
-          srNo: item.srNo || 0,
-          styleNo: item.styleNo.trim(),
-          clarity: item.clarity?.trim() || "",
-          grossWeight: item.grossWeight || 0,
-          netWeight: item.netWeight || 0,
-          diaWeight: item.diaWeight || 0,
-          pcs: item.pcs,
-          amount: item.amount,
-          description: item.description?.trim() || "",
-        })),
-      };
-
-      await axios.post(`${API_BASE_URL}/api/team/clients-order`, payload);
-
-      message.success("Order created successfully");
-      orderForm.resetFields();
-      setOrderItems([{}]);
-      setSelectedClient(null);
-      fetchClients();
-    } catch (err) {
-      console.error("Order Error:", err);
-
-      if (err.response) {
-        if (err.response.status === 400) {
-          message.error(
-            err.response.data.message ||
-              "Validation failed. Please check your inputs."
-          );
-        } else if (err.response.status === 404) {
-          message.error(err.response.data.message || "Client not found");
-        } else {
-          message.error(err.response.data.error || "Order creation failed");
-        }
-      } else {
-        message.error(err.message || "An error occurred");
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchOrderHistory = async (uniqueId) => {
-    try {
-      setLoading(true);
-      
-      // First fetch the client data
-      const clientRes = await axios.get(`${API_BASE_URL}/api/team/get-clients`, {
-        params: { uniqueId }
-      });
-
-      const clientData = clientRes.data?.data || clientRes.data;
-      
-      if (!clientData) {
-        message.error("Client not found");
-        return;
-      }
-
-      // Get orders from client data
-      const orders = ordersToArray(clientData.orders);
-      
-      // Format the order history
-      const formattedHistory = orders.map(order => ({
-        ...order,
-        orderId: order.orderId || order._id || Math.random().toString(36).substring(7),
-        orderDate: order.orderDate || order.createdAt || new Date().toISOString()
-      }));
-
-      setOrderHistory(formattedHistory);
-    } catch (err) {
-      console.error("History Error:", err);
-      message.error("Failed to fetch order history");
-      setOrderHistory([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const addOrderItem = () => {
-    setOrderItems((prev) => [...prev, {}]);
-  };
-
-  const removeOrderItem = (index) => {
-    setOrderItems((prev) => {
-      const newItems = [...prev];
-      newItems.splice(index, 1);
-      return newItems;
-    });
-  };
-
-  const updateOrderItem = (index, field, value) => {
-    setOrderItems((prev) => {
-      const newItems = [...prev];
-      newItems[index] = { ...newItems[index], [field]: value };
-      return newItems;
-    });
-  };
-
-  const addKycRow = () => {
-    setKycFields((prev) => [
-      ...prev,
-      { name: "", phone: "", address: "", gstNo: "", officePhone: "", landline: "", email: "", companyPAN: "", ownerPAN: "", aadharNumber: "", importExportCode: "" }
-    ]);
-  };
-
-  const removeKycRow = (index) => {
-    if (kycFields.length <= 1) return;
-    setKycFields((prev) => {
-      const newFields = [...prev];
-      newFields.splice(index, 1);
-      return newFields;
-    });
-  };
-
-  const updateKycField = (index, field, value) => {
-    setKycFields((prev) => {
-      const newFields = [...prev];
-      newFields[index] = { ...newFields[index], [field]: value };
-      return newFields;
-    });
-  };
-
-  const handleClientSelect = (uniqueId) => {
-    const client = clients.find((c) => c.uniqueId === uniqueId);
-    setSelectedClient(client || null);
-    if (selectedMenu === "history") {
-      fetchOrderHistory(uniqueId);
-    }
-  };
-
-  const clientColumns = [
-    {
-      title: "Unique ID",
-      dataIndex: "uniqueId",
-      key: "uniqueId",
-      render: (text) => (
-        <span className="font-medium" style={{ color: colors.darkGold }}>
-          {text}
-        </span>
-      ),
-    },
-    {
-      title: "Name",
-      dataIndex: "name",
-      key: "name",
-      render: (text) => <span style={{ color: colors.velvet }}>{text}</span>,
-    },
-    {
-      title: "Phone",
-      dataIndex: "phone",
-      key: "phone",
-      render: (text) => <span className="text-gray-600">{text}</span>,
-    },
-    {
-      title: "GST No",
-      dataIndex: "gstNo",
-      key: "gstNo",
-      render: (text) => <span className="text-gray-600">{text || "N/A"}</span>,
-    },
-    {
-      title: "Status",
-      key: "status",
-      render: (_, client) => {
-        const orders = ordersToArray(client.orders);
-        if (orders.length === 0)
-          return (
-            <Tag style={{ backgroundColor: colors.platinum }}>No orders</Tag>
-          );
-
-        const statuses = orders.map((o) => o?.status).filter(Boolean);
-
-        if (statuses.includes("ongoing"))
-          return (
-            <Tag style={{ backgroundColor: "#e6f4ff", color: colors.darkGold }}>
-              Active
-            </Tag>
-          );
-        if (statuses.every((s) => s === "completed"))
-          return (
-            <Tag style={{ backgroundColor: "#e6f7ee", color: "#08965b" }}>
-              Completed
-            </Tag>
-          );
-        return (
-          <Tag style={{ backgroundColor: "#fff7e6", color: "#d46b08" }}>
-            Mixed
-          </Tag>
-        );
-      },
-    },
-    {
-      title: "Action",
-      key: "action",
-      render: (_, client) => (
-        <Button
-          size="small"
-          style={{
-            backgroundColor: colors.platinum,
-            color: colors.darkGold,
-            borderColor: colors.darkGold,
-          }}
-          onClick={() => {
-            setSelectedMenu("history");
-            handleClientSelect(client.uniqueId);
-          }}
-        >
-          View Orders
-        </Button>
-      ),
-    },
-  ];
-
-  const orderColumns = [
-    {
-      title: "Order ID",
-      dataIndex: "orderId",
-      key: "orderId",
-      render: (id) => (
-        <span className="font-medium" style={{ color: colors.darkGold }}>
-          {id ? id.substring(0, 8) + "..." : "N/A"}
-        </span>
-      ),
-    },
-    {
-      title: "Date",
-      dataIndex: "orderDate",
-      key: "date",
-      render: (date) => (
-        <span className="text-gray-600">
-          {date ? dayjs(date).format("DD/MM/YYYY") : "N/A"}
-        </span>
-      ),
-    },
-    {
-      title: "Items",
-      dataIndex: "orderItems",
-      key: "items",
-      render: (items) => (
-        <span className="font-medium">{items?.length || 0}</span>
-      ),
-    },
-    {
-      title: "Status",
-      dataIndex: "status",
-      key: "status",
-      render: (status) => (
-        <Tag
-          className={`${
-            status === "completed"
-              ? "bg-green-100 text-green-800"
-              : "bg-blue-100 text-blue-800"
-          }`}
-        >
-          {status ? status.toUpperCase() : "UNKNOWN"}
-        </Tag>
-      ),
-    },
-    {
-      title: "Amount",
-      key: "amount",
-      render: (_, order) => (
-        <span className="font-medium">
-          ₹
-          {order.orderItems?.reduce(
-            (sum, item) => sum + (item.amount || 0),
-            0
-          ) || 0}
-        </span>
-      ),
-    },
-  ];
-
-  const orderItemColumns = [
-    {
-      title: "SR No",
-      dataIndex: "srNo",
-      key: "srNo",
-      render: (text) => <span className="text-gray-700">{text}</span>,
-    },
-    {
-      title: "Style No",
-      dataIndex: "styleNo",
-      key: "styleNo",
-      render: (text) => <span className="font-medium">{text}</span>,
-    },
-    {
-      title: "Clarity",
-      dataIndex: "clarity",
-      key: "clarity",
-      render: (text) => <span className="text-gray-700">{text}</span>,
-    },
-    {
-      title: "Gross WT",
-      dataIndex: "grossWeight",
-      key: "grossWeight",
-      render: (text) => <span className="text-gray-700">{text}</span>,
-    },
-    {
-      title: "Net WT",
-      dataIndex: "netWeight",
-      key: "netWeight",
-      render: (text) => <span className="text-gray-700">{text}</span>,
-    },
-    {
-      title: "DIA WT",
-      dataIndex: "diaWeight",
-      key: "diaWeight",
-      render: (text) => <span className="text-gray-700">{text}</span>,
-    },
-    {
-      title: "PCS",
-      dataIndex: "pcs",
-      key: "pcs",
-      render: (text) => <span className="font-medium">{text}</span>,
-    },
-    {
-      title: "Amount",
-      dataIndex: "amount",
-      key: "amount",
-      render: (text) => <span className="font-medium">₹{text}</span>,
-    },
-    {
-      title: "Description",
-      dataIndex: "description",
-      key: "description",
-      render: (text) => <span className="text-gray-600">{text}</span>,
-    },
-  ];
-
   const renderDashboard = () => (
     <div className="space-y-6">
       <h3 className="text-2xl font-semibold" style={{ color: colors.velvet }}>
@@ -1162,8 +847,36 @@ const SalesDashboard = () => {
             All Clients
           </h2>
           <Table
-            dataSource={clients}
-            columns={minimalClientColumns}
+            dataSource={users}
+            columns={[
+              {
+                title: "Unique ID",
+                dataIndex: "uniqueId",
+                key: "uniqueId",
+                render: (text) => (
+                  <span
+                    className="font-mono font-semibold"
+                    style={{ color: colors.darkGold }}
+                  >
+                    {text}
+                  </span>
+                ),
+              },
+              {
+                title: "Name",
+                dataIndex: "name",
+                key: "name",
+                render: (_, record) => (
+                  <span
+                    className="text-gray-800 font-medium cursor-pointer hover:text-blue-600 transition-colors"
+                    onClick={() => handleClientClick(record)}
+                    style={{ color: colors.velvet }}
+                  >
+                    {record.name}
+                  </span>
+                ),
+              },
+            ]}
             rowKey="uniqueId"
             loading={loading}
             pagination={{ pageSize: 5 }}
@@ -1193,11 +906,76 @@ const SalesDashboard = () => {
             Ongoing Orders
           </h2>
           <Table
-            dataSource={clients.filter((client) => {
-              const orders = ordersToArray(client.orders);
+            dataSource={users.filter((users) => {
+              const orders = ordersToArray(users.orders);
               return orders.some((order) => order?.status === "ongoing");
             })}
-            columns={ongoingClientColumns}
+            columns={[
+              {
+                title: "Unique ID",
+                dataIndex: "uniqueId",
+                key: "uniqueId",
+                render: (text) => (
+                  <span
+                    className="font-mono font-semibold"
+                    style={{ color: colors.darkGold }}
+                  >
+                    {text}
+                  </span>
+                ),
+              },
+              {
+                title: "Status",
+                key: "status",
+                render: (_, users) => {
+                  const orders = ordersToArray(users.orders);
+                  if (!orders.length) {
+                    return <Tag className="bg-gray-100 text-gray-700">No Orders</Tag>;
+                  }
+
+                  const latestOrder = orders
+                    .filter((order) => order?.orderDate)
+                    .sort((a, b) => new Date(b.orderDate) - new Date(a.orderDate))[0];
+
+                  if (latestOrder?.status === "completed") {
+                    return (
+                      <Tag style={{ backgroundColor: "#e6f7ee", color: "#08965b" }}>
+                        Completed
+                      </Tag>
+                    );
+                  } else if (latestOrder?.status === "ongoing") {
+                    return (
+                      <Tag style={{ backgroundColor: "#e6f4ff", color: colors.darkGold }}>
+                        Ongoing
+                      </Tag>
+                    );
+                  } else {
+                    return (
+                      <Tag style={{ backgroundColor: "#fff7e6", color: "#d46b08" }}>
+                        Pending
+                      </Tag>
+                    );
+                  }
+                },
+              },
+              {
+                title: "Action",
+                key: "action",
+                render: (_, users) => (
+                  <Button
+                    size="small"
+                    style={{
+                      backgroundColor: colors.platinum,
+                      color: colors.darkGold,
+                      borderColor: colors.darkGold,
+                    }}
+                    onClick={() => handleClientClick(users)}
+                  >
+                    View Details
+                  </Button>
+                ),
+              },
+            ]}
             rowKey="uniqueId"
             loading={loading}
             pagination={{ pageSize: 5 }}
@@ -1223,11 +1001,11 @@ const SalesDashboard = () => {
             Completed Orders
           </h2>
           <Table
-            dataSource={clients.flatMap((client) => {
-              const orders = ordersToArray(client.orders);
+            dataSource={users.flatMap((users) => {
+              const orders = ordersToArray(users.orders);
               return orders
                 .filter((order) => order?.status === "completed")
-                .map((order) => ({ ...order, clientName: client.name, client }))
+                .map((order) => ({ ...order, clientName: users.name, users }))
                 .sort(
                   (a, b) =>
                     new Date(b?.orderDate || 0) - new Date(a?.orderDate || 0)
@@ -1241,14 +1019,70 @@ const SalesDashboard = () => {
                 render: (text, record) => (
                   <span
                     className="font-medium cursor-pointer hover:text-blue-600 transition-colors"
-                    onClick={() => handleClientClick(record.client)}
+                    onClick={() => handleClientClick(record.users)}
                     style={{ color: colors.velvet }}
                   >
                     {text}
                   </span>
                 ),
               },
-              ...orderColumns,
+              {
+                title: "Order ID",
+                dataIndex: "orderId",
+                key: "orderId",
+                render: (id) => (
+                  <span className="font-medium" style={{ color: colors.darkGold }}>
+                    {id ? id.substring(0, 8) + "..." : "N/A"}
+                  </span>
+                ),
+              },
+              {
+                title: "Date",
+                dataIndex: "orderDate",
+                key: "date",
+                render: (date) => (
+                  <span className="text-gray-600">
+                    {date ? dayjs(date).format("DD/MM/YYYY") : "N/A"}
+                  </span>
+                ),
+              },
+              {
+                title: "Items",
+                dataIndex: "orderItems",
+                key: "items",
+                render: (items) => (
+                  <span className="font-medium">{items?.length || 0}</span>
+                ),
+              },
+              {
+                title: "Status",
+                dataIndex: "status",
+                key: "status",
+                render: (status) => (
+                  <Tag
+                    className={`${
+                      status === "completed"
+                        ? "bg-green-100 text-green-800"
+                        : "bg-blue-100 text-blue-800"
+                    }`}
+                  >
+                    {status ? status.toUpperCase() : "UNKNOWN"}
+                  </Tag>
+                ),
+              },
+              {
+                title: "Amount",
+                key: "amount",
+                render: (_, order) => (
+                  <span className="font-medium">
+                    ₹
+                    {order.orderItems?.reduce(
+                      (sum, item) => sum + (item.amount || 0),
+                      0
+                    ) || 0}
+                  </span>
+                ),
+              },
             ]}
             rowKey="orderId"
             loading={loading}
@@ -1274,7 +1108,7 @@ const SalesDashboard = () => {
       </div>
 
       {/* Client Modal */}
-      <ClientModal client={modalClient} onClose={closeModal} />
+      <ClientModal users={modalClient} onClose={closeModal} />
 
       {/* Ongoing Order Modal */}
       <OngoingOrderModal
@@ -1291,162 +1125,181 @@ const SalesDashboard = () => {
         Client KYC Form
       </h3>
 
-      <div className="rounded-lg shadow p-6 border" style={{
-        backgroundColor: colors.diamond,
-        borderColor: colors.darkGold,
-      }}>
+      <Form
+        form={kycForm}
+        onFinish={handleKYCSubmit}
+        layout="vertical"
+        className="rounded-lg shadow p-6 border"
+        style={{
+          backgroundColor: colors.diamond,
+          borderColor: colors.darkGold,
+        }}
+      >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block font-medium mb-1" style={{ color: colors.velvet }}>
-              Full Name <span className="text-red-500">*</span>
-            </label>
+          {/* Name (Required) */}
+          <Form.Item
+            label="Full Name"
+            name="name"
+            rules={[{ required: true, message: 'Please enter full name' }]}
+          >
             <Input
-              value={kycFields[0].name}
-              onChange={(e) => updateKycField(0, "name", e.target.value)}
               placeholder="Enter full name"
               style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
             />
-          </div>
+          </Form.Item>
 
-          <div>
-            <label className="block font-medium mb-1" style={{ color: colors.velvet }}>
-              Mobile Number <span className="text-red-500">*</span>
-            </label>
+          {/* Phone (Required) */}
+          <Form.Item
+            label="Mobile Number"
+            name="phone"
+            rules={[
+              { required: true, message: 'Please enter mobile number' },
+              { pattern: /^[0-9]{10}$/, message: 'Please enter valid 10-digit mobile number' }
+            ]}
+          >
             <Input
-              value={kycFields[0].phone}
-              onChange={(e) => updateKycField(0, "phone", e.target.value)}
               placeholder="Primary contact number"
               style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
+              maxLength={10}
             />
-          </div>
+          </Form.Item>
 
-          <div>
-            <label className="block font-medium mb-1" style={{ color: colors.velvet }}>
-              Alternate Phone (Optional)
-            </label>
+          {/* Alternate Phone (Optional) */}
+          <Form.Item
+            label="Alternate Phone (Optional)"
+            name="mobile"
+            rules={[
+              { pattern: /^[0-9]{10}$/, message: 'Please enter valid 10-digit mobile number' }
+            ]}
+          >
             <Input
-              value={kycFields[0].mobile}
-              onChange={(e) => updateKycField(0, "mobile", e.target.value)}
               placeholder="Secondary contact number"
               style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
+              maxLength={10}
             />
-          </div>
+          </Form.Item>
 
-          <div>
-            <label className="block font-medium mb-1" style={{ color: colors.velvet }}>
-              Office Phone (Optional)
-            </label>
+          {/* Office Phone (Optional) */}
+          <Form.Item
+            label="Office Phone (Optional)"
+            name="officePhone"
+          >
             <Input
-              value={kycFields[0].officePhone}
-              onChange={(e) => updateKycField(0, "officePhone", e.target.value)}
               placeholder="Office landline"
               style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
             />
-          </div>
+          </Form.Item>
 
-          <div>
-            <label className="block font-medium mb-1" style={{ color: colors.velvet }}>
-              Landline (Optional)
-            </label>
+          {/* Landline (Optional) */}
+          <Form.Item
+            label="Landline (Optional)"
+            name="landline"
+          >
             <Input
-              value={kycFields[0].landline}
-              onChange={(e) => updateKycField(0, "landline", e.target.value)}
               placeholder="Home landline"
               style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
             />
-          </div>
+          </Form.Item>
 
-          <div>
-            <label className="block font-medium mb-1" style={{ color: colors.velvet }}>
-              Email (Optional)
-            </label>
+          {/* Email (Optional) */}
+          <Form.Item
+            label="Email (Optional)"
+            name="email"
+            rules={[
+              { type: 'email', message: 'Please enter valid email' }
+            ]}
+          >
             <Input
-              value={kycFields[0].email}
-              onChange={(e) => updateKycField(0, "email", e.target.value)}
               placeholder="Email address"
               style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
             />
-          </div>
+          </Form.Item>
 
-          <div className="md:col-span-2">
-            <label className="block font-medium mb-1" style={{ color: colors.velvet }}>
-              Complete Address <span className="text-red-500">*</span>
-            </label>
+          {/* Address (Required) */}
+          <Form.Item
+            label="Complete Address"
+            name="address"
+            rules={[{ required: true, message: 'Please enter address' }]}
+            className="md:col-span-2"
+          >
             <Input.TextArea
-              value={kycFields[0].address}
-              onChange={(e) => updateKycField(0, "address", e.target.value)}
               placeholder="Full address with city, state, and pincode"
               rows={3}
               style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
             />
-          </div>
+          </Form.Item>
 
           {/* Business Documentation */}
-          <div>
-            <label className="block font-medium mb-1" style={{ color: colors.velvet }}>
-              GST Number (Optional)
-            </label>
+          <Form.Item
+            label="GST Number (Optional)"
+            name="gstNo"
+            rules={[
+              { validator: validateGST }
+            ]}
+          >
             <Input
-              value={kycFields[0].gstNo}
-              onChange={(e) => updateKycField(0, "gstNo", e.target.value)}
               placeholder="22AAAAA0000A1Z5"
               style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
             />
-          </div>
+          </Form.Item>
 
-          <div>
-            <label className="block font-medium mb-1" style={{ color: colors.velvet }}>
-              Company PAN (Optional)
-            </label>
+          <Form.Item
+            label="Company PAN (Optional)"
+            name="companyPAN"
+            rules={[
+              { validator: validatePAN }
+            ]}
+          >
             <Input
-              value={kycFields[0].companyPAN}
-              onChange={(e) => updateKycField(0, "companyPAN", e.target.value)}
               placeholder="ABCDE1234F"
               style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
+              maxLength={10}
             />
-          </div>
+          </Form.Item>
 
-          <div>
-            <label className="block font-medium mb-1" style={{ color: colors.velvet }}>
-              Owner PAN (Optional)
-            </label>
+          <Form.Item
+            label="Owner PAN (Optional)"
+            name="ownerPAN"
+            rules={[
+              { validator: validatePAN }
+            ]}
+          >
             <Input
-              value={kycFields[0].ownerPAN}
-              onChange={(e) => updateKycField(0, "ownerPAN", e.target.value)}
               placeholder="ABCDE1234F"
               style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
+              maxLength={10}
             />
-          </div>
+          </Form.Item>
 
-          <div>
-            <label className="block font-medium mb-1" style={{ color: colors.velvet }}>
-              Aadhar Number (Optional)
-            </label>
+          <Form.Item
+            label="Aadhar Number (Optional)"
+            name="aadharNumber"
+            rules={[
+              { validator: validateAadhar }
+            ]}
+          >
             <Input
-              value={kycFields[0].aadharNumber}
-              onChange={(e) => updateKycField(0, "aadharNumber", e.target.value)}
               placeholder="12-digit number"
               style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
+              maxLength={12}
             />
-          </div>
+          </Form.Item>
 
-          <div>
-            <label className="block font-medium mb-1" style={{ color: colors.velvet }}>
-              Import/Export Code (Optional)
-            </label>
+          <Form.Item
+            label="Import/Export Code (Optional)"
+            name="importExportCode"
+          >
             <Input
-              value={kycFields[0].importExportCode}
-              onChange={(e) => updateKycField(0, "importExportCode", e.target.value)}
               placeholder="IEC code"
               style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
             />
-          </div>
+          </Form.Item>
         </div>
 
         <div className="flex justify-end mt-6">
           <Button
             type="primary"
-            onClick={handleKYCSubmit}
+            htmlType="submit"
             loading={loading}
             style={{
               backgroundColor: colors.darkGold,
@@ -1459,7 +1312,7 @@ const SalesDashboard = () => {
             Submit KYC
           </Button>
         </div>
-      </div>
+      </Form>
 
       {/* Client List Table */}
       <div className="mt-8">
@@ -1467,8 +1320,88 @@ const SalesDashboard = () => {
           Existing Clients
         </h4>
         <Table
-          dataSource={clients}
-          columns={clientColumns}
+          dataSource={users}
+          columns={[
+            {
+              title: "Unique ID",
+              dataIndex: "uniqueId",
+              key: "uniqueId",
+              render: (text) => (
+                <span className="font-medium" style={{ color: colors.darkGold }}>
+                  {text}
+                </span>
+              ),
+            },
+            {
+              title: "Name",
+              dataIndex: "name",
+              key: "name",
+              render: (text) => <span style={{ color: colors.velvet }}>{text}</span>,
+            },
+            {
+              title: "Phone",
+              dataIndex: "phone",
+              key: "phone",
+              render: (text) => <span className="text-gray-600">{text}</span>,
+            },
+            {
+              title: "GST No",
+              dataIndex: "gstNo",
+              key: "gstNo",
+              render: (text) => <span className="text-gray-600">{text || "N/A"}</span>,
+            },
+            {
+              title: "Status",
+              key: "status",
+              render: (_, users) => {
+                const orders = ordersToArray(users.orders);
+                if (orders.length === 0)
+                  return (
+                    <Tag style={{ backgroundColor: colors.platinum }}>No orders</Tag>
+                  );
+
+                const statuses = orders.map((o) => o?.status).filter(Boolean);
+
+                if (statuses.includes("ongoing"))
+                  return (
+                    <Tag style={{ backgroundColor: "#e6f4ff", color: colors.darkGold }}>
+                      Active
+                    </Tag>
+                  );
+                if (statuses.every((s) => s === "completed"))
+                  return (
+                    <Tag style={{ backgroundColor: "#e6f7ee", color: "#08965b" }}>
+                      Completed
+                    </Tag>
+                  );
+                return (
+                  <Tag style={{ backgroundColor: "#fff7e6", color: "#d46b08" }}>
+                    Mixed
+                  </Tag>
+                );
+              },
+            },
+            {
+              title: "Action",
+              key: "action",
+              render: (_, users) => (
+                <Button
+                  size="small"
+                  style={{
+                    backgroundColor: colors.platinum,
+                    color: colors.darkGold,
+                    borderColor: colors.darkGold,
+                  }}
+                  onClick={() => {
+                    setSelectedMenu("history");
+                    handleClientSelect(users.uniqueId);
+                  }}
+                >
+                  View Orders
+                </Button>
+              ),
+            },
+          ]}
           rowKey="uniqueId"
           loading={loading}
           scroll={{ x: true }}
@@ -1510,9 +1443,9 @@ const SalesDashboard = () => {
               <ChevronDown className="h-4 w-4" style={{ color: colors.darkGold }} />
             }
           >
-            {clients.map((client) => (
-              <Option key={client.uniqueId} value={client.uniqueId}>
-                {client.uniqueId} - {client.name}
+            {users.map((users) => (
+              <Option key={users.uniqueId} value={users.uniqueId}>
+                {users.uniqueId} - {users.name}
               </Option>
             ))}
           </Select>
@@ -1956,9 +1889,9 @@ const SalesDashboard = () => {
               <Search className="h-4 w-4" style={{ color: colors.darkGold }} />
             }
           >
-            {clients.map((client) => (
-              <Option key={client.uniqueId} value={client.uniqueId}>
-                {client.uniqueId} - {client.name}
+            {users.map((users) => (
+              <Option key={users.uniqueId} value={users.uniqueId}>
+                {users.uniqueId} - {users.name}
               </Option>
             ))}
           </Select>
@@ -2407,7 +2340,7 @@ const SalesDashboard = () => {
       </div>
 
       {/* Client Modal */}
-      <ClientModal client={modalClient} onClose={closeModal} />
+      <ClientModal users={modalClient} onClose={closeModal} />
 
       {/* Ongoing Order Modal */}
       <OngoingOrderModal

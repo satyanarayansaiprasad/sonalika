@@ -1,5 +1,7 @@
 // const mongoose = require('mongoose'); // Add this line
-const Clients = require('../models/Clients');
+
+// const Users = require('../models/Users');
+const Clienttss = require('../models/Clienttss');
 const teamService = require('../services/teamService');
 
 exports.loginProduction = async (req, res) => {
@@ -246,7 +248,9 @@ exports.loginSalesteam = async (req, res) => {
 
 
 
-exports.createClientKYC = async (req, res) => {
+
+
+exports.createUser = async (req, res) => {
   try {
     const {
       name,
@@ -255,83 +259,27 @@ exports.createClientKYC = async (req, res) => {
       officePhone,
       landline,
       email,
-      officeEmail,
       address,
-      
       gstNo,
       companyPAN,
       ownerPAN,
       aadharNumber,
-      importExportCode,
-      
-      
+      importExportCode
     } = req.body;
 
-    // Required field validation
-    const missingFields = [];
-    if (!name) missingFields.push("name");
-    if (!phone) missingFields.push("phone");
-    if (!address) missingFields.push("address");
-
-    if (missingFields.length > 0) {
+    // Check required fields (only name, phone, and address are required based on schema)
+    if (!name || !phone || !address) {
       return res.status(400).json({
-        error: "Missing required fields",
-        missingFields,
-        message: `Please provide: ${missingFields.join(", ")}`
+        success: false,
+        message: "Name, phone, and address are required fields",
       });
     }
 
-    // Phone format checks (all phone fields are optional except primary 'phone')
-    const phoneRegex = /^[0-9]{10,15}$/;
-    if (!phoneRegex.test(phone)) {
-      return res.status(400).json({
-        error: "Invalid phone number",
-        message: "Primary phone number should be 10-15 digits"
-      });
-    }
-
-    if (mobile && !phoneRegex.test(mobile)) {
-      return res.status(400).json({
-        error: "Invalid mobile number",
-        message: "Mobile number should be 10-15 digits"
-      });
-    }
-
-    if (officePhone && !phoneRegex.test(officePhone)) {
-      return res.status(400).json({
-        error: "Invalid office phone number",
-        message: "Office phone should be 10-15 digits"
-      });
-    }
-
-    if (landline && !phoneRegex.test(landline)) {
-      return res.status(400).json({
-        error: "Invalid landline number",
-        message: "Landline should be 10-15 digits"
-      });
-    }
-
-    // Aadhar validation (if provided)
+    // Validate aadharNumber format if provided
     if (aadharNumber && !/^\d{12}$/.test(aadharNumber)) {
       return res.status(400).json({
-        error: "Invalid Aadhar number",
-        message: "Aadhar must be 12 digits"
-      });
-    }
-
-    // PAN validation (if provided)
-    const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
-    if (companyPAN && !panRegex.test(companyPAN)) {
-      return res.status(400).json({
-        error: "Invalid Company PAN",
-        message: "PAN should be in format: ABCDE1234F"
-      });
-    }
-
-    if (ownerPAN && !panRegex.test(ownerPAN)) {
-      return res.status(400).json({
-        error: "Invalid Owner PAN",
-        message: "PAN should be in format: ABCDE1234F"
+        success: false,
+        message: "Aadhar number must be 12 digits",
       });
     }
 
@@ -341,84 +289,90 @@ exports.createClientKYC = async (req, res) => {
     const maxAttempts = 5;
 
     do {
-      const lastClient = await Clients.findOne().sort({ _id: -1 }).limit(1);
+      const lastClient = await Clienttss.findOne().sort({ _id: -1 }).limit(1);
       const lastSerial = lastClient
-        ? parseInt(lastClient.uniqueId.replace("sonalika", "")) || 0
+        ? parseInt(lastClient.uniqueId?.replace("sonalika", "")) || 0
         : 0;
 
       const nextSerial = lastSerial + 1;
       const paddedSerial = String(nextSerial).padStart(4, "0");
       uniqueId = `sonalika${paddedSerial}`;
 
-      attempts++;
-      if (attempts >= maxAttempts) {
-        return res.status(500).json({
-          error: "Unique ID generation failed",
-          message: "Please try again later"
-        });
-      }
-    } while (await Clients.exists({ uniqueId }));
+      // Check if uniqueId already exists
+      const exists = await Clienttss.exists({ uniqueId });
+      if (!exists) break;
 
-    // Create and save new client
-    const newClient = new Clients({
+      attempts++;
+    } while (attempts < maxAttempts);
+
+    if (attempts >= maxAttempts) {
+      return res.status(500).json({
+        success: false,
+        message: "Failed to generate a unique ID after multiple attempts",
+      });
+    }
+
+    // Create new client document
+    const newClient = new Clienttss({
       name: name.trim(),
+      uniqueId,
       phone: phone.trim(),
       mobile: mobile?.trim(),
       officePhone: officePhone?.trim(),
       landline: landline?.trim(),
       email: email?.trim(),
-      officeEmail: officeEmail?.trim(),
       address: address.trim(),
-     
-      gstNo: gstNo ? gstNo.trim().toUpperCase() : undefined,
-      companyPAN: companyPAN ? companyPAN.trim().toUpperCase() : undefined,
-      ownerPAN: ownerPAN ? ownerPAN.trim().toUpperCase() : undefined,
+      gstNo: gstNo?.trim(),
+      companyPAN: companyPAN?.trim(),
+      ownerPAN: ownerPAN?.trim(),
       aadharNumber: aadharNumber?.trim(),
       importExportCode: importExportCode?.trim(),
-      
-      uniqueId,
-      orders: new Map()
+      orders: new Map() // Initialize empty orders map
     });
 
-    await newClient.validate();
     await newClient.save();
 
     return res.status(201).json({
       success: true,
-      message: "KYC submitted successfully",
+      message: "Client created successfully",
       data: {
-        uniqueId: newClient.uniqueId,
+        _id: newClient._id,
         name: newClient.name,
+        uniqueId: newClient.uniqueId,
         phone: newClient.phone,
-        // Include other fields if needed
-        orders: Object.fromEntries(newClient.orders)
+        address: newClient.address,
+        // Include other fields as needed
+        createdAt: newClient.createdAt
       }
     });
-
   } catch (error) {
-    console.error("Error submitting KYC:", error);
-
+    console.error("Error creating client:", error);
+    
+    // Handle duplicate key error (uniqueId)
     if (error.code === 11000) {
-      return res.status(409).json({
-        error: "Duplicate entry",
-        message: `Client with uniqueId ${error.keyValue.uniqueId} already exists`
+      return res.status(400).json({
+        success: false,
+        message: "Client with this unique ID already exists",
       });
     }
-
-    if (error.name === "ValidationError") {
-      const messages = Object.values(error.errors).map(err => err.message);
+    
+    // Handle validation errors
+    if (error.name === 'ValidationError') {
       return res.status(400).json({
-        error: "Validation failed",
-        messages
+        success: false,
+        message: "Validation error",
+        error: error.message
       });
     }
 
     return res.status(500).json({
-      error: "Internal Server Error",
-      message: "Could not process KYC request"
+      success: false,
+      message: "Internal server error",
+      error: error.message
     });
   }
 };
+
 
 
 exports.getClients = async (req, res) => {
@@ -574,43 +528,43 @@ exports.addClientOrder = async (req, res) => {
 };
 
 
-// exports.getOrderHistory = async (req, res) => {
-//   try {
-//     const { uniqueId } = req.query;
+exports.getOrderHistory = async (req, res) => {
+  try {
+    const { uniqueId } = req.query;
 
-//     if (!uniqueId) {
-//       return res.status(400).json({ error: "uniqueId is required" });
-//     }
+    if (!uniqueId) {
+      return res.status(400).json({ error: "uniqueId is required" });
+    }
 
-//     const client = await Clients.findOne({ uniqueId });
-//     if (!client) {
-//       return res.status(404).json({ error: "Client not found" });
-//     }
+    const client = await Clients.findOne({ uniqueId });
+    if (!client) {
+      return res.status(404).json({ error: "Client not found" });
+    }
 
-//     const orders = Array.from(client.orders.entries()).map(([orderId, order]) => ({
-//       orderId,
-//       orderDate: order.orderDate,
-//       status: order.status || "ongoing",
-//       items: order.orderItems || []
-//     }));
+    const orders = Array.from(client.orders.entries()).map(([orderId, order]) => ({
+      orderId,
+      orderDate: order.orderDate,
+      status: order.status || "ongoing",
+      items: order.orderItems || []
+    }));
 
-//     return res.status(200).json({
-//       success: true,
-//       client: {
-//         name: client.name,
-//         uniqueId: client.uniqueId,
-//         phone: client.phone,
-//         address: client.address,
-//         gstNo: client.gstNo
-//       },
-//       orders
-//     });
+    return res.status(200).json({
+      success: true,
+      client: {
+        name: client.name,
+        uniqueId: client.uniqueId,
+        phone: client.phone,
+        address: client.address,
+        gstNo: client.gstNo
+      },
+      orders
+    });
 
-//   } catch (error) {
-//     console.error("Error fetching order history:", error);
-//     return res.status(500).json({
-//       error: "Internal Server Error",
-//       message: "Could not fetch order history"
-//     });
-//   }
-// };
+  } catch (error) {
+    console.error("Error fetching order history:", error);
+    return res.status(500).json({
+      error: "Internal Server Error",
+      message: "Could not fetch order history"
+    });
+  }
+};

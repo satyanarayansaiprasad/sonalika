@@ -62,8 +62,8 @@ const clienttssSchema = new mongoose.Schema({
 }
 
 }, { timestamps: true });
-
-module.exports = mongoose.model("Clienttss", clienttssSchema);
+ const Clienttss=mongoose('Clienttss',clienttssSchema)
+module.exports =Clienttss;
 
 
 

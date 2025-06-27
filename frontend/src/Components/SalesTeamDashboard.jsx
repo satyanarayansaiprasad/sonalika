@@ -178,20 +178,25 @@ const SalesDashboard = () => {
 
   // Fetch clients from API
   const fetchClients = async () => {
-    setLoading(true);
-    try {
-      const res = await axios.get(`${API_BASE_URL}/api/team/get-clients`);
-      const usersData = res.data?.users || res.data?.data || [];
+  setLoading(true);
+  try {
+    const res = await axios.get(`${API_BASE_URL}/api/team/get-clients`);
+    if (res.data.success) {
+      const usersData = res.data.users || [];
       setUsers(usersData);
       calculateStats(usersData);
-    } catch (err) {
-      console.error("Fetch error:", err);
-      message.error("Failed to fetch clients");
+    } else {
+      message.error(res.data.message);
       setUsers([]);
-    } finally {
-      setLoading(false);
     }
-  };
+  } catch (err) {
+    console.error("Fetch error:", err);
+    message.error(err.response?.data?.message || "Failed to fetch clients");
+    setUsers([]);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const calculateStats = (usersData) => {
     let totalOrders = 0;

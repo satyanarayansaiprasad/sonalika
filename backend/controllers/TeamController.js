@@ -69,7 +69,7 @@ exports.loginSalesteam = async (req, res) => {
     
 //     do {
 //       // Get count of clients (better than countDocuments for performance)
-//       const lastClient = await Clients.findOne().sort({ _id: -1 }).limit(1);
+//       const lastClient = await Clienttss.findOne().sort({ _id: -1 }).limit(1);
 //       const lastSerial = lastClient ? parseInt(lastClient.uniqueId.replace('sonalika', '')) || 0 : 0;
       
 //       const nextSerial = lastSerial + 1;
@@ -83,10 +83,10 @@ exports.loginSalesteam = async (req, res) => {
 //           message: "Please try again later"
 //         });
 //       }
-//     } while (await Clients.exists({ uniqueId }));
+//     } while (await Clienttss.exists({ uniqueId }));
 
 //     // Create new client
-//     const newClient = new Clients({
+//     const newClient = new Clienttss({
 //       name: name.trim(),
 //       phone: phone.trim(),
 //       address: address.trim(),
@@ -178,7 +178,7 @@ exports.loginSalesteam = async (req, res) => {
 //     const maxAttempts = 5;
 
 //     do {
-//       const lastClient = await Clients.findOne().sort({ _id: -1 }).limit(1);
+//       const lastClient = await Clienttss.findOne().sort({ _id: -1 }).limit(1);
 //       const lastSerial = lastClient
 //         ? parseInt(lastClient.uniqueId.replace("sonalika", "")) || 0
 //         : 0;
@@ -194,10 +194,10 @@ exports.loginSalesteam = async (req, res) => {
 //           message: "Please try again later"
 //         });
 //       }
-//     } while (await Clients.exists({ uniqueId }));
+//     } while (await Clienttss.exists({ uniqueId }));
 
 //     // Create and save new client
-//     const newClient = new Clients({
+//     const newClient = new Clienttss({
 //       name: name.trim(),
 //       phone: phone.trim(),
 //       address: address.trim(),
@@ -374,31 +374,90 @@ exports.createUser = async (req, res) => {
 };
 
 
-
-exports.getClients = async (req, res) => {
+exports.getClienttss = async (req, res) => {
   try {
-    const clienttss = await Clienttss.find({});
+    // You can add query parameters for filtering (optional)
+    const { search, page = 1, limit = 10 } = req.query;
     
-    // Convert to plain objects and handle the Map
-    const formattedClients = clienttss.map(client => {
-      const clientData = client.toObject();
-      
-      // Convert orders Map to array if it exists
-      if (clientData.orders && clientData.orders instanceof Map) {
-        clientData.orders = Array.from(clientData.orders.entries()).map(([id, order]) => ({
+    // Build the query
+    const query = {};
+    
+    // Add search functionality (optional)
+    if (search) {
+      query.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { uniqueId: { $regex: search, $options: 'i' } },
+        { phone: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    // Get paginated results
+    const clients = await Clienttss.find(query)
+      .sort({ createdAt: -1 }) // Sort by newest first
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .lean(); // Convert to plain objects
+
+    // Convert orders Map to array for each client
+    const formattedClients = clients.map(client => {
+      if (client.orders && client.orders instanceof Map) {
+        client.orders = Array.from(client.orders.entries()).map(([id, order]) => ({
           orderId: id,
           ...order
         }));
       }
-      
-      return clientData;
+      return client;
     });
-    
-    res.json(formattedClients);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+
+    // Get total count for pagination info
+    const total = await Clienttss.countDocuments(query);
+
+    return res.status(200).json({
+      success: true,
+      message: "Clients retrieved successfully",
+      data: formattedClients,
+      pagination: {
+        total,
+        page: Number(page),
+        limit: Number(limit),
+        totalPages: Math.ceil(total / limit)
+      }
+    });
+
+  } catch (error) {
+    console.error("Error fetching clients:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message
+    });
   }
 };
+// exports.getClienttss = async (req, res) => {
+//   try {
+//     const clienttss = await Clienttss.find({});
+    
+//     // Convert to plain objects and handle the Map
+//     const formattedClienttss = clienttss.map(client => {
+//       const clientData = client.toObject();
+      
+//       // Convert orders Map to array if it exists
+//       if (clientData.orders && clientData.orders instanceof Map) {
+//         clientData.orders = Array.from(clientData.orders.entries()).map(([id, order]) => ({
+//           orderId: id,
+//           ...order
+//         }));
+//       }
+      
+//       return clientData;
+//     });
+    
+//     res.json(formattedClienttss);
+//   } catch (err) {
+//     res.status(500).json({ error: err.message });
+//   }
+// };
 
 
 
@@ -443,7 +502,7 @@ exports.addClientOrder = async (req, res) => {
     }
 
     // Find client using uniqueId
-    const client = await Clients.findOne({ uniqueId });
+    const client = await Clienttss.findOne({ uniqueId });
     if (!client) {
       return res.status(404).json({
         error: "Not Found",
@@ -536,7 +595,7 @@ exports.getOrderHistory = async (req, res) => {
       return res.status(400).json({ error: "uniqueId is required" });
     }
 
-    const client = await Clients.findOne({ uniqueId });
+    const client = await Clienttss.findOne({ uniqueId });
     if (!client) {
       return res.status(404).json({ error: "Client not found" });
     }

@@ -257,15 +257,14 @@ exports.createClientKYC = async (req, res) => {
       email,
       officeEmail,
       address,
-      billingAddress,
-      shippingAddress,
+      
       gstNo,
       companyPAN,
       ownerPAN,
       aadharNumber,
       importExportCode,
-      companyType,
-      website
+      
+      
     } = req.body;
 
     // Required field validation
@@ -370,15 +369,13 @@ exports.createClientKYC = async (req, res) => {
       email: email?.trim(),
       officeEmail: officeEmail?.trim(),
       address: address.trim(),
-      billingAddress: billingAddress?.trim(),
-      shippingAddress: shippingAddress?.trim(),
+     
       gstNo: gstNo ? gstNo.trim().toUpperCase() : undefined,
       companyPAN: companyPAN ? companyPAN.trim().toUpperCase() : undefined,
       ownerPAN: ownerPAN ? ownerPAN.trim().toUpperCase() : undefined,
       aadharNumber: aadharNumber?.trim(),
       importExportCode: importExportCode?.trim(),
-      companyType: companyType?.trim(),
-      website: website?.trim(),
+      
       uniqueId,
       orders: new Map()
     });

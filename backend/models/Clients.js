@@ -18,12 +18,11 @@ const clientSchema = new mongoose.Schema({
   officePhone: String,
   landline: String,
   email: String,
-  officeEmail: String,
+  
   
   // Address Information
   address: String,
-  billingAddress: String,
-  shippingAddress: String,
+  
   
   // Government Identifiers (all optional)
   gstNo: String,
@@ -36,31 +35,32 @@ const clientSchema = new mongoose.Schema({
   },
   importExportCode: String,
   
-  // Additional Details
-  companyType: String,
-  website: String,
+ 
   
   orders: {
-    type: Map,
-    of: {
-      orderDate: Date,
-      status: String,
-      orderItems: [
-        {
-          srNo: Number,
-          styleNo: String,
-          clarity: String,
-          grossWeight: Number,
-          netWeight: Number,
-          diaWeight: Number,
-          pcs: Number,
-          amount: Number,
-          description: String
-        }
-      ]
-    },
-    default: new Map()
-  }
+  type: Map,
+  of: {
+    orderDate: Date,
+    status: String,
+    orderItems: [
+      {
+        srNo: Number,
+        styleNo: String,
+        diamondClarity: String,
+        diamondColor: String,
+        quantity: Number,
+        grossWeight: Number,
+        netWeight: Number,
+        diaWeight: Number,
+        pcs: Number,
+        amount: Number,
+        description: String
+      }
+    ]
+  },
+  default: new Map()
+}
+
 }, { timestamps: true });
 
 module.exports = mongoose.model("Clients", clientSchema);

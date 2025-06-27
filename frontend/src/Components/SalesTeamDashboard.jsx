@@ -94,7 +94,7 @@ const SalesDashboard = () => {
     totalOrders: 0,
   });
   const [kycFields, setKycFields] = useState([
-    { name: "", phone: "", address: "", gstNo: "" },
+    { name: "", phone: "", address: "", gstNo: "", officePhone: "", landline: "", email: "", companyPAN: "", ownerPAN: "", aadharNumber: "", importExportCode: "" }
   ]);
   const [modalClient, setModalClient] = useState(null);
   const [ongoingOrderModalVisible, setOngoingOrderModalVisible] = useState(false);
@@ -211,7 +211,7 @@ const SalesDashboard = () => {
     return (
       <AnimatePresence>
         <motion.div
-          className="fixed inset-0  bg-opacity-40 flex items-center justify-center z-50 p-4"
+          className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -495,7 +495,10 @@ const SalesDashboard = () => {
                     <p>
                       <span className="font-medium">Total Amount:</span> ₹
                       {order.orderItems
-                        ?.reduce((sum, item) => sum + (item.amount || 0), 0)
+                        ?.reduce(
+                          (sum, item) => sum + (item.amount || 0),
+                          0
+                        )
                         .toFixed(2) || "0.00"}
                     </p>
                   </div>
@@ -702,7 +705,7 @@ const SalesDashboard = () => {
       }
 
       message.success(`${kycFields.length} client(s) added successfully`);
-      setKycFields([{ name: "", phone: "", address: "", gstNo: "" }]);
+      setKycFields([{ name: "", phone: "", address: "", gstNo: "", officePhone: "", landline: "", email: "", companyPAN: "", ownerPAN: "", aadharNumber: "", importExportCode: "" }]);
       fetchClients();
     } catch (err) {
       console.error("KYC Error:", err);
@@ -807,40 +810,41 @@ const SalesDashboard = () => {
   };
 
   const fetchOrderHistory = async (uniqueId) => {
-  try {
-    setLoading(true);
-    
-    // First fetch the client data
-    const clientRes = await axios.get(`${API_BASE_URL}/api/team/get-clients`, {
-      params: { uniqueId }
-    });
+    try {
+      setLoading(true);
+      
+      // First fetch the client data
+      const clientRes = await axios.get(`${API_BASE_URL}/api/team/get-clients`, {
+        params: { uniqueId }
+      });
 
-    const clientData = clientRes.data?.data || clientRes.data;
-    
-    if (!clientData) {
-      message.error("Client not found");
-      return;
+      const clientData = clientRes.data?.data || clientRes.data;
+      
+      if (!clientData) {
+        message.error("Client not found");
+        return;
+      }
+
+      // Get orders from client data
+      const orders = ordersToArray(clientData.orders);
+      
+      // Format the order history
+      const formattedHistory = orders.map(order => ({
+        ...order,
+        orderId: order.orderId || order._id || Math.random().toString(36).substring(7),
+        orderDate: order.orderDate || order.createdAt || new Date().toISOString()
+      }));
+
+      setOrderHistory(formattedHistory);
+    } catch (err) {
+      console.error("History Error:", err);
+      message.error("Failed to fetch order history");
+      setOrderHistory([]);
+    } finally {
+      setLoading(false);
     }
+  };
 
-    // Get orders from client data
-    const orders = ordersToArray(clientData.orders);
-    
-    // Format the order history
-    const formattedHistory = orders.map(order => ({
-      ...order,
-      orderId: order.orderId || order._id || Math.random().toString(36).substring(7),
-      orderDate: order.orderDate || order.createdAt || new Date().toISOString()
-    }));
-
-    setOrderHistory(formattedHistory);
-  } catch (err) {
-    console.error("History Error:", err);
-    message.error("Failed to fetch order history");
-    setOrderHistory([]);
-  } finally {
-    setLoading(false);
-  }
-};
   const addOrderItem = () => {
     setOrderItems((prev) => [...prev, {}]);
   };
@@ -864,7 +868,7 @@ const SalesDashboard = () => {
   const addKycRow = () => {
     setKycFields((prev) => [
       ...prev,
-      { name: "", phone: "", address: "", gstNo: "" },
+      { name: "", phone: "", address: "", gstNo: "", officePhone: "", landline: "", email: "", companyPAN: "", ownerPAN: "", aadharNumber: "", importExportCode: "" }
     ]);
   };
 
@@ -1282,233 +1286,197 @@ const SalesDashboard = () => {
   );
 
   const renderKYCForm = () => (
-  <div className="space-y-6">
-    <h3 className="text-2xl font-semibold" style={{ color: colors.velvet }}>
-      Client KYC Form
-    </h3>
+    <div className="space-y-6">
+      <h3 className="text-2xl font-semibold" style={{ color: colors.velvet }}>
+        Client KYC Form
+      </h3>
 
-    <div className="rounded-lg shadow p-6 border" style={{
-      backgroundColor: colors.diamond,
-      borderColor: colors.darkGold,
-    }}>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Required Fields */}
-        <div>
-          <label className="block font-medium mb-1" style={{ color: colors.velvet }}>
-            Full Name <span className="text-red-500">*</span>
-          </label>
-          <Input
-            value={kycFields[0].name}
-            onChange={(e) => updateKycField(0, "name", e.target.value)}
-            placeholder="Enter full name"
-            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
-          />
+      <div className="rounded-lg shadow p-6 border" style={{
+        backgroundColor: colors.diamond,
+        borderColor: colors.darkGold,
+      }}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="block font-medium mb-1" style={{ color: colors.velvet }}>
+              Full Name <span className="text-red-500">*</span>
+            </label>
+            <Input
+              value={kycFields[0].name}
+              onChange={(e) => updateKycField(0, "name", e.target.value)}
+              placeholder="Enter full name"
+              style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
+            />
+          </div>
+
+          <div>
+            <label className="block font-medium mb-1" style={{ color: colors.velvet }}>
+              Mobile Number <span className="text-red-500">*</span>
+            </label>
+            <Input
+              value={kycFields[0].phone}
+              onChange={(e) => updateKycField(0, "phone", e.target.value)}
+              placeholder="Primary contact number"
+              style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
+            />
+          </div>
+
+          <div>
+            <label className="block font-medium mb-1" style={{ color: colors.velvet }}>
+              Alternate Phone (Optional)
+            </label>
+            <Input
+              value={kycFields[0].mobile}
+              onChange={(e) => updateKycField(0, "mobile", e.target.value)}
+              placeholder="Secondary contact number"
+              style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
+            />
+          </div>
+
+          <div>
+            <label className="block font-medium mb-1" style={{ color: colors.velvet }}>
+              Office Phone (Optional)
+            </label>
+            <Input
+              value={kycFields[0].officePhone}
+              onChange={(e) => updateKycField(0, "officePhone", e.target.value)}
+              placeholder="Office landline"
+              style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
+            />
+          </div>
+
+          <div>
+            <label className="block font-medium mb-1" style={{ color: colors.velvet }}>
+              Landline (Optional)
+            </label>
+            <Input
+              value={kycFields[0].landline}
+              onChange={(e) => updateKycField(0, "landline", e.target.value)}
+              placeholder="Home landline"
+              style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
+            />
+          </div>
+
+          <div>
+            <label className="block font-medium mb-1" style={{ color: colors.velvet }}>
+              Email (Optional)
+            </label>
+            <Input
+              value={kycFields[0].email}
+              onChange={(e) => updateKycField(0, "email", e.target.value)}
+              placeholder="Email address"
+              style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
+            />
+          </div>
+
+          <div className="md:col-span-2">
+            <label className="block font-medium mb-1" style={{ color: colors.velvet }}>
+              Complete Address <span className="text-red-500">*</span>
+            </label>
+            <Input.TextArea
+              value={kycFields[0].address}
+              onChange={(e) => updateKycField(0, "address", e.target.value)}
+              placeholder="Full address with city, state, and pincode"
+              rows={3}
+              style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
+            />
+          </div>
+
+          {/* Business Documentation */}
+          <div>
+            <label className="block font-medium mb-1" style={{ color: colors.velvet }}>
+              GST Number (Optional)
+            </label>
+            <Input
+              value={kycFields[0].gstNo}
+              onChange={(e) => updateKycField(0, "gstNo", e.target.value)}
+              placeholder="22AAAAA0000A1Z5"
+              style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
+            />
+          </div>
+
+          <div>
+            <label className="block font-medium mb-1" style={{ color: colors.velvet }}>
+              Company PAN (Optional)
+            </label>
+            <Input
+              value={kycFields[0].companyPAN}
+              onChange={(e) => updateKycField(0, "companyPAN", e.target.value)}
+              placeholder="ABCDE1234F"
+              style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
+            />
+          </div>
+
+          <div>
+            <label className="block font-medium mb-1" style={{ color: colors.velvet }}>
+              Owner PAN (Optional)
+            </label>
+            <Input
+              value={kycFields[0].ownerPAN}
+              onChange={(e) => updateKycField(0, "ownerPAN", e.target.value)}
+              placeholder="ABCDE1234F"
+              style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
+            />
+          </div>
+
+          <div>
+            <label className="block font-medium mb-1" style={{ color: colors.velvet }}>
+              Aadhar Number (Optional)
+            </label>
+            <Input
+              value={kycFields[0].aadharNumber}
+              onChange={(e) => updateKycField(0, "aadharNumber", e.target.value)}
+              placeholder="12-digit number"
+              style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
+            />
+          </div>
+
+          <div>
+            <label className="block font-medium mb-1" style={{ color: colors.velvet }}>
+              Import/Export Code (Optional)
+            </label>
+            <Input
+              value={kycFields[0].importExportCode}
+              onChange={(e) => updateKycField(0, "importExportCode", e.target.value)}
+              placeholder="IEC code"
+              style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
+            />
+          </div>
         </div>
 
-        <div>
-          <label className="block font-medium mb-1" style={{ color: colors.velvet }}>
-            Phone Number <span className="text-red-500">*</span>
-          </label>
-          <Input
-            value={kycFields[0].phone}
-            onChange={(e) => updateKycField(0, "phone", e.target.value)}
-            placeholder="10-15 digits"
-            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
-          />
-        </div>
-
-        {/* Optional Fields */}
-        <div>
-          <label className="block font-medium mb-1" style={{ color: colors.velvet }}>
-            Mobile Number (Optional)
-          </label>
-          <Input
-            value={kycFields[0].mobile}
-            onChange={(e) => updateKycField(0, "mobile", e.target.value)}
-            placeholder="Alternative phone"
-            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
-          />
-        </div>
-
-        <div>
-          <label className="block font-medium mb-1" style={{ color: colors.velvet }}>
-            Email (Optional)
-          </label>
-          <Input
-            value={kycFields[0].email}
-            onChange={(e) => updateKycField(0, "email", e.target.value)}
-            placeholder="client@example.com"
-            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
-          />
-        </div>
-
-        <div>
-          <label className="block font-medium mb-1" style={{ color: colors.velvet }}>
-            GST Number (Optional)
-          </label>
-          <Input
-            value={kycFields[0].gstNo}
-            onChange={(e) => updateKycField(0, "gstNo", e.target.value)}
-            placeholder="22AAAAA0000A1Z5"
-            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
-          />
-        </div>
-
-        <div>
-          <label className="block font-medium mb-1" style={{ color: colors.velvet }}>
-            Company PAN (Optional)
-          </label>
-          <Input
-            value={kycFields[0].companyPAN}
-            onChange={(e) => updateKycField(0, "companyPAN", e.target.value)}
-            placeholder="ABCDE1234F"
-            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
-          />
-        </div>
-
-        <div>
-          <label className="block font-medium mb-1" style={{ color: colors.velvet }}>
-            Owner PAN (Optional)
-          </label>
-          <Input
-            value={kycFields[0].ownerPAN}
-            onChange={(e) => updateKycField(0, "ownerPAN", e.target.value)}
-            placeholder="ABCDE1234F"
-            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
-          />
-        </div>
-
-        <div>
-          <label className="block font-medium mb-1" style={{ color: colors.velvet }}>
-            Aadhar Number (Optional)
-          </label>
-          <Input
-            value={kycFields[0].aadharNumber}
-            onChange={(e) => updateKycField(0, "aadharNumber", e.target.value)}
-            placeholder="12-digit number"
-            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
-          />
-        </div>
-
-        {/* Address Section */}
-        <div className="md:col-span-2">
-          <label className="block font-medium mb-1" style={{ color: colors.velvet }}>
-            Complete Address <span className="text-red-500">*</span>
-          </label>
-          <Input.TextArea
-            value={kycFields[0].address}
-            onChange={(e) => updateKycField(0, "address", e.target.value)}
-            placeholder="Full address with city, state, and pincode"
-            rows={3}
-            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
-          />
-        </div>
-
-        {/* Optional Address Fields */}
-        <div>
-          <label className="block font-medium mb-1" style={{ color: colors.velvet }}>
-            Billing Address (Optional)
-          </label>
-          <Input.TextArea
-            value={kycFields[0].billingAddress}
-            onChange={(e) => updateKycField(0, "billingAddress", e.target.value)}
-            placeholder="If different from main address"
-            rows={2}
-            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
-          />
-        </div>
-
-        <div>
-          <label className="block font-medium mb-1" style={{ color: colors.velvet }}>
-            Shipping Address (Optional)
-          </label>
-          <Input.TextArea
-            value={kycFields[0].shippingAddress}
-            onChange={(e) => updateKycField(0, "shippingAddress", e.target.value)}
-            placeholder="If different from main address"
-            rows={2}
-            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
-          />
-        </div>
-
-        {/* Additional Optional Fields */}
-        <div>
-          <label className="block font-medium mb-1" style={{ color: colors.velvet }}>
-            Import/Export Code (Optional)
-          </label>
-          <Input
-            value={kycFields[0].importExportCode}
-            onChange={(e) => updateKycField(0, "importExportCode", e.target.value)}
-            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
-          />
-        </div>
-
-        <div>
-          <label className="block font-medium mb-1" style={{ color: colors.velvet }}>
-            Company Type (Optional)
-          </label>
-          <Select
-            value={kycFields[0].companyType}
-            onChange={(value) => updateKycField(0, "companyType", value)}
-            style={{ width: '100%', borderColor: colors.darkGold }}
-            placeholder="Select company type"
+        <div className="flex justify-end mt-6">
+          <Button
+            type="primary"
+            onClick={handleKYCSubmit}
+            loading={loading}
+            style={{
+              backgroundColor: colors.darkGold,
+              color: colors.light,
+              padding: '8px 24px',
+              borderRadius: '6px',
+              fontWeight: 'medium'
+            }}
           >
-            <Option value="Proprietorship">Proprietorship</Option>
-            <Option value="Partnership">Partnership</Option>
-            <Option value="LLP">LLP</Option>
-            <Option value="Private Limited">Private Limited</Option>
-            <Option value="Public Limited">Public Limited</Option>
-            <Option value="Individual">Individual</Option>
-          </Select>
-        </div>
-
-        <div>
-          <label className="block font-medium mb-1" style={{ color: colors.velvet }}>
-            Website (Optional)
-          </label>
-          <Input
-            value={kycFields[0].website}
-            onChange={(e) => updateKycField(0, "website", e.target.value)}
-            placeholder="https://example.com"
-            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
-          />
+            Submit KYC
+          </Button>
         </div>
       </div>
 
-      <div className="flex justify-end mt-6">
-        <Button
-          type="primary"
-          onClick={handleKYCSubmit}
+      {/* Client List Table */}
+      <div className="mt-8">
+        <h4 className="text-lg font-semibold mb-4" style={{ color: colors.velvet }}>
+          Existing Clients
+        </h4>
+        <Table
+          dataSource={clients}
+          columns={clientColumns}
+          rowKey="uniqueId"
           loading={loading}
-          style={{
-            backgroundColor: colors.darkGold,
-            color: colors.light,
-            padding: '8px 24px',
-            borderRadius: '6px',
-            fontWeight: 'medium'
-          }}
-        >
-          Submit KYC
-        </Button>
+          scroll={{ x: true }}
+          pagination={{ pageSize: 5 }}
+        />
       </div>
     </div>
-
-    {/* Client List Table */}
-    <div className="mt-8">
-      <h4 className="text-lg font-semibold mb-4" style={{ color: colors.velvet }}>
-        Existing Clients
-      </h4>
-      <Table
-        dataSource={clients}
-        columns={clientColumns}
-        rowKey="uniqueId"
-        loading={loading}
-        scroll={{ x: true }}
-        pagination={{ pageSize: 5 }}
-      />
-    </div>
-  </div>
-);
+  );
 
   const renderOrderForm = () => (
     <div>

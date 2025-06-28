@@ -416,7 +416,7 @@ const SalesDashboard = () => {
 const fetchOrderHistory = async (uniqueId) => {
   setLoading(true);
   try {
-    const res = await axios.get(`${API_BASE_URL}/api/team/get-clients/${uniqueId}`);
+    const res = await axios.get(`${API_BASE_URL}/api/team/get-client/${uniqueId}`);
 
     if (!res.data.success) {
       throw new Error(res.data.message || "Failed to fetch client orders");
@@ -2423,7 +2423,7 @@ const fetchOrderHistory = async (uniqueId) => {
           >
             {clients.map((client) => (
               <Option key={client.uniqueId} value={client.uniqueId}>
-                {client.uniqueId}
+                {client.uniqueId} 
               </Option>
             ))}
           </Select>

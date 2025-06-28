@@ -338,7 +338,7 @@ const SalesDashboard = () => {
       }
 
       const payload = {
-        clientId: selectedClient._id,
+        uniqueId: selectedClient.uniqueId,
         orderItems: orderItems.map((item) => ({
           srNo: item.srNo || 0,
           styleNo: item.styleNo.trim(),

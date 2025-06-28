@@ -188,61 +188,65 @@ const SalesDashboard = () => {
   };
 
   // Fetch clients from API
-  const fetchClients = async () => {
-    setLoading(true);
-    try {
-      const res = await axios.get(`${API_BASE_URL}/api/team/get-clients`);
-      
-      if (!res.data.success) {
-        throw new Error(res.data.message || 'Failed to fetch clients');
-      }
+const fetchClients = async () => {
+  setLoading(true);
+  try {
+    const res = await axios.get(`${API_BASE_URL}/api/team/get-clients`);
 
-      const clientData = res.data.clients.map(client => ({
-        _id: client._id,
-        name: client.name || 'No Name',
-        uniqueId: client.uniqueId || '',
-        phone: client.phone || '',
-        mobile: client.mobile || '',
-        officePhone: client.officePhone || '',
-        landline: client.landline || '',
-        email: client.email || '',
-        address: client.address || '',
-        gstNo: client.gstNo || '',
-        companyPAN: client.companyPAN || '',
-        ownerPAN: client.ownerPAN || '',
-        aadharNumber: client.aadharNumber || '',
-        importExportCode: client.importExportCode || '',
-        orders: client.orders ? client.orders.map(order => ({
-          ...order,
-          orderDate: order.orderDate ? new Date(order.orderDate) : null,
-          orderItems: order.orderItems.map(item => ({
-            srNo: item.srNo || 0,
-            styleNo: item.styleNo || '',
-            diamondClarity: item.diamondClarity || '',
-            diamondColor: item.diamondColor || '',
-            quantity: item.quantity || 0,
-            grossWeight: item.grossWeight || 0,
-            netWeight: item.netWeight || 0,
-            diaWeight: item.diaWeight || 0,
-            pcs: item.pcs || 0,
-            amount: item.amount || 0,
-            description: item.description || ''
-          }))
-        })) : [],
-        createdAt: client.createdAt,
-        updatedAt: client.updatedAt
-      }));
-
-      setClients(clientData);
-      calculateStats(clientData);
-    } catch (err) {
-      console.error("Fetch error:", err);
-      message.error(err.message || "Failed to fetch clients");
-      setClients([]);
-    } finally {
-      setLoading(false);
+    if (!res.data.success) {
+      throw new Error(res.data.message || 'Failed to fetch clients');
     }
-  };
+
+    const clientData = res.data.clients.map(client => ({
+      _id: client._id,
+      name: client.name || 'No Name',
+      uniqueId: client.uniqueId || '',
+      phone: client.phone || '',
+      mobile: client.mobile || '',
+      officePhone: client.officePhone || '',
+      landline: client.landline || '',
+      email: client.email || '',
+      address: client.address || '',
+      gstNo: client.gstNo || '',
+      companyPAN: client.companyPAN || '',
+      ownerPAN: client.ownerPAN || '',
+      aadharNumber: client.aadharNumber || '',
+      importExportCode: client.importExportCode || '',
+
+      orders: (client.orders || []).map(order => ({
+        orderId: order.orderId || '',
+        orderDate: order.orderDate ? new Date(order.orderDate) : null,
+        status: order.status || '',
+        orderItems: (order.orderItems || []).map(item => ({
+          srNo: item.srNo || 0,
+          styleNo: item.styleNo || '',
+          diamondClarity: item.diamondClarity || '',
+          diamondColor: item.diamondColor || '',
+          quantity: item.quantity || 0,
+          grossWeight: item.grossWeight || 0,
+          netWeight: item.netWeight || 0,
+          diaWeight: item.diaWeight || 0,
+          pcs: item.pcs || 0,
+          amount: item.amount || 0,
+          description: item.description || ''
+        }))
+      })),
+
+      createdAt: client.createdAt,
+      updatedAt: client.updatedAt
+    }));
+
+    setClients(clientData);
+    calculateStats(clientData);
+  } catch (err) {
+    console.error("Fetch error:", err);
+    message.error(err.message || "Failed to fetch clients");
+    setClients([]);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const calculateStats = (clientData) => {
     let totalOrders = 0;
@@ -397,10 +401,10 @@ const SalesDashboard = () => {
     }
   };
 
-  const fetchOrderHistory = async (clientId) => {
+  const fetchOrderHistory = async (uniqueId) => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_BASE_URL}/api/team/client-orders/${clientId}`);
+      const response = await axios.get(`${API_BASE_URL}/api/team/client-orders/${uniqueId}`);
       
       if (response.data.success) {
         const formattedHistory = response.data.orders.map(order => ({

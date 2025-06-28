@@ -6,6 +6,6 @@ router.post('/productionteam-login',TeamController.loginProduction)
 router.post('/salesteam-login',TeamController.loginSalesteam)
 router.post('/create-client',TeamController.createUser)
  router.get('/get-clients',TeamController.getAllClients)
- router.post('/clients-order',TeamController.addClientOrder)
+ router.post('/client-orders',TeamController.addClientOrder)
 // .get('/order-history',TeamController.getOrderHistory)
 module.exports = router;

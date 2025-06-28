@@ -430,32 +430,65 @@ exports.createUser = async (req, res) => {
 
 exports.getAllClients = async (req, res) => {
   try {
-    const clients = await Clienttss.find({}).lean(); // Using lean() for better performance
-    
+    const clients = await Clienttss.find({}); // No .lean() because Map support chahiye
+
     const formattedClients = clients.map(client => {
-      // Convert orders Map to array of objects
-      const ordersArray = client.orders ? Array.from(client.orders.entries()).map(([orderId, order]) => ({
+      const ordersMap = client.orders || new Map();
+
+      // Convert Map to array
+      const ordersArray = Array.from(ordersMap.entries()).map(([orderId, order]) => ({
         orderId,
-        ...order,
-        orderItems: order.orderItems || [] // Ensure orderItems exists
-      })) : [];
-      
+        orderDate: order.orderDate,
+        status: order.status,
+        orderItems: (order.orderItems || []).map(item => ({
+          srNo: item.srNo || 0,
+          styleNo: item.styleNo || '',
+          diamondClarity: item.diamondClarity || '',
+          diamondColor: item.diamondColor || '',
+          quantity: item.quantity || 0,
+          grossWeight: item.grossWeight || 0,
+          netWeight: item.netWeight || 0,
+          diaWeight: item.diaWeight || 0,
+          pcs: item.pcs || 0,
+          amount: item.amount || 0,
+          description: item.description || ''
+        }))
+      }));
+
       return {
-        ...client,
-        orders: ordersArray
+        _id: client._id,
+        name: client.name,
+        uniqueId: client.uniqueId,
+        phone: client.phone,
+        mobile: client.mobile,
+        officePhone: client.officePhone,
+        landline: client.landline,
+        email: client.email,
+        address: client.address,
+        gstNo: client.gstNo,
+        companyPAN: client.companyPAN,
+        ownerPAN: client.ownerPAN,
+        aadharNumber: client.aadharNumber,
+        importExportCode: client.importExportCode,
+        orders: ordersArray,
+        createdAt: client.createdAt,
+        updatedAt: client.updatedAt
       };
     });
 
     res.json({ success: true, clients: formattedClients });
   } catch (err) {
     console.error("Error fetching clients:", err);
-    res.status(500).json({ 
-      success: false, 
+    res.status(500).json({
+      success: false,
       message: err.message,
       error: process.env.NODE_ENV === 'development' ? err.stack : undefined
     });
   }
 };
+
+
+
 
 
 

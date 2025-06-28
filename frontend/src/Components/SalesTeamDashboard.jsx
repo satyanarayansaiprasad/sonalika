@@ -188,65 +188,62 @@ const SalesDashboard = () => {
   };
 
   // Fetch clients from API
-const fetchClients = async () => {
-  setLoading(true);
-  try {
-    const res = await axios.get(`${API_BASE_URL}/api/team/get-clients`);
+  const fetchClients = async () => {
+    setLoading(true);
+    try {
+      const res = await axios.get(`${API_BASE_URL}/api/team/get-clients`);
 
-    if (!res.data.success) {
-      throw new Error(res.data.message || 'Failed to fetch clients');
+      if (!res.data.success) {
+        throw new Error(res.data.message || 'Failed to fetch clients');
+      }
+
+      const clientData = res.data.clients.map(client => ({
+        _id: client._id,
+        name: client.name || 'No Name',
+        uniqueId: client.uniqueId || '',
+        phone: client.phone || '',
+        mobile: client.mobile || '',
+        officePhone: client.officePhone || '',
+        landline: client.landline || '',
+        email: client.email || '',
+        address: client.address || '',
+        gstNo: client.gstNo || '',
+        companyPAN: client.companyPAN || '',
+        ownerPAN: client.ownerPAN || '',
+        aadharNumber: client.aadharNumber || '',
+        importExportCode: client.importExportCode || '',
+        orders: (client.orders || []).map(order => ({
+          orderId: order.orderId || '',
+          orderDate: order.orderDate ? new Date(order.orderDate) : null,
+          status: order.status || '',
+          orderItems: (order.orderItems || []).map(item => ({
+            srNo: item.srNo || 0,
+            styleNo: item.styleNo || '',
+            diamondClarity: item.diamondClarity || '',
+            diamondColor: item.diamondColor || '',
+            quantity: item.quantity || 0,
+            grossWeight: item.grossWeight || 0,
+            netWeight: item.netWeight || 0,
+            diaWeight: item.diaWeight || 0,
+            pcs: item.pcs || 0,
+            amount: item.amount || 0,
+            description: item.description || ''
+          }))
+        })),
+        createdAt: client.createdAt,
+        updatedAt: client.updatedAt
+      }));
+
+      setClients(clientData);
+      calculateStats(clientData);
+    } catch (err) {
+      console.error("Fetch error:", err);
+      message.error(err.message || "Failed to fetch clients");
+      setClients([]);
+    } finally {
+      setLoading(false);
     }
-
-    const clientData = res.data.clients.map(client => ({
-      _id: client._id,
-      name: client.name || 'No Name',
-      uniqueId: client.uniqueId || '',
-      phone: client.phone || '',
-      mobile: client.mobile || '',
-      officePhone: client.officePhone || '',
-      landline: client.landline || '',
-      email: client.email || '',
-      address: client.address || '',
-      gstNo: client.gstNo || '',
-      companyPAN: client.companyPAN || '',
-      ownerPAN: client.ownerPAN || '',
-      aadharNumber: client.aadharNumber || '',
-      importExportCode: client.importExportCode || '',
-
-      orders: (client.orders || []).map(order => ({
-        orderId: order.orderId || '',
-        orderDate: order.orderDate ? new Date(order.orderDate) : null,
-        status: order.status || '',
-        orderItems: (order.orderItems || []).map(item => ({
-          srNo: item.srNo || 0,
-          styleNo: item.styleNo || '',
-          diamondClarity: item.diamondClarity || '',
-          diamondColor: item.diamondColor || '',
-          quantity: item.quantity || 0,
-          grossWeight: item.grossWeight || 0,
-          netWeight: item.netWeight || 0,
-          diaWeight: item.diaWeight || 0,
-          pcs: item.pcs || 0,
-          amount: item.amount || 0,
-          description: item.description || ''
-        }))
-      })),
-
-      createdAt: client.createdAt,
-      updatedAt: client.updatedAt
-    }));
-
-    setClients(clientData);
-    calculateStats(clientData);
-  } catch (err) {
-    console.error("Fetch error:", err);
-    message.error(err.message || "Failed to fetch clients");
-    setClients([]);
-  } finally {
-    setLoading(false);
-  }
-};
-
+  };
 
   const calculateStats = (clientData) => {
     let totalOrders = 0;
@@ -296,7 +293,7 @@ const fetchClients = async () => {
     try {
       setLoading(true);
 
-      if (!selectedClient) {
+      if (!selectedClient.uniqueId) {
         message.error("Please select a client");
         return;
       }
@@ -357,7 +354,7 @@ const fetchClients = async () => {
         })),
       };
 
-      const response = await axios.post(`${API_BASE_URL}/api/team/clients-order`, payload);
+      const response = await axios.post(`${API_BASE_URL}/api/team/client-orders`, payload);
 
       if (response.data.success) {
         message.success("Order created successfully");
@@ -668,7 +665,7 @@ const fetchClients = async () => {
 
     return (
       <Modal
-        title={`Order Details - ${orderId.substring(0, 8)}...`}
+        title={`Order Details - ${orderId ? orderId.substring(0, 8) + '...' : 'N/A'}`}
         visible={visible}
         onCancel={onClose}
         footer={null}
@@ -904,7 +901,7 @@ const fetchClients = async () => {
       </h3>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <div
           className="rounded-lg shadow p-4 border"
           style={{
@@ -944,20 +941,7 @@ const fetchClients = async () => {
             valueStyle={{ color: colors.velvet, fontSize: "24px" }}
           />
         </div>
-        <div
-          className="rounded-lg shadow p-4 border"
-          style={{
-            backgroundColor: colors.diamond,
-            borderColor: colors.roseGold,
-          }}
-        >
-          <Statistic
-            title={<span className="text-gray-600">Total Revenue</span>}
-            value={stats.totalRevenue}
-            prefix="₹"
-            valueStyle={{ color: colors.roseGold, fontSize: "24px" }}
-          />
-        </div>
+        
       </div>
 
       {/* Clients and Orders Sections */}
@@ -1059,26 +1043,8 @@ const fetchClients = async () => {
                   </span>
                 ),
               },
-              {
-                title: "Order ID",
-                dataIndex: "_id",
-                key: "orderId",
-                render: (id) => (
-                  <span className="font-medium" style={{ color: colors.darkGold }}>
-                    {id ? id.substring(0, 8) + "..." : "N/A"}
-                  </span>
-                ),
-              },
-              {
-                title: "Date",
-                dataIndex: "createdAt",
-                key: "date",
-                render: (date) => (
-                  <span className="text-gray-600">
-                    {date ? dayjs(date).format("DD/MM/YYYY") : "N/A"}
-                  </span>
-                ),
-              },
+              
+              
               {
                 title: "Status",
                 key: "status",
@@ -1545,6 +1511,14 @@ const fetchClients = async () => {
     </div>
   );
 
+  const diamondClarityOptions = [
+    "FL", "IF", "VVS1", "VVS2", "VS1", "VS2", "SI1", "SI2", "I1", "I2", "I3"
+  ];
+
+  const diamondColorOptions = [
+    "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"
+  ];
+
   const renderOrderForm = () => (
     <div>
       <h3 className="text-2xl font-semibold" style={{ color: colors.velvet }}>
@@ -1580,7 +1554,7 @@ const fetchClients = async () => {
           >
             {clients.map((client) => (
               <Option key={client._id} value={client._id}>
-                {client.uniqueId} - {client.name}
+                {client.uniqueId} 
               </Option>
             ))}
           </Select>
@@ -1695,20 +1669,30 @@ const fetchClients = async () => {
                   
                   <div>
                     <label className="block text-sm font-medium" style={{ color: colors.velvet }}>Diamond Clarity</label>
-                    <Input
+                    <Select
                       value={item.diamondClarity}
-                      onChange={(e) => updateOrderItem(index, "diamondClarity", e.target.value)}
+                      onChange={(val) => updateOrderItem(index, "diamondClarity", val)}
                       style={{ width: '100%', borderColor: colors.darkGold }}
-                    />
+                      placeholder="Select clarity"
+                    >
+                      {diamondClarityOptions.map(option => (
+                        <Option key={option} value={option}>{option}</Option>
+                      ))}
+                    </Select>
                   </div>
                   
                   <div>
                     <label className="block text-sm font-medium" style={{ color: colors.velvet }}>Diamond Color</label>
-                    <Input
+                    <Select
                       value={item.diamondColor}
-                      onChange={(e) => updateOrderItem(index, "diamondColor", e.target.value)}
+                      onChange={(val) => updateOrderItem(index, "diamondColor", val)}
                       style={{ width: '100%', borderColor: colors.darkGold }}
-                    />
+                      placeholder="Select color"
+                    >
+                      {diamondColorOptions.map(option => (
+                        <Option key={option} value={option}>{option}</Option>
+                      ))}
+                    </Select>
                   </div>
                   
                   <div>
@@ -1717,6 +1701,19 @@ const fetchClients = async () => {
                       value={item.quantity}
                       onChange={(val) => updateOrderItem(index, "quantity", val)}
                       style={{ width: '100%', borderColor: colors.darkGold }}
+                      min={1}
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium" style={{ color: colors.velvet }}>PCS*</label>
+                    <InputNumber
+                      value={item.pcs}
+                      onChange={(val) => updateOrderItem(index, "pcs", val)}
+                      style={{
+                        width: '100%',
+                        borderColor: !item.pcs || item.pcs < 1 ? colors.roseGold : colors.darkGold,
+                      }}
                       min={1}
                     />
                   </div>
@@ -1751,19 +1748,6 @@ const fetchClients = async () => {
                       style={{ width: '100%', borderColor: colors.darkGold }}
                       min={0}
                       step={0.01}
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium" style={{ color: colors.velvet }}>PCS*</label>
-                    <InputNumber
-                      value={item.pcs}
-                      onChange={(val) => updateOrderItem(index, "pcs", val)}
-                      style={{
-                        width: '100%',
-                        borderColor: !item.pcs || item.pcs < 1 ? colors.roseGold : colors.darkGold,
-                      }}
-                      min={1}
                     />
                   </div>
                   
@@ -1830,8 +1814,12 @@ const fetchClients = async () => {
                  Diamond Color
                 </th>
                 <th className="p-2 text-left font-medium border" style={{ borderColor: colors.darkGold, color: colors.velvet }}>
+                  PCS*
+                </th>
+                <th className="p-2 text-left font-medium border" style={{ borderColor: colors.darkGold, color: colors.velvet }}>
                   Quantity
                 </th>
+                
                 <th className="p-2 text-left font-medium border" style={{ borderColor: colors.darkGold, color: colors.velvet }}>
                   Gross WT
                 </th>
@@ -1840,9 +1828,6 @@ const fetchClients = async () => {
                 </th>
                 <th className="p-2 text-left font-medium border" style={{ borderColor: colors.darkGold, color: colors.velvet }}>
                   DIA WT
-                </th>
-                <th className="p-2 text-left font-medium border" style={{ borderColor: colors.darkGold, color: colors.velvet }}>
-                  PCS*
                 </th>
                 <th className="p-2 text-left font-medium border" style={{ borderColor: colors.darkGold, color: colors.velvet }}>
                   Amount*
@@ -1890,28 +1875,34 @@ const fetchClients = async () => {
                     />
                   </td>
                   <td className="p-2 border" style={{ borderColor: colors.darkGold }}>
-                    <Input
+                    <Select
                       value={item.diamondClarity}
-                      onChange={(e) =>
-                        updateOrderItem(index, "diamondClarity", e.target.value)
-                      }
+                      onChange={(val) => updateOrderItem(index, "diamondClarity", val)}
                       style={{
                         width: "100%",
                         borderColor: colors.darkGold,
                       }}
-                    />
+                      placeholder="Select clarity"
+                    >
+                      {diamondClarityOptions.map(option => (
+                        <Option key={option} value={option}>{option}</Option>
+                      ))}
+                    </Select>
                   </td>
                   <td className="p-2 border" style={{ borderColor: colors.darkGold }}>
-                    <Input
+                    <Select
                       value={item.diamondColor}
-                      onChange={(e) =>
-                        updateOrderItem(index, "diamondColor", e.target.value)
-                      }
+                      onChange={(val) => updateOrderItem(index, "diamondColor", val)}
                       style={{
                         width: "100%",
                         borderColor: colors.darkGold,
                       }}
-                    />
+                      placeholder="Select color"
+                    >
+                      {diamondColorOptions.map(option => (
+                        <Option key={option} value={option}>{option}</Option>
+                      ))}
+                    </Select>
                   </td>
                   <td className="p-2 border" style={{ borderColor: colors.darkGold }}>
                     <InputNumber
@@ -1922,6 +1913,20 @@ const fetchClients = async () => {
                       style={{
                         width: "100%",
                         borderColor: colors.darkGold,
+                      }}
+                      min={1}
+                    />
+                  </td>
+                  <td className="p-2 border" style={{ borderColor: colors.darkGold }}>
+                    <InputNumber
+                      value={item.pcs}
+                      onChange={(val) => updateOrderItem(index, "pcs", val)}
+                      style={{
+                        width: "100%",
+                        borderColor:
+                          !item.pcs || item.pcs < 1
+                            ? colors.roseGold
+                            : colors.darkGold,
                       }}
                       min={1}
                     />
@@ -1962,20 +1967,6 @@ const fetchClients = async () => {
                       }}
                       min={0}
                       step={0.01}
-                    />
-                  </td>
-                  <td className="p-2 border" style={{ borderColor: colors.darkGold }}>
-                    <InputNumber
-                      value={item.pcs}
-                      onChange={(val) => updateOrderItem(index, "pcs", val)}
-                      style={{
-                        width: "100%",
-                        borderColor:
-                          !item.pcs || item.pcs < 1
-                            ? colors.roseGold
-                            : colors.darkGold,
-                      }}
-                      min={1}
                     />
                   </td>
                   <td className="p-2 border" style={{ borderColor: colors.darkGold }}>
@@ -2484,8 +2475,7 @@ const fetchClients = async () => {
             </nav>
           </div>
         </div>
-      )
-    }
+      )}
       <div className="flex-1 flex flex-col overflow-hidden md:mt-0 mt-16">
         {/* Desktop Header */}
         <header

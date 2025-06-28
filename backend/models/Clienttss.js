@@ -54,6 +54,7 @@ const clienttssSchema = new mongoose.Schema({
         diaWeight: Number,
         pcs: Number,
         amount: Number,
+        // total:Number,
         description: String
       }
     ]

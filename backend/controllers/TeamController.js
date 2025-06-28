@@ -525,89 +525,82 @@ exports.getAllClients = async (req, res) => {
 // Add order items to existing client by uniqueId or _id
 exports.addClientOrder = async (req, res) => {
   try {
-    const { uniqueId, orderItems } = req.body; // Changed from 'orders' to 'orderItems' to match schema
+    const { uniqueId, orderItems } = req.body;
 
-    // Validate required fields
-    if (!uniqueId || !orderItems || !Array.isArray(orderItems) || orderItems.length === 0) {
+    // 1. Validate input
+    if (!uniqueId || !Array.isArray(orderItems) || orderItems.length === 0) {
       return res.status(400).json({
         error: "Validation Error",
-        message: "uniqueId and at least one order item are required",
-        details: {
-          uniqueId: !uniqueId ? "Missing uniqueId" : "Valid",
-          orderItems: !orderItems ? "Missing order items" 
-                   : !Array.isArray(orderItems) ? "orderItems must be an array" 
-                   : orderItems.length === 0 ? "At least one order item required" 
-                   : "Valid"
-        }
+        message: "uniqueId and at least one valid order item are required",
       });
     }
 
-    // Validate each order item
-    const invalidItems = [];
-    orderItems.forEach((item, index) => {
+    // 2. Validate each order item
+    const invalidItems = orderItems.map((item, index) => {
       const errors = [];
       if (!item.styleNo) errors.push("styleNo is required");
-      if (!item.pcs || isNaN(item.pcs) || item.pcs < 1) errors.push("valid pcs (≥1) is required");
-      if (!item.amount || isNaN(item.amount)) errors.push("valid amount is required");
-      if (errors.length > 0) {
-        invalidItems.push({ itemIndex: index, errors });
-      }
-    });
+      if (!item.quantity || isNaN(item.quantity) || item.quantity < 1)
+        errors.push("quantity must be ≥ 1");
+      if (!item.amount || isNaN(item.amount))
+        errors.push("amount must be a valid number");
+      return errors.length ? { itemIndex: index, errors } : null;
+    }).filter(Boolean);
 
     if (invalidItems.length > 0) {
       return res.status(400).json({
         error: "Invalid Order Items",
-        message: "Some order items failed validation",
+        message: "Some items failed validation",
         invalidItems
       });
     }
 
-    // Find client using uniqueId
+    // 3. Find client
     const client = await Clienttss.findOne({ uniqueId });
     if (!client) {
       return res.status(404).json({
         error: "Not Found",
-        message: "Client not found with the provided uniqueId"
+        message: `No client found with uniqueId: ${uniqueId}`
       });
     }
 
+    // 4. Generate orderId
     const orderId = `order_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
 
-    // Prepare new order
+    // 5. Prepare order object
     const newOrder = {
       orderDate: new Date(),
-      status: 'ongoing', // Default status
-      orderItems: orderItems.map(item => ({  // Changed from 'orders' to 'orderItems' to match schema
+      status: 'ongoing',
+      orderItems: orderItems.map(item => ({
         srNo: item.srNo || 0,
-        styleNo: item.styleNo.trim(),
-        clarity: item.clarity?.trim() || "",
+        styleNo: item.styleNo?.trim() || "",
+        diamondClarity: item.diamondClarity?.trim() || "",
+        diamondColor: item.diamondColor?.trim() || "",
+        quantity: item.quantity || 0,
         grossWeight: item.grossWeight || 0,
         netWeight: item.netWeight || 0,
         diaWeight: item.diaWeight || 0,
-        pcs: item.pcs,
+        pcs: item.pcs || 0,
         amount: item.amount,
+        // total: item.total || (item.amount * (item.quantity || 1)),
         description: item.description?.trim() || ""
-      })
-    )};
+      }))
+    };
 
-    // Add order to client's orders Map
+    // 6. Add to client's orders map
     client.orders.set(orderId, newOrder);
 
-    // Save the updated client document
+    // 7. Save
     await client.save();
-
-    // Get the newly added order from the Map
-    const addedOrder = client.orders.get(orderId);
 
     return res.status(201).json({
       success: true,
-      message: "Order added successfully",
+      message: "Order placed successfully",
       data: {
-        orderId: orderId,
-        orderDate: addedOrder.orderDate,
-        status: addedOrder.status,
-        itemCount: addedOrder.orderItems.length,
-        clientDetails: {
+        orderId,
+        orderDate: newOrder.orderDate,
+        status: newOrder.status,
+        itemCount: newOrder.orderItems.length,
+        client: {
           name: client.name,
           uniqueId: client.uniqueId
         }
@@ -615,37 +608,15 @@ exports.addClientOrder = async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Error adding client order:", error);
-
-    // Handle specific error types
-    if (error.name === 'CastError') {
-      return res.status(400).json({
-        error: "Invalid Format",
-        message: "The provided uniqueId is not valid"
-      });
-    }
-
-    if (error.name === 'ValidationError') {
-      return res.status(400).json({
-        error: "Validation Error",
-        message: error.message
-      });
-    }
-
-    if (error.code === 11000) {
-      return res.status(400).json({
-        error: "Duplicate Key",
-        message: "Order with this ID already exists"
-      });
-    }
-
+    console.error("Add order error:", error);
     return res.status(500).json({
-      error: "Internal Server Error",
-      message: "Failed to process the order",
+      error: "Server Error",
+      message: "Something went wrong while placing the order",
       systemMessage: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 };
+
 
 
 exports.getOrderHistory = async (req, res) => {

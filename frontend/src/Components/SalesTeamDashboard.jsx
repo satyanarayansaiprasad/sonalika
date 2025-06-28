@@ -401,7 +401,7 @@ const SalesDashboard = () => {
   const fetchOrderHistory = async (uniqueId) => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_BASE_URL}/api/team/client-orders/${uniqueId}`);
+      const response = await axios.get(`${API_BASE_URL}/api/team/order-history/${uniqueId}`);
       
       if (response.data.success) {
         const formattedHistory = response.data.orders.map(order => ({
@@ -466,12 +466,6 @@ const SalesDashboard = () => {
       const newItems = [...prev];
       newItems[index] = { ...newItems[index], [field]: value };
       
-      // Auto-calculate amount if quantity or pcs changes
-      if (field === 'quantity' || field === 'pcs') {
-        const quantity = newItems[index].quantity || 1;
-        const pcs = newItems[index].pcs || 1;
-        newItems[index].amount = quantity * pcs;
-      }
       
       return newItems;
     });
@@ -634,20 +628,20 @@ const SalesDashboard = () => {
     );
   };
 
-  const OngoingOrderModal = ({ orderId, visible, onClose }) => {
+  const OngoingOrderModal = ({ uniqueId, visible, onClose }) => {
     const [order, setOrder] = useState(null);
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-      if (visible && orderId) {
-        fetchOrderDetails(orderId);
+      if (visible && uniqueId) {
+        fetchOrderDetails(uniqueId);
       }
-    }, [visible, orderId]);
+    }, [visible, uniqueId]);
 
     const fetchOrderDetails = async (id) => {
       setLoading(true);
       try {
-        const response = await axios.get(`${API_BASE_URL}/api/team/order-details/${id}`);
+        const response = await axios.get(`${API_BASE_URL}/api/team/order-history/${id}`);
         if (response.data.success) {
           setOrder(response.data.order);
         } else {
@@ -665,7 +659,7 @@ const SalesDashboard = () => {
 
     return (
       <Modal
-        title={`Order Details - ${orderId ? orderId.substring(0, 8) + '...' : 'N/A'}`}
+        title={`Order Details - ${uniqueId ? uniqueId.substring(0, 8) + '...' : 'N/A'}`}
         visible={visible}
         onCancel={onClose}
         footer={null}
@@ -1045,20 +1039,38 @@ const SalesDashboard = () => {
               },
               
               
-              {
-                title: "Status",
-                key: "status",
-                render: (_, record) => (
-                  <Tag
-                    style={{ 
-                      backgroundColor: "#e6f4ff",
-                      color: colors.darkGold
-                    }}
-                  >
-                    ONGOING
-                  </Tag>
-                ),
-              },
+             {
+  title: "Status",
+  key: "status",
+  render: (_id, record) => {
+    // Determine color based on status
+    let statusColor = colors.darkGold; // default color
+    let backgroundColor = "#e6f4ff"; // default background
+    
+    if (record.status === "COMPLETED") {
+      statusColor = colors.green;
+      backgroundColor = "#f6ffed";
+    } else if (record.status === "CANCELLED") {
+      statusColor = colors.red;
+      backgroundColor = "#fff2f0";
+    } else if (record.status === "PENDING") {
+      statusColor = colors.orange;
+      backgroundColor = "#fff7e6";
+    }
+
+    return (
+      <Tag
+        style={{ 
+          backgroundColor: backgroundColor,
+          color: statusColor,
+          borderColor: statusColor
+        }}
+      >
+        {record.status || "ONGOING"}
+      </Tag>
+    );
+  },
+},
               {
                 title: "Action",
                 key: "action",
@@ -1696,12 +1708,41 @@ const SalesDashboard = () => {
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium" style={{ color: colors.velvet }}>Quantity</label>
+                    <label className="block text-sm font-medium" style={{ color: colors.velvet }}>Gross WT</label>
                     <InputNumber
-                      value={item.quantity}
-                      onChange={(val) => updateOrderItem(index, "quantity", val)}
+                      value={item.grossWeight ?? 0.0}
+                      onChange={(val) => updateOrderItem(index, "grossWeight", val)}
                       style={{ width: '100%', borderColor: colors.darkGold }}
-                      min={1}
+                      min={0}
+                      step={0.01}
+                      formatter={(value) => parseFloat(value || 0).toFixed(2)}
+                      parser={(value) => parseFloat(value.replace(/[^\d.]/g, ""))}
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium" style={{ color: colors.velvet }}>Net WT</label>
+                    <InputNumber
+                      value={item.netWeight ?? 0.0}
+                      onChange={(val) => updateOrderItem(index, "netWeight", val)}
+                      style={{ width: '100%', borderColor: colors.darkGold }}
+                      min={0}
+                      step={0.01}
+                      formatter={(value) => parseFloat(value || 0).toFixed(2)}
+                      parser={(value) => parseFloat(value.replace(/[^\d.]/g, ""))}
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium" style={{ color: colors.velvet }}>DIA WT</label>
+                    <InputNumber
+                      value={item.diaWeight ?? 0.0}
+                      onChange={(val) => updateOrderItem(index, "diaWeight", val)}
+                      style={{ width: "100%", borderColor: colors.darkGold }}
+                      min={0}
+                      step={0.01}
+                      formatter={(value) => parseFloat(value || 0).toFixed(2)}
+                      parser={(value) => parseFloat(value.replace(/[^\d.]/g, ""))}
                     />
                   </div>
                   
@@ -1719,35 +1760,12 @@ const SalesDashboard = () => {
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium" style={{ color: colors.velvet }}>Gross WT</label>
+                    <label className="block text-sm font-medium" style={{ color: colors.velvet }}>Quantity</label>
                     <InputNumber
-                      value={item.grossWeight}
-                      onChange={(val) => updateOrderItem(index, "grossWeight", val)}
+                      value={item.quantity}
+                      onChange={(val) => updateOrderItem(index, "quantity", val)}
                       style={{ width: '100%', borderColor: colors.darkGold }}
-                      min={0}
-                      step={0.01}
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium" style={{ color: colors.velvet }}>Net WT</label>
-                    <InputNumber
-                      value={item.netWeight}
-                      onChange={(val) => updateOrderItem(index, "netWeight", val)}
-                      style={{ width: '100%', borderColor: colors.darkGold }}
-                      min={0}
-                      step={0.01}
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium" style={{ color: colors.velvet }}>DIA WT</label>
-                    <InputNumber
-                      value={item.diaWeight}
-                      onChange={(val) => updateOrderItem(index, "diaWeight", val)}
-                      style={{ width: '100%', borderColor: colors.darkGold }}
-                      min={0}
-                      step={0.01}
+                      min={1}
                     />
                   </div>
                   
@@ -1814,13 +1832,6 @@ const SalesDashboard = () => {
                  Diamond Color
                 </th>
                 <th className="p-2 text-left font-medium border" style={{ borderColor: colors.darkGold, color: colors.velvet }}>
-                  PCS*
-                </th>
-                <th className="p-2 text-left font-medium border" style={{ borderColor: colors.darkGold, color: colors.velvet }}>
-                  Quantity
-                </th>
-                
-                <th className="p-2 text-left font-medium border" style={{ borderColor: colors.darkGold, color: colors.velvet }}>
                   Gross WT
                 </th>
                 <th className="p-2 text-left font-medium border" style={{ borderColor: colors.darkGold, color: colors.velvet }}>
@@ -1828,6 +1839,12 @@ const SalesDashboard = () => {
                 </th>
                 <th className="p-2 text-left font-medium border" style={{ borderColor: colors.darkGold, color: colors.velvet }}>
                   DIA WT
+                </th>
+                <th className="p-2 text-left font-medium border" style={{ borderColor: colors.darkGold, color: colors.velvet }}>
+                  PCS*
+                </th>
+                <th className="p-2 text-left font-medium border" style={{ borderColor: colors.darkGold, color: colors.velvet }}>
+                  Quantity
                 </th>
                 <th className="p-2 text-left font-medium border" style={{ borderColor: colors.darkGold, color: colors.velvet }}>
                   Amount*
@@ -1906,15 +1923,44 @@ const SalesDashboard = () => {
                   </td>
                   <td className="p-2 border" style={{ borderColor: colors.darkGold }}>
                     <InputNumber
-                      value={item.quantity}
-                      onChange={(val) =>
-                        updateOrderItem(index, "quantity", val)
-                      }
+                      value={item.grossWeight ?? 0.0}
+                      onChange={(val) => updateOrderItem(index, "grossWeight", val)}
                       style={{
                         width: "100%",
                         borderColor: colors.darkGold,
                       }}
-                      min={1}
+                      min={0}
+                      step={0.01}
+                      formatter={(value) => parseFloat(value || 0).toFixed(2)}
+                      parser={(value) => parseFloat(value.replace(/[^\d.]/g, ""))}
+                    />
+                  </td>
+                  <td className="p-2 border" style={{ borderColor: colors.darkGold }}>
+                    <InputNumber
+                      value={item.netWeight ?? 0.0}
+                      onChange={(val) => updateOrderItem(index, "netWeight", val)}
+                      style={{
+                        width: "100%",
+                        borderColor: colors.darkGold,
+                      }}
+                      min={0}
+                      step={0.01}
+                      formatter={(value) => parseFloat(value || 0).toFixed(2)}
+                      parser={(value) => parseFloat(value.replace(/[^\d.]/g, ""))}
+                    />
+                  </td>
+                  <td className="p-2 border" style={{ borderColor: colors.darkGold }}>
+                    <InputNumber
+                      value={item.diaWeight ?? 0.0}
+                      onChange={(val) => updateOrderItem(index, "diaWeight", val)}
+                      style={{
+                        width: "100%",
+                        borderColor: colors.darkGold,
+                      }}
+                      min={0}
+                      step={0.01}
+                      formatter={(value) => parseFloat(value || 0).toFixed(2)}
+                      parser={(value) => parseFloat(value.replace(/[^\d.]/g, ""))}
                     />
                   </td>
                   <td className="p-2 border" style={{ borderColor: colors.darkGold }}>
@@ -1933,40 +1979,15 @@ const SalesDashboard = () => {
                   </td>
                   <td className="p-2 border" style={{ borderColor: colors.darkGold }}>
                     <InputNumber
-                      value={item.grossWeight}
+                      value={item.quantity}
                       onChange={(val) =>
-                        updateOrderItem(index, "grossWeight", val)
+                        updateOrderItem(index, "quantity", val)
                       }
                       style={{
                         width: "100%",
                         borderColor: colors.darkGold,
                       }}
-                      min={0}
-                      step={0.01}
-                    />
-                  </td>
-                  <td className="p-2 border" style={{ borderColor: colors.darkGold }}>
-                    <InputNumber
-                      value={item.netWeight}
-                      onChange={(val) => updateOrderItem(index, "netWeight", val)}
-                      style={{
-                        width: "100%",
-                        borderColor: colors.darkGold,
-                      }}
-                      min={0}
-                      step={0.01}
-                    />
-                  </td>
-                  <td className="p-2 border" style={{ borderColor: colors.darkGold }}>
-                    <InputNumber
-                      value={item.diaWeight}
-                      onChange={(val) => updateOrderItem(index, "diaWeight", val)}
-                      style={{
-                        width: "100%",
-                        borderColor: colors.darkGold,
-                      }}
-                      min={0}
-                      step={0.01}
+                      min={1}
                     />
                   </td>
                   <td className="p-2 border" style={{ borderColor: colors.darkGold }}>

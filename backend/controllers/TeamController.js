@@ -621,41 +621,78 @@ exports.addClientOrder = async (req, res) => {
 
 exports.getOrderHistory = async (req, res) => {
   try {
-    const { uniqueId } = req.query;
+    const { uniqueId } = req.params;
 
+    // 1. Validate input
     if (!uniqueId) {
-      return res.status(400).json({ error: "uniqueId is required" });
+      return res.status(400).json({
+        success: false,
+        error: "Validation Error",
+        message: "Client ID is required"
+      });
     }
 
-    const client = await Clienttss.findOne({ uniqueId });
+    // 2. Find client with basic info and orders
+    const client = await Clienttss.findOne({ uniqueId })
+      .select('name phone gstNo uniqueId orders');
+    
     if (!client) {
-      return res.status(404).json({ error: "Client not found" });
+      return res.status(404).json({
+        success: false,
+        error: "Not Found",
+        message: "Client not found with the provided ID"
+      });
     }
 
-    const orders = Array.from(client.orders.entries()).map(([orderId, order]) => ({
-      orderId,
-      orderDate: order.orderDate,
-      status: order.status || "ongoing",
-      items: order.orderItems || []
-    }));
+    // 3. Convert orders map to array and format response
+    const orders = Array.from(client.orders.entries()).map(([orderId, order]) => {
+      // Calculate order total if not already present
+      const orderTotal = order.orderItems.reduce((sum, item) => sum + (item.amount * item.quantity), 0);
+      
+      return {
+        id: orderId,
+        orderNumber: `ORD-${orderId.slice(-6).toUpperCase()}`, // Generate a readable order number
+        date: order.orderDate.toISOString().split('T')[0], // Format as YYYY-MM-DD
+        status: order.status || 'ongoing',
+        items: order.orderItems.map(item => ({
+          styleNo: item.styleNo,
+          description: item.description,
+          quantity: item.quantity,
+          amount: item.amount,
+          total: item.amount * item.quantity
+        })),
+        totalAmount: orderTotal,
+        clientDetails: {
+          name: client.name,
+          contact: client.phone,
+          gst: client.gstNo
+        }
+      };
+    });
+
+    // 4. Sort by order date (newest first)
+    orders.sort((a, b) => new Date(b.date) - new Date(a.date));
 
     return res.status(200).json({
       success: true,
       client: {
+        id: client.uniqueId,
         name: client.name,
-        uniqueId: client.uniqueId,
         phone: client.phone,
-        address: client.address,
         gstNo: client.gstNo
       },
-      orders
+      orders,
+      totalOrders: orders.length,
+      message: "Order history retrieved successfully"
     });
 
   } catch (error) {
-    console.error("Error fetching order history:", error);
+    console.error("Order history error:", error);
     return res.status(500).json({
-      error: "Internal Server Error",
-      message: "Could not fetch order history"
+      success: false,
+      error: "Server Error",
+      message: "Failed to retrieve order history",
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 };

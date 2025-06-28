@@ -66,10 +66,10 @@ const useMobile = () => {
     };
 
     checkIfMobile();
-    window.addEventListener('resize', checkIfMobile);
+    window.addEventListener("resize", checkIfMobile);
 
     return () => {
-      window.removeEventListener('resize', checkIfMobile);
+      window.removeEventListener("resize", checkIfMobile);
     };
   }, []);
 
@@ -85,28 +85,30 @@ const SalesDashboard = () => {
   const [loading, setLoading] = useState(false);
   const [kycForm] = Form.useForm();
   const [orderForm] = Form.useForm();
-  const [orderItems, setOrderItems] = useState([{ 
-    srNo: 1,
-    styleNo: "",
-    diamondClarity: "",
-    diamondColor: "",
-    quantity: 1,
-    grossWeight: 0,
-    netWeight: 0,
-    diaWeight: 0,
-    pcs: 1,
-    amount: 0,
-    description: ""
-  }]);
+  const [orderItems, setOrderItems] = useState([
+    {
+      srNo: 1,
+      styleNo: "",
+      diamondClarity: "",
+      diamondColor: "",
+      quantity: 1,
+      grossWeight: 0,
+      netWeight: 0,
+      diaWeight: 0,
+      pcs: 1,
+      amount: 0,
+      description: "",
+    },
+  ]);
   const [orderHistory, setOrderHistory] = useState([]);
-  const [selectedClient, setSelectedClient] = useState(null);
+  const [selectedClientId, setSelectedClientId] = useState(null);
   const [stats, setStats] = useState({
     totalClients: 0,
     activeClients: 0,
     totalOrders: 0,
     totalRevenue: 0,
   });
-  
+
   const [modalClient, setModalClient] = useState(null);
   const [ongoingOrderModalVisible, setOngoingOrderModalVisible] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
@@ -115,7 +117,7 @@ const SalesDashboard = () => {
   const handleKYCSubmit = async (values) => {
     try {
       setLoading(true);
-      
+
       const payload = {
         name: values.name,
         phone: values.phone,
@@ -128,10 +130,13 @@ const SalesDashboard = () => {
         companyPAN: values.companyPAN,
         ownerPAN: values.ownerPAN,
         aadharNumber: values.aadharNumber,
-        importExportCode: values.importExportCode
+        importExportCode: values.importExportCode,
       };
 
-      const response = await axios.post(`${API_BASE_URL}/api/team/create-client`, payload);
+      const response = await axios.post(
+        `${API_BASE_URL}/api/team/create-client`,
+        payload
+      );
 
       if (response.data.success) {
         message.success("Client KYC submitted successfully");
@@ -142,7 +147,7 @@ const SalesDashboard = () => {
       }
     } catch (error) {
       console.error("KYC Submission Error:", error);
-      
+
       if (error.response) {
         if (error.response.status === 400) {
           message.error(
@@ -166,16 +171,18 @@ const SalesDashboard = () => {
     if (/^\d{12}$/.test(value)) {
       return Promise.resolve();
     }
-    return Promise.reject(new Error('Aadhar number must be 12 digits'));
+    return Promise.reject(new Error("Aadhar number must be 12 digits"));
   };
 
   // Validate GST Number
   const validateGST = (_, value) => {
     if (!value) return Promise.resolve();
-    if (/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(value)) {
+    if (
+      /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(value)
+    ) {
       return Promise.resolve();
     }
-    return Promise.reject(new Error('Invalid GST number format'));
+    return Promise.reject(new Error("Invalid GST number format"));
   };
 
   // Validate PAN Number
@@ -184,7 +191,7 @@ const SalesDashboard = () => {
     if (/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(value)) {
       return Promise.resolve();
     }
-    return Promise.reject(new Error('Invalid PAN format (e.g. ABCDE1234F)'));
+    return Promise.reject(new Error("Invalid PAN format (e.g. ABCDE1234F)"));
   };
 
   // Fetch clients from API
@@ -194,44 +201,44 @@ const SalesDashboard = () => {
       const res = await axios.get(`${API_BASE_URL}/api/team/get-clients`);
 
       if (!res.data.success) {
-        throw new Error(res.data.message || 'Failed to fetch clients');
+        throw new Error(res.data.message || "Failed to fetch clients");
       }
 
-      const clientData = res.data.clients.map(client => ({
+      const clientData = res.data.clients.map((client) => ({
         _id: client._id,
-        name: client.name || 'No Name',
-        uniqueId: client.uniqueId || '',
-        phone: client.phone || '',
-        mobile: client.mobile || '',
-        officePhone: client.officePhone || '',
-        landline: client.landline || '',
-        email: client.email || '',
-        address: client.address || '',
-        gstNo: client.gstNo || '',
-        companyPAN: client.companyPAN || '',
-        ownerPAN: client.ownerPAN || '',
-        aadharNumber: client.aadharNumber || '',
-        importExportCode: client.importExportCode || '',
-        orders: (client.orders || []).map(order => ({
-          orderId: order.orderId || '',
+        name: client.name || "No Name",
+        uniqueId: client.uniqueId || "",
+        phone: client.phone || "",
+        mobile: client.mobile || "",
+        officePhone: client.officePhone || "",
+        landline: client.landline || "",
+        email: client.email || "",
+        address: client.address || "",
+        gstNo: client.gstNo || "",
+        companyPAN: client.companyPAN || "",
+        ownerPAN: client.ownerPAN || "",
+        aadharNumber: client.aadharNumber || "",
+        importExportCode: client.importExportCode || "",
+        orders: (client.orders || []).map((order) => ({
+          orderId: order.orderId || "",
           orderDate: order.orderDate ? new Date(order.orderDate) : null,
-          status: order.status || '',
-          orderItems: (order.orderItems || []).map(item => ({
+          status: order.status || "",
+          orderItems: (order.orderItems || []).map((item) => ({
             srNo: item.srNo || 0,
-            styleNo: item.styleNo || '',
-            diamondClarity: item.diamondClarity || '',
-            diamondColor: item.diamondColor || '',
+            styleNo: item.styleNo || "",
+            diamondClarity: item.diamondClarity || "",
+            diamondColor: item.diamondColor || "",
             quantity: item.quantity || 0,
             grossWeight: item.grossWeight || 0,
             netWeight: item.netWeight || 0,
             diaWeight: item.diaWeight || 0,
             pcs: item.pcs || 0,
             amount: item.amount || 0,
-            description: item.description || ''
-          }))
+            description: item.description || "",
+          })),
         })),
         createdAt: client.createdAt,
-        updatedAt: client.updatedAt
+        updatedAt: client.updatedAt,
       }));
 
       setClients(clientData);
@@ -254,9 +261,12 @@ const SalesDashboard = () => {
       const orders = client.orders || [];
       orders.forEach((order) => {
         totalOrders++;
-        const orderTotal = order.orderItems.reduce((sum, item) => sum + (item.amount || 0), 0);
+        const orderTotal = order.orderItems.reduce(
+          (sum, item) => sum + (item.amount || 0),
+          0
+        );
         totalRevenue += orderTotal;
-        
+
         if (order.status === "ongoing") {
           activeClients.add(client._id);
         }
@@ -293,7 +303,7 @@ const SalesDashboard = () => {
     try {
       setLoading(true);
 
-      if (!selectedClient.uniqueId) {
+      if (!selectedClientId) {
         message.error("Please select a client");
         return;
       }
@@ -338,7 +348,7 @@ const SalesDashboard = () => {
       }
 
       const payload = {
-        uniqueId: selectedClient.uniqueId,
+        uniqueId: selectedClientId,
         orderItems: orderItems.map((item) => ({
           srNo: item.srNo || 0,
           styleNo: item.styleNo.trim(),
@@ -354,31 +364,36 @@ const SalesDashboard = () => {
         })),
       };
 
-      const response = await axios.post(`${API_BASE_URL}/api/team/client-orders`, payload);
+      const response = await axios.post(
+        `${API_BASE_URL}/api/team/client-orders`,
+        payload
+      );
 
       if (response.data.success) {
         message.success("Order created successfully");
         orderForm.resetFields();
-        setOrderItems([{ 
-          srNo: 1,
-          styleNo: "",
-          diamondClarity: "",
-          diamondColor: "",
-          quantity: 1,
-          grossWeight: 0,
-          netWeight: 0,
-          diaWeight: 0,
-          pcs: 1,
-          amount: 0,
-          description: ""
-        }]);
+        setOrderItems([
+          {
+            srNo: 1,
+            styleNo: "",
+            diamondClarity: "",
+            diamondColor: "",
+            quantity: 1,
+            grossWeight: 0,
+            netWeight: 0,
+            diaWeight: 0,
+            pcs: 1,
+            amount: 0,
+            description: "",
+          },
+        ]);
         fetchClients();
       } else {
         message.error(response.data.message || "Failed to create order");
       }
     } catch (err) {
       console.error("Order Error:", err);
-      
+
       if (err.response) {
         if (err.response.status === 400) {
           message.error(
@@ -398,40 +413,68 @@ const SalesDashboard = () => {
     }
   };
 
-  const fetchOrderHistory = async (uniqueId) => {
-    try {
-      setLoading(true);
-      const response = await axios.get(`${API_BASE_URL}/api/team/order-history/${uniqueId}`);
-      
-      if (response.data.success) {
-        const formattedHistory = response.data.orders.map(order => ({
-          ...order,
-          orderId: order._id,
-          orderDate: order.createdAt,
-          client: {
-            name: selectedClient.name,
-            phone: selectedClient.phone,
-            gstNo: selectedClient.gstNo
-          }
-        }));
-        
-        setOrderHistory(formattedHistory);
-      } else {
-        throw new Error(response.data.message || "Failed to fetch orders");
-      }
-    } catch (err) {
-      console.error("History Error:", err);
-      message.error("Failed to fetch order history");
-      setOrderHistory([]);
-    } finally {
-      setLoading(false);
+const fetchOrderHistory = async (uniqueId) => {
+  setLoading(true);
+  try {
+    const res = await axios.get(`${API_BASE_URL}/api/team/get-clients/${uniqueId}`);
+
+    if (!res.data.success) {
+      throw new Error(res.data.message || "Failed to fetch client orders");
     }
-  };
+
+    const client = res.data.client;
+    if (!client || !client.orders) {
+      setOrderHistory([]);
+      return;
+    }
+
+    // Convert orders object to array and transform data
+    const ordersArray = Object.entries(client.orders).map(([orderKey, order]) => ({
+      id: orderKey,
+      orderNumber: orderKey.split('_')[2] || "", // Extract the order number
+      orderDate: order.orderDate ? new Date(order.orderDate) : null,
+      status: order.status || "ongoing",
+      orderItems: (order.orderItems || []).map((item) => ({
+        srNo: item.srNo || 0,
+        styleNo: item.styleNo || "",
+        diamondClarity: item.diamondClarity || "",
+        diamondColor: item.diamondColor || "",
+        quantity: item.quantity || 0,
+        grossWeight: item.grossWeight || 0,
+        netWeight: item.netWeight || 0,
+        diaWeight: item.diaWeight || 0,
+        pcs: item.pcs || 0,
+        amount: item.amount || 0,
+        description: item.description || "",
+      })),
+      totalAmount: (order.orderItems || []).reduce(
+        (sum, item) => sum + (item.amount || 0) * (item.quantity || 1),
+        0
+      ),
+      clientDetails: {
+        name: client.name || "No Name",
+        contact: client.phone || "",
+        gst: client.gstNo || ""
+      }
+    }));
+
+    // Sort by date (newest first)
+    ordersArray.sort((a, b) => new Date(b.orderDate) - new Date(a.orderDate));
+
+    setOrderHistory(ordersArray);
+  } catch (err) {
+    console.error("Fetch error:", err);
+    message.error(err.message || "Failed to fetch order history");
+    setOrderHistory([]);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const addOrderItem = () => {
     setOrderItems((prev) => [
-      ...prev, 
-      { 
+      ...prev,
+      {
         srNo: prev.length + 1,
         styleNo: "",
         diamondClarity: "",
@@ -442,8 +485,8 @@ const SalesDashboard = () => {
         diaWeight: 0,
         pcs: 1,
         amount: 0,
-        description: ""
-      }
+        description: "",
+      },
     ]);
   };
 
@@ -452,7 +495,7 @@ const SalesDashboard = () => {
       message.warning("At least one order item is required");
       return;
     }
-    
+
     setOrderItems((prev) => {
       const newItems = [...prev];
       newItems.splice(index, 1);
@@ -465,17 +508,14 @@ const SalesDashboard = () => {
     setOrderItems((prev) => {
       const newItems = [...prev];
       newItems[index] = { ...newItems[index], [field]: value };
-      
-      
       return newItems;
     });
   };
 
-  const handleClientSelect = (clientId) => {
-    const client = clients.find((c) => c._id === clientId);
-    setSelectedClient(client || null);
-    if (selectedMenu === "history" && client) {
-      fetchOrderHistory(client._id);
+  const handleClientSelect = (uniqueId) => {
+    setSelectedClientId(uniqueId);
+    if (selectedMenu === "history") {
+      fetchOrderHistory(uniqueId);
     }
   };
 
@@ -505,7 +545,10 @@ const SalesDashboard = () => {
           >
             <div className="flex justify-between items-start mb-4">
               <div>
-                <h3 className="text-xl font-bold" style={{ color: colors.velvet }}>
+                <h3
+                  className="text-xl font-bold"
+                  style={{ color: colors.velvet }}
+                >
                   {client.name}
                 </h3>
                 <p className="text-sm" style={{ color: colors.darkGold }}>
@@ -532,7 +575,7 @@ const SalesDashboard = () => {
                 </svg>
               </button>
             </div>
-           
+
             <div className="space-y-3">
               <div className="flex items-center">
                 <svg
@@ -605,7 +648,10 @@ const SalesDashboard = () => {
                   style={{ backgroundColor: colors.gold }}
                 >
                   <p className="text-sm text-gray-600">Total Orders</p>
-                  <p className="text-lg font-bold" style={{ color: colors.velvet }}>
+                  <p
+                    className="text-lg font-bold"
+                    style={{ color: colors.velvet }}
+                  >
                     {client.orders ? client.orders.length : 0}
                   </p>
                 </div>
@@ -614,9 +660,13 @@ const SalesDashboard = () => {
                   style={{ backgroundColor: colors.roseGold }}
                 >
                   <p className="text-sm text-gray-600">Active Orders</p>
-                  <p className="text-lg font-bold" style={{ color: colors.light }}>
+                  <p
+                    className="text-lg font-bold"
+                    style={{ color: colors.light }}
+                  >
                     {client.orders
-                      ? client.orders.filter(o => o.status === "ongoing").length
+                      ? client.orders.filter((o) => o.status === "ongoing")
+                          .length
                       : 0}
                   </p>
                 </div>
@@ -628,22 +678,30 @@ const SalesDashboard = () => {
     );
   };
 
-  const OngoingOrderModal = ({ uniqueId, visible, onClose }) => {
+  const OngoingOrderModal = ({ orderId, visible, onClose }) => {
     const [order, setOrder] = useState(null);
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-      if (visible && uniqueId) {
-        fetchOrderDetails(uniqueId);
+      if (visible && orderId && selectedClientId) {
+        fetchOrderDetails(orderId);
       }
-    }, [visible, uniqueId]);
+    }, [visible, orderId, selectedClientId]);
 
     const fetchOrderDetails = async (id) => {
       setLoading(true);
       try {
-        const response = await axios.get(`${API_BASE_URL}/api/team/order-history/${id}`);
+        const response = await axios.get(
+          `${API_BASE_URL}/api/team/order-history/${selectedClientId}`
+        );
+        
         if (response.data.success) {
-          setOrder(response.data.order);
+          const foundOrder = response.data.orders.find(o => o.id === id);
+          if (foundOrder) {
+            setOrder(foundOrder);
+          } else {
+            throw new Error("Order not found in response");
+          }
         } else {
           throw new Error(response.data.message || "Failed to load order");
         }
@@ -659,11 +717,11 @@ const SalesDashboard = () => {
 
     return (
       <Modal
-        title={`Order Details - ${uniqueId ? uniqueId.substring(0, 8) + '...' : 'N/A'}`}
+        title={`Order Details - ${order?.orderNumber || 'N/A'}`}
         visible={visible}
         onCancel={onClose}
         footer={null}
-        width={isMobile ? '90%' : 800}
+        width={isMobile ? "90%" : 800}
         style={{ top: 20 }}
       >
         {loading ? (
@@ -677,50 +735,89 @@ const SalesDashboard = () => {
                 <div className="border rounded-lg p-4">
                   <h4 className="font-medium mb-2">Client Information</h4>
                   <div className="space-y-2">
-                    <p><span className="font-medium">Name:</span> {order.client?.name || "N/A"}</p>
-                    <p><span className="font-medium">Phone:</span> {order.client?.phone || "N/A"}</p>
-                    <p><span className="font-medium">GST:</span> {order.client?.gstNo || "N/A"}</p>
+                    <p>
+                      <span className="font-medium">Name:</span>{" "}
+                      {order.clientDetails?.name || "N/A"}
+                    </p>
+                    <p>
+                      <span className="font-medium">Phone:</span>{" "}
+                      {order.clientDetails?.contact || "N/A"}
+                    </p>
+                    <p>
+                      <span className="font-medium">GST:</span>{" "}
+                      {order.clientDetails?.gst || "N/A"}
+                    </p>
                   </div>
                 </div>
-                
+
                 <div className="border rounded-lg p-4">
                   <h4 className="font-medium mb-2">Order Information</h4>
                   <div className="space-y-2">
-                    <p><span className="font-medium">Order ID:</span> {orderId.substring(0, 8)}...</p>
-                    <p><span className="font-medium">Date:</span> {dayjs(order.orderDate).format("DD/MM/YYYY")}</p>
+                    <p>
+                      <span className="font-medium">Order #:</span>{" "}
+                      {order.orderNumber}
+                    </p>
+                    <p>
+                      <span className="font-medium">Date:</span>{" "}
+                      {dayjs(orders.orderDate).format("DD/MM/YYYY")}
+                    </p>
                     <p>
                       <span className="font-medium">Status:</span>
-                      <Tag className="ml-2" style={{ 
-                        backgroundColor: order.status === "completed" ? "#e6f7ee" : "#e6f4ff",
-                        color: order.status === "completed" ? "#08965b" : colors.darkGold
-                      }}>
+                      <Tag
+                        className="ml-2"
+                        style={{
+                          backgroundColor:
+                            orders.status === "completed"
+                              ? "#e6f7ee"
+                              : "#e6f4ff",
+                          color:
+                            order.status === "completed"
+                              ? "#08965b"
+                              : colors.darkGold,
+                        }}
+                      >
                         {order.status?.toUpperCase() || "UNKNOWN"}
                       </Tag>
                     </p>
                     <p>
                       <span className="font-medium">Total Amount:</span> ₹
-                      {order.orderItems?.reduce((sum, item) => sum + (item.amount || 0), 0).toFixed(2) || "0.00"}
+                      {order.totalAmount?.toFixed(2) || "0.00"}
                     </p>
                   </div>
                 </div>
-                
+
                 <div className="border rounded-lg p-4">
                   <h4 className="font-medium mb-2">Order Items</h4>
                   {order.orderItems?.length > 0 ? (
                     <div className="space-y-4">
                       {order.orderItems.map((item, idx) => (
-                        <div key={idx} className="border-b pb-4 last:border-b-0">
+                        <div
+                          key={idx}
+                          className="border-b pb-4 last:border-b-0"
+                        >
                           <div className="grid grid-cols-2 gap-2">
-                            <p><span className="font-medium">SR No:</span> {item.srNo}</p>
-                            <p><span className="font-medium">Style No:</span> {item.styleNo}</p>
-                            <p><span className="font-medium">Clarity:</span> {item.diamondClarity || "N/A"}</p>
-                            <p><span className="font-medium">Color:</span> {item.diamondColor || "N/A"}</p>
-                            <p><span className="font-medium">Quantity:</span> {item.quantity}</p>
-                            <p><span className="font-medium">PCS:</span> {item.pcs}</p>
-                            <p><span className="font-medium">Amount:</span> ₹{item.amount}</p>
+                            <p>
+                              <span className="font-medium">Style No:</span>{" "}
+                              {item.styleNo}
+                            </p>
+                            <p>
+                              <span className="font-medium">Quantity:</span>{" "}
+                              {item.quantity}
+                            </p>
+                            <p>
+                              <span className="font-medium">Unit Price:</span>{" "}
+                              ₹{item.amount?.toFixed(2)}
+                            </p>
+                            <p>
+                              <span className="font-medium">Total:</span>{" "}
+                              ₹{item.total?.toFixed(2)}
+                            </p>
                           </div>
                           {item.description && (
-                            <p className="mt-2"><span className="font-medium">Description:</span> {item.description}</p>
+                            <p className="mt-2">
+                              <span className="font-medium">Description:</span>{" "}
+                              {item.description}
+                            </p>
                           )}
                         </div>
                       ))}
@@ -731,66 +828,72 @@ const SalesDashboard = () => {
                 </div>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="p-4 rounded-lg" style={{ backgroundColor: colors.platinum }}>
-                  <h4 className="font-medium mb-2" style={{ color: colors.velvet }}>
-                    Client Information
-                  </h4>
-                  <div className="space-y-2">
-                    <p>
-                      <span className="font-medium">Name:</span>{" "}
-                      {order.client?.name || "N/A"}
-                    </p>
-                    <p>
-                      <span className="font-medium">Phone:</span>{" "}
-                      {order.client?.phone || "N/A"}
-                    </p>
-                    <p>
-                      <span className="font-medium">GST:</span>{" "}
-                      {order.client?.gstNo || "N/A"}
-                    </p>
-                  </div>
-                </div>
-                <div className="p-4 rounded-lg" style={{ backgroundColor: colors.platinum }}>
-                  <h4 className="font-medium mb-2" style={{ color: colors.velvet }}>
-                    Order Information
-                  </h4>
-                  <div className="space-y-2">
-                    <p>
-                      <span className="font-medium">Order ID:</span> {orderId.substring(0, 8)}...
-                    </p>
-                    <p>
-                      <span className="font-medium">Date:</span>{" "}
-                      {dayjs(order.orderDate).format("DD/MM/YYYY")}
-                    </p>
-                    <p>
-                      <span className="font-medium">Status:</span>
-                      <Tag
-                        className={`ml-2 ${
-                          order.status === "completed"
-                            ? "bg-green-100 text-green-800"
-                            : "bg-blue-100 text-blue-800"
-                        }`}
-                      >
-                        {order.status?.toUpperCase() || "UNKNOWN"}
-                      </Tag>
-                    </p>
-                    <p>
-                      <span className="font-medium">Total Amount:</span> ₹
-                      {order.orderItems
-                        ?.reduce(
-                          (sum, item) => sum + (item.amount || 0),
-                          0
-                        )
-                        .toFixed(2) || "0.00"}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {!isMobile && (
               <>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div
+                    className="p-4 rounded-lg"
+                    style={{ backgroundColor: colors.platinum }}
+                  >
+                    <h4
+                      className="font-medium mb-2"
+                      style={{ color: colors.velvet }}
+                    >
+                      Client Information
+                    </h4>
+                    <div className="space-y-2">
+                      <p>
+                        <span className="font-medium">Name:</span>{" "}
+                        {order.clientDetails?.name || "N/A"}
+                      </p>
+                      <p>
+                        <span className="font-medium">Phone:</span>{" "}
+                        {order.clientDetails?.contact || "N/A"}
+                      </p>
+                      <p>
+                        <span className="font-medium">GST:</span>{" "}
+                        {order.clientDetails?.gst || "N/A"}
+                      </p>
+                    </div>
+                  </div>
+                  <div
+                    className="p-4 rounded-lg"
+                    style={{ backgroundColor: colors.platinum }}
+                  >
+                    <h4
+                      className="font-medium mb-2"
+                      style={{ color: colors.velvet }}
+                    >
+                      Order Information
+                    </h4>
+                    <div className="space-y-2">
+                      <p>
+                        <span className="font-medium">Order #:</span>{" "}
+                        {order.orderNumber}
+                      </p>
+                      <p>
+                        <span className="font-medium">Date:</span>{" "}
+                        {dayjs(order.orderDate).format("DD/MM/YYYY")}
+                      </p>
+                      <p>
+                        <span className="font-medium">Status:</span>
+                        <Tag
+                          className={`ml-2 ${
+                            order.status === "completed"
+                              ? "bg-green-100 text-green-800"
+                              : "bg-blue-100 text-blue-800"
+                          }`}
+                        >
+                          {order.status?.toUpperCase() || "UNKNOWN"}
+                        </Tag>
+                      </p>
+                      <p>
+                        <span className="font-medium">Total Amount:</span> ₹
+                        {order.totalAmount?.toFixed(2) || "0.00"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
                 <Divider style={{ borderColor: colors.darkGold }}>
                   Order Items
                 </Divider>
@@ -798,14 +901,6 @@ const SalesDashboard = () => {
                 {order.orderItems?.length > 0 ? (
                   <Table
                     columns={[
-                      {
-                        title: "SR No",
-                        dataIndex: "srNo",
-                        key: "srNo",
-                        render: (text) => (
-                          <span className="text-gray-700">{text}</span>
-                        ),
-                      },
                       {
                         title: "Style No",
                         dataIndex: "styleNo",
@@ -815,17 +910,9 @@ const SalesDashboard = () => {
                         ),
                       },
                       {
-                        title: "Clarity",
-                        dataIndex: "diamondClarity",
-                        key: "clarity",
-                        render: (text) => (
-                          <span className="text-gray-600">{text || "N/A"}</span>
-                        ),
-                      },
-                      {
-                        title: "Color",
-                        dataIndex: "diamondColor",
-                        key: "color",
+                        title: "Description",
+                        dataIndex: "description",
+                        key: "description",
                         render: (text) => (
                           <span className="text-gray-600">{text || "N/A"}</span>
                         ),
@@ -839,15 +926,7 @@ const SalesDashboard = () => {
                         ),
                       },
                       {
-                        title: "PCS",
-                        dataIndex: "pcs",
-                        key: "pcs",
-                        render: (text) => (
-                          <span className="font-medium">{text}</span>
-                        ),
-                      },
-                      {
-                        title: "Amount",
+                        title: "Unit Price (₹)",
                         dataIndex: "amount",
                         key: "amount",
                         render: (text) => (
@@ -857,16 +936,18 @@ const SalesDashboard = () => {
                         ),
                       },
                       {
-                        title: "Description",
-                        dataIndex: "description",
-                        key: "description",
+                        title: "Total (₹)",
+                        dataIndex: "total",
+                        key: "total",
                         render: (text) => (
-                          <span className="text-gray-600">{text || "N/A"}</span>
+                          <span className="font-medium">
+                            ₹{Number(text).toFixed(2)}
+                          </span>
                         ),
                       },
                     ]}
                     dataSource={order.orderItems}
-                    rowKey={(record) => `${record.srNo}-${record.styleNo}`}
+                    rowKey={(record, idx) => `${record.styleNo}-${idx}`}
                     pagination={false}
                     size="small"
                     bordered
@@ -935,21 +1016,20 @@ const SalesDashboard = () => {
             valueStyle={{ color: colors.velvet, fontSize: "24px" }}
           />
         </div>
-        
       </div>
 
       {/* Clients and Orders Sections */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* All Clients */}
         <div
-          className="rounded-2xl shadow-sm border p-5"
+          className="rounded-2xl shadow-sm border "
           style={{
             backgroundColor: colors.diamond,
             borderColor: colors.darkGold,
           }}
         >
           <h2
-            className="text-lg font-semibold mb-3 border-b pb-2"
+            className="text-lg font-semibold mb-3 border-b p-4 pb-2"
             style={{ color: colors.velvet }}
           >
             All Clients
@@ -1001,76 +1081,74 @@ const SalesDashboard = () => {
 
         {/* Ongoing Orders */}
         <div
-          className="rounded-2xl shadow-sm border p-5"
+          className="rounded-2xl shadow-sm border "
           style={{
             backgroundColor: colors.diamond,
             borderColor: colors.darkGold,
           }}
         >
           <h2
-            className="text-lg font-semibold mb-3 border-b pb-2"
+            className="text-lg font-semibold mb-3 border-b p-4 pb-2"
             style={{ color: colors.velvet }}
           >
             Ongoing Orders
           </h2>
           <Table
-            dataSource={clients.flatMap(client => {
-              const ongoingOrders = (client.orders || []).filter(order => order.status === "ongoing");
-              return ongoingOrders.map(order => ({
+            dataSource={clients.flatMap((client) => {
+              const ongoingOrders = (client.orders || []).filter(
+                (order) => order.status === "ongoing"
+              );
+              return ongoingOrders.map((order) => ({
                 ...order,
-                clientName: client.name,
-                client
+                clientuniqueId: client.uniqueId,
+                client,
               }));
             })}
             columns={[
               {
-                title: "Client",
-                dataIndex: "clientName",
-                key: "clientName",
-                render: (text, record) => (
+                title: "Unique ID",
+                dataIndex: "clientuniqueId",
+                key: "uniqueId",
+                render: (text) => (
                   <span
-                    className="font-medium cursor-pointer hover:text-blue-600 transition-colors"
-                    onClick={() => handleClientClick(record.client)}
-                    style={{ color: colors.velvet }}
+                    className="font-mono font-semibold"
+                    style={{ color: colors.darkGold }}
                   >
                     {text}
                   </span>
                 ),
               },
-              
-              
-             {
-  title: "Status",
-  key: "status",
-  render: (_id, record) => {
-    // Determine color based on status
-    let statusColor = colors.darkGold; // default color
-    let backgroundColor = "#e6f4ff"; // default background
-    
-    if (record.status === "COMPLETED") {
-      statusColor = colors.green;
-      backgroundColor = "#f6ffed";
-    } else if (record.status === "CANCELLED") {
-      statusColor = colors.red;
-      backgroundColor = "#fff2f0";
-    } else if (record.status === "PENDING") {
-      statusColor = colors.orange;
-      backgroundColor = "#fff7e6";
-    }
+              {
+                title: "Status",
+                key: "status",
+                render: (_, record) => {
+                  let statusColor = colors.darkGold;
+                  let backgroundColor = "#e6f4ff";
 
-    return (
-      <Tag
-        style={{ 
-          backgroundColor: backgroundColor,
-          color: statusColor,
-          borderColor: statusColor
-        }}
-      >
-        {record.status || "ONGOING"}
-      </Tag>
-    );
-  },
-},
+                  if (record.status === "COMPLETED") {
+                    statusColor = colors.green;
+                    backgroundColor = "#f6ffed";
+                  } else if (record.status === "CANCELLED") {
+                    statusColor = colors.red;
+                    backgroundColor = "#fff2f0";
+                  } else if (record.status === "PENDING") {
+                    statusColor = colors.orange;
+                    backgroundColor = "#fff7e6";
+                  }
+
+                  return (
+                    <Tag
+                      style={{
+                        backgroundColor,
+                        color: statusColor,
+                        borderColor: statusColor,
+                      }}
+                    >
+                      {record.status || "ONGOING"}
+                    </Tag>
+                  );
+                },
+              },
               {
                 title: "Action",
                 key: "action",
@@ -1101,7 +1179,7 @@ const SalesDashboard = () => {
 
         {/* Completed Orders */}
         <div
-          className="rounded-2xl shadow-sm border p-5"
+          className="rounded-2xl shadow-sm border "
           style={{
             backgroundColor: colors.diamond,
             borderColor: colors.darkGold,
@@ -1114,69 +1192,60 @@ const SalesDashboard = () => {
             Completed Orders
           </h2>
           <Table
-            dataSource={clients.flatMap(client => {
-              const completedOrders = (client.orders || []).filter(order => order.status === "completed");
-              return completedOrders.map(order => ({
+            dataSource={clients.flatMap((client) => {
+              const ongoingOrders = (client.orders || []).filter(
+                (order) => order.status === "completed"
+              );
+              return ongoingOrders.map((order) => ({
                 ...order,
-                clientName: client.name,
-                client
+                clientuniqueId: client.uniqueId,
+                client,
               }));
             })}
             columns={[
               {
-                title: "Client",
-                dataIndex: "clientName",
-                key: "clientName",
-                render: (text, record) => (
+                title: "Unique ID",
+                dataIndex: "clientuniqueId",
+                key: "uniqueId",
+                render: (text) => (
                   <span
-                    className="font-medium cursor-pointer hover:text-blue-600 transition-colors"
-                    onClick={() => handleClientClick(record.client)}
-                    style={{ color: colors.velvet }}
+                    className="font-mono font-semibold"
+                    style={{ color: colors.darkGold }}
                   >
                     {text}
                   </span>
                 ),
               },
               {
-                title: "Order ID",
-                dataIndex: "_id",
-                key: "orderId",
-                render: (id) => (
-                  <span className="font-medium" style={{ color: colors.darkGold }}>
-                    {id ? id.substring(0, 8) + "..." : "N/A"}
-                  </span>
-                ),
-              },
-              {
-                title: "Date",
-                dataIndex: "createdAt",
-                key: "date",
-                render: (date) => (
-                  <span className="text-gray-600">
-                    {date ? dayjs(date).format("DD/MM/YYYY") : "N/A"}
-                  </span>
-                ),
-              },
-              {
-                title: "Items",
-                dataIndex: "orderItems",
-                key: "items",
-                render: (items) => (
-                  <span className="font-medium">{items?.length || 0}</span>
-                ),
-              },
-              {
-                title: "Amount",
-                key: "amount",
-                render: (_, record) => (
-                  <span className="font-medium">
-                    ₹
-                    {record.orderItems?.reduce(
-                      (sum, item) => sum + (item.amount || 0),
-                      0
-                    ) || 0}
-                  </span>
-                ),
+                title: "Status",
+                key: "status",
+                render: (_, record) => {
+                  let statusColor = colors.darkGold;
+                  let backgroundColor = "#e6f4ff";
+
+                  if (record.status === "COMPLETED") {
+                    statusColor = colors.green;
+                    backgroundColor = "#f6ffed";
+                  } else if (record.status === "CANCELLED") {
+                    statusColor = colors.red;
+                    backgroundColor = "#fff2f0";
+                  } else if (record.status === "PENDING") {
+                    statusColor = colors.orange;
+                    backgroundColor = "#fff7e6";
+                  }
+
+                  return (
+                    <Tag
+                      style={{
+                        backgroundColor,
+                        color: statusColor,
+                        borderColor: statusColor,
+                      }}
+                    >
+                      {record.status || "COMPLETED"}
+                    </Tag>
+                  );
+                },
               },
               {
                 title: "Action",
@@ -1202,18 +1271,6 @@ const SalesDashboard = () => {
             scroll={{ y: 280 }}
             size="small"
             bordered
-            locale={{
-              emptyText: (
-                <div className="text-gray-500 text-sm flex flex-col items-center justify-center py-10">
-                  <img
-                    src="/empty-box-icon.svg"
-                    alt="No Data"
-                    className="w-12 h-12 mb-2"
-                  />
-                  <p>No completed orders</p>
-                </div>
-              ),
-            }}
             className="custom-table"
           />
         </div>
@@ -1252,7 +1309,7 @@ const SalesDashboard = () => {
           <Form.Item
             label="Full Name"
             name="name"
-            rules={[{ required: true, message: 'Please enter full name' }]}
+            rules={[{ required: true, message: "Please enter full name" }]}
           >
             <Input
               placeholder="Enter full name"
@@ -1265,8 +1322,11 @@ const SalesDashboard = () => {
             label="Mobile Number"
             name="phone"
             rules={[
-              { required: true, message: 'Please enter mobile number' },
-              { pattern: /^[0-9]{10}$/, message: 'Please enter valid 10-digit mobile number' }
+              { required: true, message: "Please enter mobile number" },
+              {
+                pattern: /^[0-9]{10}$/,
+                message: "Please enter valid 10-digit mobile number",
+              },
             ]}
           >
             <Input
@@ -1281,7 +1341,10 @@ const SalesDashboard = () => {
             label="Alternate Phone (Optional)"
             name="mobile"
             rules={[
-              { pattern: /^[0-9]{10}$/, message: 'Please enter valid 10-digit mobile number' }
+              {
+                pattern: /^[0-9]{10}$/,
+                message: "Please enter valid 10-digit mobile number",
+              },
             ]}
           >
             <Input
@@ -1292,10 +1355,7 @@ const SalesDashboard = () => {
           </Form.Item>
 
           {/* Office Phone (Optional) */}
-          <Form.Item
-            label="Office Phone (Optional)"
-            name="officePhone"
-          >
+          <Form.Item label="Office Phone (Optional)" name="officePhone">
             <Input
               placeholder="Office landline"
               style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
@@ -1303,10 +1363,7 @@ const SalesDashboard = () => {
           </Form.Item>
 
           {/* Landline (Optional) */}
-          <Form.Item
-            label="Landline (Optional)"
-            name="landline"
-          >
+          <Form.Item label="Landline (Optional)" name="landline">
             <Input
               placeholder="Home landline"
               style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
@@ -1317,9 +1374,7 @@ const SalesDashboard = () => {
           <Form.Item
             label="Email (Optional)"
             name="email"
-            rules={[
-              { type: 'email', message: 'Please enter valid email' }
-            ]}
+            rules={[{ type: "email", message: "Please enter valid email" }]}
           >
             <Input
               placeholder="Email address"
@@ -1331,7 +1386,7 @@ const SalesDashboard = () => {
           <Form.Item
             label="Complete Address"
             name="address"
-            rules={[{ required: true, message: 'Please enter address' }]}
+            rules={[{ required: true, message: "Please enter address" }]}
             className="md:col-span-2"
           >
             <Input.TextArea
@@ -1345,9 +1400,7 @@ const SalesDashboard = () => {
           <Form.Item
             label="GST Number (Optional)"
             name="gstNo"
-            rules={[
-              { validator: validateGST }
-            ]}
+            rules={[{ validator: validateGST }]}
           >
             <Input
               placeholder="22AAAAA0000A1Z5"
@@ -1358,9 +1411,7 @@ const SalesDashboard = () => {
           <Form.Item
             label="Company PAN (Optional)"
             name="companyPAN"
-            rules={[
-              { validator: validatePAN }
-            ]}
+            rules={[{ validator: validatePAN }]}
           >
             <Input
               placeholder="ABCDE1234F"
@@ -1372,9 +1423,7 @@ const SalesDashboard = () => {
           <Form.Item
             label="Owner PAN (Optional)"
             name="ownerPAN"
-            rules={[
-              { validator: validatePAN }
-            ]}
+            rules={[{ validator: validatePAN }]}
           >
             <Input
               placeholder="ABCDE1234F"
@@ -1386,9 +1435,7 @@ const SalesDashboard = () => {
           <Form.Item
             label="Aadhar Number (Optional)"
             name="aadharNumber"
-            rules={[
-              { validator: validateAadhar }
-            ]}
+            rules={[{ validator: validateAadhar }]}
           >
             <Input
               placeholder="12-digit number"
@@ -1416,9 +1463,9 @@ const SalesDashboard = () => {
             style={{
               backgroundColor: colors.darkGold,
               color: colors.light,
-              padding: '8px 24px',
-              borderRadius: '6px',
-              fontWeight: 'medium'
+              padding: "8px 24px",
+              borderRadius: "6px",
+              fontWeight: "medium",
             }}
           >
             Submit KYC
@@ -1428,7 +1475,10 @@ const SalesDashboard = () => {
 
       {/* Client List Table */}
       <div className="mt-8">
-        <h4 className="text-lg font-semibold mb-4" style={{ color: colors.velvet }}>
+        <h4
+          className="text-lg font-semibold mb-4"
+          style={{ color: colors.velvet }}
+        >
           Existing Clients
         </h4>
         <Table
@@ -1439,7 +1489,10 @@ const SalesDashboard = () => {
               dataIndex: "uniqueId",
               key: "uniqueId",
               render: (text) => (
-                <span className="font-medium" style={{ color: colors.darkGold }}>
+                <span
+                  className="font-medium"
+                  style={{ color: colors.darkGold }}
+                >
                   {text}
                 </span>
               ),
@@ -1448,7 +1501,9 @@ const SalesDashboard = () => {
               title: "Name",
               dataIndex: "name",
               key: "name",
-              render: (text) => <span style={{ color: colors.velvet }}>{text}</span>,
+              render: (text) => (
+                <span style={{ color: colors.velvet }}>{text}</span>
+              ),
             },
             {
               title: "Phone",
@@ -1460,7 +1515,9 @@ const SalesDashboard = () => {
               title: "GST No",
               dataIndex: "gstNo",
               key: "gstNo",
-              render: (text) => <span className="text-gray-600">{text || "N/A"}</span>,
+              render: (text) => (
+                <span className="text-gray-600">{text || "N/A"}</span>
+              ),
             },
             {
               title: "Status",
@@ -1469,20 +1526,29 @@ const SalesDashboard = () => {
                 const orders = client.orders || [];
                 if (orders.length === 0)
                   return (
-                    <Tag style={{ backgroundColor: colors.platinum }}>No orders</Tag>
+                    <Tag style={{ backgroundColor: colors.platinum }}>
+                      No orders
+                    </Tag>
                   );
 
-                const statuses = orders.map(o => o?.status).filter(Boolean);
+                const statuses = orders.map((o) => o?.status).filter(Boolean);
 
                 if (statuses.includes("ongoing"))
                   return (
-                    <Tag style={{ backgroundColor: "#e6f4ff", color: colors.darkGold }}>
+                    <Tag
+                      style={{
+                        backgroundColor: "#e6f4ff",
+                        color: colors.darkGold,
+                      }}
+                    >
                       Active
                     </Tag>
                   );
-                if (statuses.every(s => s === "completed"))
+                if (statuses.every((s) => s === "completed"))
                   return (
-                    <Tag style={{ backgroundColor: "#e6f7ee", color: "#08965b" }}>
+                    <Tag
+                      style={{ backgroundColor: "#e6f7ee", color: "#08965b" }}
+                    >
                       Completed
                     </Tag>
                   );
@@ -1506,7 +1572,7 @@ const SalesDashboard = () => {
                   }}
                   onClick={() => {
                     setSelectedMenu("history");
-                    handleClientSelect(client._id);
+                    handleClientSelect(client.uniqueId);
                   }}
                 >
                   View Orders
@@ -1524,11 +1590,43 @@ const SalesDashboard = () => {
   );
 
   const diamondClarityOptions = [
-    "FL", "IF", "VVS1", "VVS2", "VS1", "VS2", "SI1", "SI2", "I1", "I2", "I3"
+    "FL",
+    "IF",
+    "VVS1",
+    "VVS2",
+    "VS1",
+    "VS2",
+    "SI1",
+    "SI2",
+    "I1",
+    "I2",
+    "I3",
   ];
 
   const diamondColorOptions = [
-    "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"
+    "D",
+    "E",
+    "F",
+    "G",
+    "H",
+    "I",
+    "J",
+    "K",
+    "L",
+    "M",
+    "N",
+    "O",
+    "P",
+    "Q",
+    "R",
+    "S",
+    "T",
+    "U",
+    "V",
+    "W",
+    "X",
+    "Y",
+    "Z",
   ];
 
   const renderOrderForm = () => (
@@ -1544,7 +1642,10 @@ const SalesDashboard = () => {
         }}
       >
         <div className="mb-6">
-          <label className="block font-medium mb-2" style={{ color: colors.velvet }}>
+          <label
+            className="block font-medium mb-2"
+            style={{ color: colors.velvet }}
+          >
             Client
           </label>
           <Select
@@ -1552,7 +1653,7 @@ const SalesDashboard = () => {
             placeholder="Select client"
             optionFilterProp="children"
             onChange={handleClientSelect}
-            value={selectedClient?._id}
+            value={selectedClientId}
             filterOption={(input, option) =>
               option.children.toLowerCase().includes(input.toLowerCase())
             }
@@ -1561,18 +1662,21 @@ const SalesDashboard = () => {
               borderColor: colors.darkGold,
             }}
             suffixIcon={
-              <ChevronDown className="h-4 w-4" style={{ color: colors.darkGold }} />
+              <ChevronDown
+                className="h-4 w-4"
+                style={{ color: colors.darkGold }}
+              />
             }
           >
             {clients.map((client) => (
-              <Option key={client._id} value={client._id}>
-                {client.uniqueId} 
+              <Option key={client.uniqueId} value={client.uniqueId}>
+                {client.uniqueId}
               </Option>
             ))}
           </Select>
         </div>
 
-        {selectedClient && (
+        {selectedClientId && (
           <div
             className="rounded-lg p-4 mb-6"
             style={{
@@ -1583,55 +1687,95 @@ const SalesDashboard = () => {
             {isMobile ? (
               <div className="space-y-2">
                 <div className="flex justify-between">
-                  <span className="font-medium" style={{ color: colors.velvet }}>Client:</span>
-                  <span style={{ color: colors.deepNavy }}>{selectedClient.name}</span>
+                  <span
+                    className="font-medium"
+                    style={{ color: colors.velvet }}
+                  >
+                    Client:
+                  </span>
+                  <span style={{ color: colors.deepNavy }}>
+                    {clients.find(c => c.uniqueId === selectedClientId)?.name || 'N/A'}
+                  </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="font-medium" style={{ color: colors.velvet }}>Phone:</span>
-                  <span style={{ color: colors.deepNavy }}>{selectedClient.phone}</span>
+                  <span
+                    className="font-medium"
+                    style={{ color: colors.velvet }}
+                  >
+                    Phone:
+                  </span>
+                  <span style={{ color: colors.deepNavy }}>
+                    {clients.find(c => c.uniqueId === selectedClientId)?.phone || 'N/A'}
+                  </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="font-medium" style={{ color: colors.velvet }}>GST:</span>
-                  <span style={{ color: colors.deepNavy }}>{selectedClient.gstNo || "N/A"}</span>
+                  <span
+                    className="font-medium"
+                    style={{ color: colors.velvet }}
+                  >
+                    GST:
+                  </span>
+                  <span style={{ color: colors.deepNavy }}>
+                    {clients.find(c => c.uniqueId === selectedClientId)?.gstNo || 'N/A'}
+                  </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="font-medium" style={{ color: colors.velvet }}>Address:</span>
-                  <span style={{ color: colors.deepNavy }}>{selectedClient.address}</span>
+                  <span
+                    className="font-medium"
+                    style={{ color: colors.velvet }}
+                  >
+                    Address:
+                  </span>
+                  <span style={{ color: colors.deepNavy }}>
+                    {clients.find(c => c.uniqueId === selectedClientId)?.address || 'N/A'}
+                  </span>
                 </div>
               </div>
             ) : (
               <table className="w-full">
                 <tbody>
                   <tr>
-                    <td className="font-medium p-1" style={{ color: colors.velvet }}>
+                    <td
+                      className="font-medium p-1"
+                      style={{ color: colors.velvet }}
+                    >
                       Client:
                     </td>
                     <td className="p-1" style={{ color: colors.deepNavy }}>
-                      {selectedClient.name}
+                      {clients.find(c => c.uniqueId === selectedClientId)?.name || 'N/A'}
                     </td>
                   </tr>
                   <tr>
-                    <td className="font-medium p-1" style={{ color: colors.velvet }}>
+                    <td
+                      className="font-medium p-1"
+                      style={{ color: colors.velvet }}
+                    >
                       Phone:
                     </td>
                     <td className="p-1" style={{ color: colors.deepNavy }}>
-                      {selectedClient.phone}
+                      {clients.find(c => c.uniqueId === selectedClientId)?.phone || 'N/A'}
                     </td>
                   </tr>
                   <tr>
-                    <td className="font-medium p-1" style={{ color: colors.velvet }}>
+                    <td
+                      className="font-medium p-1"
+                      style={{ color: colors.velvet }}
+                    >
                       GST:
                     </td>
                     <td className="p-1" style={{ color: colors.deepNavy }}>
-                      {selectedClient.gstNo || "N/A"}
+                      {clients.find(c => c.uniqueId === selectedClientId)?.gstNo || 'N/A'}
                     </td>
                   </tr>
                   <tr>
-                    <td className="font-medium p-1" style={{ color: colors.velvet }}>
+                    <td
+                      className="font-medium p-1"
+                      style={{ color: colors.velvet }}
+                    >
                       Address:
                     </td>
                     <td className="p-1" style={{ color: colors.deepNavy }}>
-                      {selectedClient.address}
+                      {clients.find(c => c.uniqueId === selectedClientId)?.address || 'N/A'}
                     </td>
                   </tr>
                 </tbody>
@@ -1653,147 +1797,234 @@ const SalesDashboard = () => {
         {isMobile ? (
           <div className="space-y-4">
             {orderItems.map((item, index) => (
-              <div 
-                key={index} 
+              <div
+                key={index}
                 className="border rounded-lg p-4"
                 style={{ borderColor: colors.darkGold }}
               >
                 <div className="grid grid-cols-1 gap-3">
                   <div>
-                    <label className="block text-sm font-medium" style={{ color: colors.velvet }}>SR No</label>
+                    <label
+                      className="block text-sm font-medium"
+                      style={{ color: colors.velvet }}
+                    >
+                      SR No
+                    </label>
                     <InputNumber
                       value={item.srNo}
                       onChange={(val) => updateOrderItem(index, "srNo", val)}
-                      style={{ width: '100%', borderColor: colors.darkGold }}
+                      style={{ width: "100%", borderColor: colors.darkGold }}
                       min={1}
                     />
                   </div>
-                  
+
                   <div>
-                    <label className="block text-sm font-medium" style={{ color: colors.velvet }}>Style No*</label>
+                    <label
+                      className="block text-sm font-medium"
+                      style={{ color: colors.velvet }}
+                    >
+                      Style No*
+                    </label>
                     <Input
                       value={item.styleNo}
-                      onChange={(e) => updateOrderItem(index, "styleNo", e.target.value)}
+                      onChange={(e) =>
+                        updateOrderItem(index, "styleNo", e.target.value)
+                      }
                       placeholder="Style number"
-                      style={{ width: '100%', borderColor: colors.darkGold }}
+                      style={{ width: "100%", borderColor: colors.darkGold }}
                     />
                   </div>
-                  
+
                   <div>
-                    <label className="block text-sm font-medium" style={{ color: colors.velvet }}>Diamond Clarity</label>
+                    <label
+                      className="block text-sm font-medium"
+                      style={{ color: colors.velvet }}
+                    >
+                      Diamond Clarity
+                    </label>
                     <Select
                       value={item.diamondClarity}
-                      onChange={(val) => updateOrderItem(index, "diamondClarity", val)}
-                      style={{ width: '100%', borderColor: colors.darkGold }}
+                      onChange={(val) =>
+                        updateOrderItem(index, "diamondClarity", val)
+                      }
+                      style={{ width: "100%", borderColor: colors.darkGold }}
                       placeholder="Select clarity"
                     >
-                      {diamondClarityOptions.map(option => (
-                        <Option key={option} value={option}>{option}</Option>
+                      {diamondClarityOptions.map((option) => (
+                        <Option key={option} value={option}>
+                          {option}
+                        </Option>
                       ))}
                     </Select>
                   </div>
-                  
+
                   <div>
-                    <label className="block text-sm font-medium" style={{ color: colors.velvet }}>Diamond Color</label>
+                    <label
+                      className="block text-sm font-medium"
+                      style={{ color: colors.velvet }}
+                    >
+                      Diamond Color
+                    </label>
                     <Select
                       value={item.diamondColor}
-                      onChange={(val) => updateOrderItem(index, "diamondColor", val)}
-                      style={{ width: '100%', borderColor: colors.darkGold }}
+                      onChange={(val) =>
+                        updateOrderItem(index, "diamondColor", val)
+                      }
+                      style={{ width: "100%", borderColor: colors.darkGold }}
                       placeholder="Select color"
                     >
-                      {diamondColorOptions.map(option => (
-                        <Option key={option} value={option}>{option}</Option>
+                      {diamondColorOptions.map((option) => (
+                        <Option key={option} value={option}>
+                          {option}
+                        </Option>
                       ))}
                     </Select>
                   </div>
-                  
+
                   <div>
-                    <label className="block text-sm font-medium" style={{ color: colors.velvet }}>Gross WT</label>
+                    <label
+                      className="block text-sm font-medium"
+                      style={{ color: colors.velvet }}
+                    >
+                      Gross WT
+                    </label>
                     <InputNumber
                       value={item.grossWeight ?? 0.0}
-                      onChange={(val) => updateOrderItem(index, "grossWeight", val)}
-                      style={{ width: '100%', borderColor: colors.darkGold }}
-                      min={0}
-                      step={0.01}
-                      formatter={(value) => parseFloat(value || 0).toFixed(2)}
-                      parser={(value) => parseFloat(value.replace(/[^\d.]/g, ""))}
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium" style={{ color: colors.velvet }}>Net WT</label>
-                    <InputNumber
-                      value={item.netWeight ?? 0.0}
-                      onChange={(val) => updateOrderItem(index, "netWeight", val)}
-                      style={{ width: '100%', borderColor: colors.darkGold }}
-                      min={0}
-                      step={0.01}
-                      formatter={(value) => parseFloat(value || 0).toFixed(2)}
-                      parser={(value) => parseFloat(value.replace(/[^\d.]/g, ""))}
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium" style={{ color: colors.velvet }}>DIA WT</label>
-                    <InputNumber
-                      value={item.diaWeight ?? 0.0}
-                      onChange={(val) => updateOrderItem(index, "diaWeight", val)}
+                      onChange={(val) =>
+                        updateOrderItem(index, "grossWeight", val)
+                      }
                       style={{ width: "100%", borderColor: colors.darkGold }}
                       min={0}
                       step={0.01}
                       formatter={(value) => parseFloat(value || 0).toFixed(2)}
-                      parser={(value) => parseFloat(value.replace(/[^\d.]/g, ""))}
+                      parser={(value) =>
+                        parseFloat(value.replace(/[^\d.]/g, ""))
+                      }
                     />
                   </div>
-                  
+
                   <div>
-                    <label className="block text-sm font-medium" style={{ color: colors.velvet }}>PCS*</label>
+                    <label
+                      className="block text-sm font-medium"
+                      style={{ color: colors.velvet }}
+                    >
+                      Net WT
+                    </label>
+                    <InputNumber
+                      value={item.netWeight ?? 0.0}
+                      onChange={(val) =>
+                        updateOrderItem(index, "netWeight", val)
+                      }
+                      style={{ width: "100%", borderColor: colors.darkGold }}
+                      min={0}
+                      step={0.01}
+                      formatter={(value) => parseFloat(value || 0).toFixed(2)}
+                      parser={(value) =>
+                        parseFloat(value.replace(/[^\d.]/g, ""))
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <label
+                      className="block text-sm font-medium"
+                      style={{ color: colors.velvet }}
+                    >
+                      DIA WT
+                    </label>
+                    <InputNumber
+                      value={item.diaWeight ?? 0.0}
+                      onChange={(val) =>
+                        updateOrderItem(index, "diaWeight", val)
+                      }
+                      style={{ width: "100%", borderColor: colors.darkGold }}
+                      min={0}
+                      step={0.01}
+                      formatter={(value) => parseFloat(value || 0).toFixed(2)}
+                      parser={(value) =>
+                        parseFloat(value.replace(/[^\d.]/g, ""))
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <label
+                      className="block text-sm font-medium"
+                      style={{ color: colors.velvet }}
+                    >
+                      PCS*
+                    </label>
                     <InputNumber
                       value={item.pcs}
                       onChange={(val) => updateOrderItem(index, "pcs", val)}
                       style={{
-                        width: '100%',
-                        borderColor: !item.pcs || item.pcs < 1 ? colors.roseGold : colors.darkGold,
+                        width: "100%",
+                        borderColor:
+                          !item.pcs || item.pcs < 1
+                            ? colors.roseGold
+                            : colors.darkGold,
                       }}
                       min={1}
                     />
                   </div>
-                  
+
                   <div>
-                    <label className="block text-sm font-medium" style={{ color: colors.velvet }}>Quantity</label>
+                    <label
+                      className="block text-sm font-medium"
+                      style={{ color: colors.velvet }}
+                    >
+                      Quantity
+                    </label>
                     <InputNumber
                       value={item.quantity}
-                      onChange={(val) => updateOrderItem(index, "quantity", val)}
-                      style={{ width: '100%', borderColor: colors.darkGold }}
+                      onChange={(val) =>
+                        updateOrderItem(index, "quantity", val)
+                      }
+                      style={{ width: "100%", borderColor: colors.darkGold }}
                       min={1}
                     />
                   </div>
-                  
+
                   <div>
-                    <label className="block text-sm font-medium" style={{ color: colors.velvet }}>Amount*</label>
+                    <label
+                      className="block text-sm font-medium"
+                      style={{ color: colors.velvet }}
+                    >
+                      Amount*
+                    </label>
                     <InputNumber
                       value={item.amount}
                       onChange={(val) => updateOrderItem(index, "amount", val)}
                       style={{
-                        width: '100%',
-                        borderColor: !item.amount || item.amount <= 0 ? colors.roseGold : colors.darkGold,
+                        width: "100%",
+                        borderColor:
+                          !item.amount || item.amount <= 0
+                            ? colors.roseGold
+                            : colors.darkGold,
                       }}
                       min={0}
                       step={0.01}
                     />
                   </div>
-                  
+
                   <div className="mb-2">
-                    <label className="block text-sm font-medium" style={{ color: colors.velvet }}>Description</label>
+                    <label
+                      className="block text-sm font-medium"
+                      style={{ color: colors.velvet }}
+                    >
+                      Description
+                    </label>
                     <Input.TextArea
                       value={item.description}
-                      onChange={(e) => updateOrderItem(index, "description", e.target.value)}
+                      onChange={(e) =>
+                        updateOrderItem(index, "description", e.target.value)
+                      }
                       rows={2}
-                      style={{ width: '100%', borderColor: colors.darkGold }}
+                      style={{ width: "100%", borderColor: colors.darkGold }}
                       placeholder={`Description for item ${index + 1}`}
                     />
                   </div>
-                  
+
                   <div className="flex justify-end">
                     <Button
                       danger
@@ -1819,40 +2050,76 @@ const SalesDashboard = () => {
           >
             <thead>
               <tr style={{ backgroundColor: colors.platinum }}>
-                <th className="p-2 text-left font-medium border" style={{ borderColor: colors.darkGold, color: colors.velvet }}>
+                <th
+                  className="p-2 text-left font-medium border"
+                  style={{ borderColor: colors.darkGold, color: colors.velvet }}
+                >
                   SR No
                 </th>
-                <th className="p-2 text-left font-medium border" style={{ borderColor: colors.darkGold, color: colors.velvet }}>
+                <th
+                  className="p-2 text-left font-medium border"
+                  style={{ borderColor: colors.darkGold, color: colors.velvet }}
+                >
                   Style No*
                 </th>
-                <th className="p-2 text-left font-medium border" style={{ borderColor: colors.darkGold, color: colors.velvet }}>
-                 Diamond Clarity
+                <th
+                  className="p-2 text-left font-medium border"
+                  style={{ borderColor: colors.darkGold, color: colors.velvet }}
+                >
+                  Diamond Clarity
                 </th>
-                <th className="p-2 text-left font-medium border" style={{ borderColor: colors.darkGold, color: colors.velvet }}>
-                 Diamond Color
+                <th
+                  className="p-2 text-left font-medium border"
+                  style={{ borderColor: colors.darkGold, color: colors.velvet }}
+                >
+                  Diamond Color
                 </th>
-                <th className="p-2 text-left font-medium border" style={{ borderColor: colors.darkGold, color: colors.velvet }}>
+                <th
+                  className="p-2 text-left font-medium border"
+                  style={{ borderColor: colors.darkGold, color: colors.velvet }}
+                >
                   Gross WT
                 </th>
-                <th className="p-2 text-left font-medium border" style={{ borderColor: colors.darkGold, color: colors.velvet }}>
+                <th
+                  className="p-2 text-left font-medium border"
+                  style={{ borderColor: colors.darkGold, color: colors.velvet }}
+                >
                   Net WT
                 </th>
-                <th className="p-2 text-left font-medium border" style={{ borderColor: colors.darkGold, color: colors.velvet }}>
+                <th
+                  className="p-2 text-left font-medium border"
+                  style={{ borderColor: colors.darkGold, color: colors.velvet }}
+                >
                   DIA WT
                 </th>
-                <th className="p-2 text-left font-medium border" style={{ borderColor: colors.darkGold, color: colors.velvet }}>
+                <th
+                  className="p-2 text-left font-medium border"
+                  style={{ borderColor: colors.darkGold, color: colors.velvet }}
+                >
                   PCS*
                 </th>
-                <th className="p-2 text-left font-medium border" style={{ borderColor: colors.darkGold, color: colors.velvet }}>
+                <th
+                  className="p-2 text-left font-medium border"
+                  style={{ borderColor: colors.darkGold, color: colors.velvet }}
+                >
                   Quantity
                 </th>
-                <th className="p-2 text-left font-medium border" style={{ borderColor: colors.darkGold, color: colors.velvet }}>
+                <th
+                  className="p-2 text-left font-medium border"
+                  style={{ borderColor: colors.darkGold, color: colors.velvet }}
+                >
                   Amount*
                 </th>
-                <th className="p-2 text-left font-medium border" style={{ borderColor: colors.darkGold, color: colors.velvet }}>
+                <th
+                  className="p-2 text-left font-medium border"
+                  style={{ borderColor: colors.darkGold, color: colors.velvet }}
+                >
                   Description
                 </th>
-                <th className="p-2 text-left font-medium border" style={{ borderColor: colors.darkGold, color: colors.velvet }}>
+                <th
+                  className="p-2 text-left font-medium border"
+                  style={{ borderColor: colors.darkGold, color: colors.velvet }}
+                >
                   Action
                 </th>
               </tr>
@@ -1867,7 +2134,10 @@ const SalesDashboard = () => {
                     backgroundColor: colors.light,
                   }}
                 >
-                  <td className="p-2 border" style={{ borderColor: colors.darkGold }}>
+                  <td
+                    className="p-2 border"
+                    style={{ borderColor: colors.darkGold }}
+                  >
                     <InputNumber
                       value={item.srNo}
                       onChange={(val) => updateOrderItem(index, "srNo", val)}
@@ -1878,7 +2148,10 @@ const SalesDashboard = () => {
                       min={1}
                     />
                   </td>
-                  <td className="p-2 border" style={{ borderColor: colors.darkGold }}>
+                  <td
+                    className="p-2 border"
+                    style={{ borderColor: colors.darkGold }}
+                  >
                     <Input
                       value={item.styleNo}
                       onChange={(e) =>
@@ -1891,40 +2164,59 @@ const SalesDashboard = () => {
                       }}
                     />
                   </td>
-                  <td className="p-2 border" style={{ borderColor: colors.darkGold }}>
+                  <td
+                    className="p-2 border"
+                    style={{ borderColor: colors.darkGold }}
+                  >
                     <Select
                       value={item.diamondClarity}
-                      onChange={(val) => updateOrderItem(index, "diamondClarity", val)}
+                      onChange={(val) =>
+                        updateOrderItem(index, "diamondClarity", val)
+                      }
                       style={{
                         width: "100%",
                         borderColor: colors.darkGold,
                       }}
                       placeholder="Select clarity"
                     >
-                      {diamondClarityOptions.map(option => (
-                        <Option key={option} value={option}>{option}</Option>
+                      {diamondClarityOptions.map((option) => (
+                        <Option key={option} value={option}>
+                          {option}
+                        </Option>
                       ))}
                     </Select>
                   </td>
-                  <td className="p-2 border" style={{ borderColor: colors.darkGold }}>
+                  <td
+                    className="p-2 border"
+                    style={{ borderColor: colors.darkGold }}
+                  >
                     <Select
                       value={item.diamondColor}
-                      onChange={(val) => updateOrderItem(index, "diamondColor", val)}
+                      onChange={(val) =>
+                        updateOrderItem(index, "diamondColor", val)
+                      }
                       style={{
                         width: "100%",
                         borderColor: colors.darkGold,
                       }}
                       placeholder="Select color"
                     >
-                      {diamondColorOptions.map(option => (
-                        <Option key={option} value={option}>{option}</Option>
+                      {diamondColorOptions.map((option) => (
+                        <Option key={option} value={option}>
+                          {option}
+                        </Option>
                       ))}
                     </Select>
                   </td>
-                  <td className="p-2 border" style={{ borderColor: colors.darkGold }}>
+                  <td
+                    className="p-2 border"
+                    style={{ borderColor: colors.darkGold }}
+                  >
                     <InputNumber
                       value={item.grossWeight ?? 0.0}
-                      onChange={(val) => updateOrderItem(index, "grossWeight", val)}
+                      onChange={(val) =>
+                        updateOrderItem(index, "grossWeight", val)
+                      }
                       style={{
                         width: "100%",
                         borderColor: colors.darkGold,
@@ -1932,13 +2224,20 @@ const SalesDashboard = () => {
                       min={0}
                       step={0.01}
                       formatter={(value) => parseFloat(value || 0).toFixed(2)}
-                      parser={(value) => parseFloat(value.replace(/[^\d.]/g, ""))}
+                      parser={(value) =>
+                        parseFloat(value.replace(/[^\d.]/g, ""))
+                      }
                     />
                   </td>
-                  <td className="p-2 border" style={{ borderColor: colors.darkGold }}>
+                  <td
+                    className="p-2 border"
+                    style={{ borderColor: colors.darkGold }}
+                  >
                     <InputNumber
                       value={item.netWeight ?? 0.0}
-                      onChange={(val) => updateOrderItem(index, "netWeight", val)}
+                      onChange={(val) =>
+                        updateOrderItem(index, "netWeight", val)
+                      }
                       style={{
                         width: "100%",
                         borderColor: colors.darkGold,
@@ -1946,13 +2245,20 @@ const SalesDashboard = () => {
                       min={0}
                       step={0.01}
                       formatter={(value) => parseFloat(value || 0).toFixed(2)}
-                      parser={(value) => parseFloat(value.replace(/[^\d.]/g, ""))}
+                      parser={(value) =>
+                        parseFloat(value.replace(/[^\d.]/g, ""))
+                      }
                     />
                   </td>
-                  <td className="p-2 border" style={{ borderColor: colors.darkGold }}>
+                  <td
+                    className="p-2 border"
+                    style={{ borderColor: colors.darkGold }}
+                  >
                     <InputNumber
                       value={item.diaWeight ?? 0.0}
-                      onChange={(val) => updateOrderItem(index, "diaWeight", val)}
+                      onChange={(val) =>
+                        updateOrderItem(index, "diaWeight", val)
+                      }
                       style={{
                         width: "100%",
                         borderColor: colors.darkGold,
@@ -1960,10 +2266,15 @@ const SalesDashboard = () => {
                       min={0}
                       step={0.01}
                       formatter={(value) => parseFloat(value || 0).toFixed(2)}
-                      parser={(value) => parseFloat(value.replace(/[^\d.]/g, ""))}
+                      parser={(value) =>
+                        parseFloat(value.replace(/[^\d.]/g, ""))
+                      }
                     />
                   </td>
-                  <td className="p-2 border" style={{ borderColor: colors.darkGold }}>
+                  <td
+                    className="p-2 border"
+                    style={{ borderColor: colors.darkGold }}
+                  >
                     <InputNumber
                       value={item.pcs}
                       onChange={(val) => updateOrderItem(index, "pcs", val)}
@@ -1977,7 +2288,10 @@ const SalesDashboard = () => {
                       min={1}
                     />
                   </td>
-                  <td className="p-2 border" style={{ borderColor: colors.darkGold }}>
+                  <td
+                    className="p-2 border"
+                    style={{ borderColor: colors.darkGold }}
+                  >
                     <InputNumber
                       value={item.quantity}
                       onChange={(val) =>
@@ -1990,7 +2304,10 @@ const SalesDashboard = () => {
                       min={1}
                     />
                   </td>
-                  <td className="p-2 border" style={{ borderColor: colors.darkGold }}>
+                  <td
+                    className="p-2 border"
+                    style={{ borderColor: colors.darkGold }}
+                  >
                     <InputNumber
                       value={item.amount}
                       onChange={(val) => updateOrderItem(index, "amount", val)}
@@ -2005,16 +2322,24 @@ const SalesDashboard = () => {
                       step={0.01}
                     />
                   </td>
-                  <td className="p-2 border" style={{ borderColor: colors.darkGold }}>
+                  <td
+                    className="p-2 border"
+                    style={{ borderColor: colors.darkGold }}
+                  >
                     <Input.TextArea
                       value={item.description}
-                      onChange={(e) => updateOrderItem(index, "description", e.target.value)}
+                      onChange={(e) =>
+                        updateOrderItem(index, "description", e.target.value)
+                      }
                       rows={2}
                       style={{ width: "100%", borderColor: colors.darkGold }}
                       placeholder={`Description for item ${index + 1}`}
                     />
                   </td>
-                  <td className="p-2 border text-center" style={{ borderColor: colors.darkGold }}>
+                  <td
+                    className="p-2 border text-center"
+                    style={{ borderColor: colors.darkGold }}
+                  >
                     <Button
                       danger
                       icon={<Minus className="h-4 w-4" />}
@@ -2085,10 +2410,8 @@ const SalesDashboard = () => {
               borderColor: colors.darkGold,
             }}
             placeholder="Search client"
-            value={selectedClient?._id}
-            onChange={(clientId) => {
-              handleClientSelect(clientId);
-            }}
+            value={selectedClientId}
+            onChange={handleClientSelect}
             showSearch
             optionFilterProp="children"
             filterOption={(input, option) =>
@@ -2099,39 +2422,47 @@ const SalesDashboard = () => {
             }
           >
             {clients.map((client) => (
-              <Option key={client._id} value={client._id}>
-                {client.uniqueId} - {client.name}
+              <Option key={client.uniqueId} value={client.uniqueId}>
+                {client.uniqueId}
               </Option>
             ))}
           </Select>
         </div>
 
-        {selectedClient ? (
+        {selectedClientId ? (
           isMobile ? (
             <div className="space-y-4">
               {orderHistory.length > 0 ? (
                 orderHistory.map((order) => (
-                  <div 
-                    key={order._id} 
+                  <div
+                    key={order.id}
                     className="border rounded-lg p-4"
                     style={{ borderColor: colors.darkGold }}
                     onClick={() => handleOrderClick(order)}
                   >
                     <div className="space-y-2">
                       <div className="flex justify-between">
-                        <span className="font-medium">Order ID:</span>
-                        <span>{order._id?.slice(0, 8)}...</span>
+                        <span className="font-medium">Order #:</span>
+                        <span>{order.orderNumber}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="font-medium">Date:</span>
-                        <span>{dayjs(order.orderDate).format("DD MMM YYYY")}</span>
+                        <span>
+                          {dayjs(order.orderDate).format("DD MMM YYYY")}
+                        </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="font-medium">Status:</span>
                         <Tag
-                          style={{ 
-                            backgroundColor: order.status === "completed" ? "#e6f7ee" : "#e6f4ff",
-                            color: order.status === "completed" ? "#08965b" : colors.darkGold
+                          style={{
+                            backgroundColor:
+                              order.status === "completed"
+                                ? "#e6f7ee"
+                                : "#e6f4ff",
+                            color:
+                              order.status === "completed"
+                                ? "#08965b"
+                                : colors.darkGold,
                           }}
                         >
                           {order.status?.toUpperCase() || "UNKNOWN"}
@@ -2143,9 +2474,7 @@ const SalesDashboard = () => {
                       </div>
                       <div className="flex justify-between">
                         <span className="font-medium">Total Amount:</span>
-                        <span>
-                          ₹{order.orderItems?.reduce((sum, i) => sum + (i.amount || 0), 0) || 0}
-                        </span>
+                        <span>₹{order.totalAmount?.toFixed(2) || "0.00"}</span>
                       </div>
                     </div>
                   </div>
@@ -2160,7 +2489,7 @@ const SalesDashboard = () => {
             <Table
               bordered
               dataSource={orderHistory}
-              rowKey="_id"
+              rowKey="id"
               size="middle"
               pagination={{ pageSize: 5 }}
               style={{ marginTop: "1.5rem" }}
@@ -2169,12 +2498,12 @@ const SalesDashboard = () => {
               })}
               columns={[
                 {
-                  title: "Order ID",
-                  dataIndex: "_id",
-                  key: "orderId",
-                  render: (id) => (
+                  title: "Order #",
+                  dataIndex: "orderNumber",
+                  key: "orderNumber",
+                  render: (orderNumber) => (
                     <span style={{ color: colors.darkGold, fontWeight: 600 }}>
-                      {id?.slice(0, 8)}...
+                      {orderNumber}
                     </span>
                   ),
                 },
@@ -2190,9 +2519,11 @@ const SalesDashboard = () => {
                   key: "status",
                   render: (status) => (
                     <Tag
-                      style={{ 
-                        backgroundColor: status === "completed" ? "#e6f7ee" : "#e6f4ff",
-                        color: status === "completed" ? "#08965b" : colors.darkGold
+                      style={{
+                        backgroundColor:
+                          status === "completed" ? "#e6f7ee" : "#e6f4ff",
+                        color:
+                          status === "completed" ? "#08965b" : colors.darkGold,
                       }}
                     >
                       {status?.toUpperCase() || "UNKNOWN"}
@@ -2207,12 +2538,9 @@ const SalesDashboard = () => {
                 },
                 {
                   title: "Total Amount (₹)",
+                  dataIndex: "totalAmount",
                   key: "amount",
-                  render: (_, record) =>
-                    record.orderItems?.reduce(
-                      (sum, i) => sum + (i.amount || 0),
-                      0
-                    ) || 0,
+                  render: (amount) => amount?.toFixed(2) || "0.00",
                 },
                 {
                   title: "Action",
@@ -2509,7 +2837,7 @@ const SalesDashboard = () => {
           <div className="flex items-center justify-between bg-[#050d3f] h-16 px-6">
             <h4
               className="text-lg font-semibold"
-              style={{ color: colors.velvet  }}
+              style={{ color: colors.velvet }}
             >
               Sales Dashboard
             </h4>
@@ -2552,7 +2880,7 @@ const SalesDashboard = () => {
 
       {/* Ongoing Order Modal */}
       <OngoingOrderModal
-        orderId={selectedOrder?._id}
+        orderId={selectedOrder?.id}
         visible={ongoingOrderModalVisible}
         onClose={closeOrderModal}
       />

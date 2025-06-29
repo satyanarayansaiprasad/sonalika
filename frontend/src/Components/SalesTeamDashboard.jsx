@@ -112,6 +112,9 @@ const SalesDashboard = () => {
   const [modalClient, setModalClient] = useState(null);
   const [ongoingOrderModalVisible, setOngoingOrderModalVisible] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [dateRange, setDateRange] = useState([]);
 
   // KYC Form Submit Handler
   const handleKYCSubmit = async (values) => {
@@ -219,24 +222,7 @@ const SalesDashboard = () => {
         ownerPAN: client.ownerPAN || "",
         aadharNumber: client.aadharNumber || "",
         importExportCode: client.importExportCode || "",
-        orders: (client.orders || []).map((order) => ({
-          orderId: order.orderId || "",
-          orderDate: order.orderDate ? new Date(order.orderDate) : null,
-          status: order.status || "",
-          orderItems: (order.orderItems || []).map((item) => ({
-            srNo: item.srNo || 0,
-            styleNo: item.styleNo || "",
-            diamondClarity: item.diamondClarity || "",
-            diamondColor: item.diamondColor || "",
-            quantity: item.quantity || 0,
-            grossWeight: item.grossWeight || 0,
-            netWeight: item.netWeight || 0,
-            diaWeight: item.diaWeight || 0,
-            pcs: item.pcs || 0,
-            amount: item.amount || 0,
-            description: item.description || "",
-          })),
-        })),
+        orders: client.orders || [],
         createdAt: client.createdAt,
         updatedAt: client.updatedAt,
       }));
@@ -299,7 +285,7 @@ const SalesDashboard = () => {
     setSelectedOrder(null);
   };
 
-  const handleOrderSubmit = async () => {
+   const handleOrderSubmit = async () => {
     try {
       setLoading(true);
 
@@ -412,64 +398,59 @@ const SalesDashboard = () => {
       setLoading(false);
     }
   };
+  const fetchOrderHistory = async (uniqueId) => {
+    setLoading(true);
+    try {
+      const res = await axios.get(`${API_BASE_URL}/api/team/order-history/${uniqueId}`);
 
-const fetchOrderHistory = async (uniqueId) => {
-  setLoading(true);
-  try {
-    const res = await axios.get(`${API_BASE_URL}/api/team/get-clients/${uniqueId}`);
-
-    if (!res.data.success) {
-      throw new Error(res.data.message || "Failed to fetch client orders");
-    }
-
-    const client = res.data.client;
-    if (!client || !client.orders) {
-      setOrderHistory([]);
-      return;
-    }
-
-    // Convert orders object to array and transform data
-    const ordersArray = Object.entries(client.orders).map(([orderKey, order]) => ({
-      id: orderKey,
-      orderNumber: orderKey.split('_')[2] || "", // Extract the order number
-      orderDate: order.orderDate ? new Date(order.orderDate) : null,
-      status: order.status || "ongoing",
-      orderItems: (order.orderItems || []).map((item) => ({
-        srNo: item.srNo || 0,
-        styleNo: item.styleNo || "",
-        diamondClarity: item.diamondClarity || "",
-        diamondColor: item.diamondColor || "",
-        quantity: item.quantity || 0,
-        grossWeight: item.grossWeight || 0,
-        netWeight: item.netWeight || 0,
-        diaWeight: item.diaWeight || 0,
-        pcs: item.pcs || 0,
-        amount: item.amount || 0,
-        description: item.description || "",
-      })),
-      totalAmount: (order.orderItems || []).reduce(
-        (sum, item) => sum + (item.amount || 0) * (item.quantity || 1),
-        0
-      ),
-      clientDetails: {
-        name: client.name || "No Name",
-        contact: client.phone || "",
-        gst: client.gstNo || ""
+      if (!res.data.success) {
+        throw new Error(res.data.message || "Failed to fetch client orders");
       }
-    }));
 
-    // Sort by date (newest first)
-    ordersArray.sort((a, b) => new Date(b.orderDate) - new Date(a.orderDate));
+      const client = res.data;
+      if (!client || !client.orders) {
+        setOrderHistory([]);
+        return;
+      }
 
-    setOrderHistory(ordersArray);
-  } catch (err) {
-    console.error("Fetch error:", err);
-    message.error(err.message || "Failed to fetch order history");
-    setOrderHistory([]);
-  } finally {
-    setLoading(false);
-  }
-};
+      // Convert orders to array and transform data
+      const ordersArray = client.orders.map((order, index) => ({
+        id: order.orderId || `order_${index}`,
+        orderId: order.orderId,
+        orderDate: order.orderDate ? new Date(order.orderDate) : null,
+        status: order.status || "ongoing",
+        orderItems: (order.orderItems || []).map((item) => ({
+          srNo: item.srNo || 0,
+          styleNo: item.styleNo || "",
+          diamondClarity: item.diamondClarity || "",
+          diamondColor: item.diamondColor || "",
+          quantity: item.quantity || 0,
+          grossWeight: item.grossWeight || 0,
+          netWeight: item.netWeight || 0,
+          diaWeight: item.diaWeight || 0,
+          pcs: item.pcs || 0,
+          amount: item.amount || 0,
+          description: item.description || "",
+        })),
+        totalAmount: (order.orderItems || []).reduce(
+          (sum, item) => sum + (item.amount || 0) * (item.quantity || 1),
+          0
+        ),
+        
+      }));
+
+      // Sort by date (newest first)
+      ordersArray.sort((a, b) => new Date(b.orderDate) - new Date(a.orderDate));
+
+      setOrderHistory(ordersArray);
+    } catch (err) {
+      console.error("Fetch error:", err);
+      message.error(err.message || "Failed to fetch order history");
+      setOrderHistory([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const addOrderItem = () => {
     setOrderItems((prev) => [
@@ -517,6 +498,29 @@ const fetchOrderHistory = async (uniqueId) => {
     if (selectedMenu === "history") {
       fetchOrderHistory(uniqueId);
     }
+  };
+
+  // Filter orders based on search term, status filter, and date range
+  const getFilteredOrders = () => {
+    return orderHistory.filter(order => {
+      // Filter by search term (matches order ID or client name)
+      const matchesSearch = searchTerm === "" || 
+        order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (order.clientDetails?.name && order.clientDetails.name.toLowerCase().includes(searchTerm.toLowerCase()));
+      
+      // Filter by status
+      const matchesStatus = statusFilter === "all" || 
+        order.status.toLowerCase() === statusFilter.toLowerCase();
+      
+      // Filter by date range
+      let matchesDate = true;
+      if (dateRange && dateRange.length === 2) {
+        const orderDate = dayjs(order.orderDate);
+        matchesDate = orderDate.isAfter(dateRange[0]) && orderDate.isBefore(dateRange[1]);
+      }
+      
+      return matchesSearch && matchesStatus && matchesDate;
+    });
   };
 
   useEffect(() => {
@@ -678,293 +682,133 @@ const fetchOrderHistory = async (uniqueId) => {
     );
   };
 
-  const OngoingOrderModal = ({ orderId, visible, onClose }) => {
-    const [order, setOrder] = useState(null);
-    const [loading, setLoading] = useState(false);
-
-    useEffect(() => {
-      if (visible && orderId && selectedClientId) {
-        fetchOrderDetails(orderId);
-      }
-    }, [visible, orderId, selectedClientId]);
-
-    const fetchOrderDetails = async (id) => {
-      setLoading(true);
-      try {
-        const response = await axios.get(
-          `${API_BASE_URL}/api/team/order-history/${selectedClientId}`
-        );
-        
-        if (response.data.success) {
-          const foundOrder = response.data.orders.find(o => o.id === id);
-          if (foundOrder) {
-            setOrder(foundOrder);
-          } else {
-            throw new Error("Order not found in response");
-          }
-        } else {
-          throw new Error(response.data.message || "Failed to load order");
-        }
-      } catch (error) {
-        console.error("Error fetching order:", error);
-        message.error("Failed to load order details");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (!visible) return null;
+  const OngoingOrderModal = ({ order, visible, onClose }) => {
+    if (!order || !visible) return null;
 
     return (
       <Modal
-        title={`Order Details - ${order?.orderNumber || 'N/A'}`}
-        visible={visible}
+        title={`Order Details - ${order.orderId || "N/A"}`}
+        open={visible}
         onCancel={onClose}
         footer={null}
         width={isMobile ? "90%" : 800}
         style={{ top: 20 }}
       >
-        {loading ? (
-          <div className="flex justify-center items-center h-64">
-            <Spin size="large" />
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <p className="font-medium" style={{ color: colors.velvet }}>
+                Order ID:
+              </p>
+              <p>{order.orderId}</p>
+            </div>
+            <div>
+              <p className="font-medium" style={{ color: colors.velvet }}>
+                Order Date:
+              </p>
+              <p>{dayjs(order.orderDate).format("DD MMM YYYY, hh:mm A")}</p>
+            </div>
+            <div>
+              <p className="font-medium" style={{ color: colors.velvet }}>
+                Status:
+              </p>
+              <Tag
+                style={{
+                  backgroundColor:
+                    order.status === "completed" ? "#e6f7ee" : "#e6f4ff",
+                  color:
+                    order.status === "completed" ? "#08965b" : colors.darkGold,
+                }}
+              >
+                {order.status?.toUpperCase() || "UNKNOWN"}
+              </Tag>
+            </div>
+            <div>
+              <p className="font-medium" style={{ color: colors.velvet }}>
+                Total Amount:
+              </p>
+              <p>₹{order.totalAmount?.toFixed(2) || "0.00"}</p>
+            </div>
           </div>
-        ) : order ? (
-          <div className="space-y-4 p-6">
-            {isMobile ? (
-              <div className="space-y-4">
-                <div className="border rounded-lg p-4">
-                  <h4 className="font-medium mb-2">Client Information</h4>
-                  <div className="space-y-2">
-                    <p>
-                      <span className="font-medium">Name:</span>{" "}
-                      {order.clientDetails?.name || "N/A"}
-                    </p>
-                    <p>
-                      <span className="font-medium">Phone:</span>{" "}
-                      {order.clientDetails?.contact || "N/A"}
-                    </p>
-                    <p>
-                      <span className="font-medium">GST:</span>{" "}
-                      {order.clientDetails?.gst || "N/A"}
-                    </p>
-                  </div>
-                </div>
 
-                <div className="border rounded-lg p-4">
-                  <h4 className="font-medium mb-2">Order Information</h4>
-                  <div className="space-y-2">
-                    <p>
-                      <span className="font-medium">Order #:</span>{" "}
-                      {order.orderNumber}
-                    </p>
-                    <p>
-                      <span className="font-medium">Date:</span>{" "}
-                      {dayjs(orders.orderDate).format("DD/MM/YYYY")}
-                    </p>
-                    <p>
-                      <span className="font-medium">Status:</span>
-                      <Tag
-                        className="ml-2"
-                        style={{
-                          backgroundColor:
-                            orders.status === "completed"
-                              ? "#e6f7ee"
-                              : "#e6f4ff",
-                          color:
-                            order.status === "completed"
-                              ? "#08965b"
-                              : colors.darkGold,
-                        }}
-                      >
-                        {order.status?.toUpperCase() || "UNKNOWN"}
-                      </Tag>
-                    </p>
-                    <p>
-                      <span className="font-medium">Total Amount:</span> ₹
-                      {order.totalAmount?.toFixed(2) || "0.00"}
-                    </p>
-                  </div>
-                </div>
+          <Divider />
 
-                <div className="border rounded-lg p-4">
-                  <h4 className="font-medium mb-2">Order Items</h4>
-                  {order.orderItems?.length > 0 ? (
-                    <div className="space-y-4">
-                      {order.orderItems.map((item, idx) => (
-                        <div
-                          key={idx}
-                          className="border-b pb-4 last:border-b-0"
-                        >
-                          <div className="grid grid-cols-2 gap-2">
-                            <p>
-                              <span className="font-medium">Style No:</span>{" "}
-                              {item.styleNo}
-                            </p>
-                            <p>
-                              <span className="font-medium">Quantity:</span>{" "}
-                              {item.quantity}
-                            </p>
-                            <p>
-                              <span className="font-medium">Unit Price:</span>{" "}
-                              ₹{item.amount?.toFixed(2)}
-                            </p>
-                            <p>
-                              <span className="font-medium">Total:</span>{" "}
-                              ₹{item.total?.toFixed(2)}
-                            </p>
-                          </div>
-                          {item.description && (
-                            <p className="mt-2">
-                              <span className="font-medium">Description:</span>{" "}
-                              {item.description}
-                            </p>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p>No order items found</p>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div
-                    className="p-4 rounded-lg"
-                    style={{ backgroundColor: colors.platinum }}
-                  >
-                    <h4
-                      className="font-medium mb-2"
-                      style={{ color: colors.velvet }}
-                    >
-                      Client Information
-                    </h4>
-                    <div className="space-y-2">
-                      <p>
-                        <span className="font-medium">Name:</span>{" "}
-                        {order.clientDetails?.name || "N/A"}
-                      </p>
-                      <p>
-                        <span className="font-medium">Phone:</span>{" "}
-                        {order.clientDetails?.contact || "N/A"}
-                      </p>
-                      <p>
-                        <span className="font-medium">GST:</span>{" "}
-                        {order.clientDetails?.gst || "N/A"}
-                      </p>
-                    </div>
-                  </div>
-                  <div
-                    className="p-4 rounded-lg"
-                    style={{ backgroundColor: colors.platinum }}
-                  >
-                    <h4
-                      className="font-medium mb-2"
-                      style={{ color: colors.velvet }}
-                    >
-                      Order Information
-                    </h4>
-                    <div className="space-y-2">
-                      <p>
-                        <span className="font-medium">Order #:</span>{" "}
-                        {order.orderNumber}
-                      </p>
-                      <p>
-                        <span className="font-medium">Date:</span>{" "}
-                        {dayjs(order.orderDate).format("DD/MM/YYYY")}
-                      </p>
-                      <p>
-                        <span className="font-medium">Status:</span>
-                        <Tag
-                          className={`ml-2 ${
-                            order.status === "completed"
-                              ? "bg-green-100 text-green-800"
-                              : "bg-blue-100 text-blue-800"
-                          }`}
-                        >
-                          {order.status?.toUpperCase() || "UNKNOWN"}
-                        </Tag>
-                      </p>
-                      <p>
-                        <span className="font-medium">Total Amount:</span> ₹
-                        {order.totalAmount?.toFixed(2) || "0.00"}
-                      </p>
-                    </div>
-                  </div>
-                </div>
+         {order.client ? (
+  <>
+    <h4 className="font-medium" style={{ color: colors.velvet }}>
+      Client Details
+    </h4>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <p className="font-medium" style={{ color: colors.velvet }}>
+          Name:
+        </p>
+        <p>{order.client.name}</p>
+      </div>
+      <div>
+        <p className="font-medium" style={{ color: colors.velvet }}>
+          Unique ID:
+        </p>
+        <p>{order.client.uniqueId}</p>
+      </div>
+      <div>
+        <p className="font-medium" style={{ color: colors.velvet }}>
+          GST:
+        </p>
+        <p>{order.client.gstNo}</p>
+      </div>
+    </div>
+  </>
+) : (
+  <p className="text-sm text-gray-500">Client information not available.</p>
+)}
 
-                <Divider style={{ borderColor: colors.darkGold }}>
-                  Order Items
-                </Divider>
 
-                {order.orderItems?.length > 0 ? (
-                  <Table
-                    columns={[
-                      {
-                        title: "Style No",
-                        dataIndex: "styleNo",
-                        key: "styleNo",
-                        render: (text) => (
-                          <span className="font-medium">{text}</span>
-                        ),
-                      },
-                      {
-                        title: "Description",
-                        dataIndex: "description",
-                        key: "description",
-                        render: (text) => (
-                          <span className="text-gray-600">{text || "N/A"}</span>
-                        ),
-                      },
-                      {
-                        title: "Quantity",
-                        dataIndex: "quantity",
-                        key: "quantity",
-                        render: (text) => (
-                          <span className="font-medium">{text}</span>
-                        ),
-                      },
-                      {
-                        title: "Unit Price (₹)",
-                        dataIndex: "amount",
-                        key: "amount",
-                        render: (text) => (
-                          <span className="font-medium">
-                            ₹{Number(text).toFixed(2)}
-                          </span>
-                        ),
-                      },
-                      {
-                        title: "Total (₹)",
-                        dataIndex: "total",
-                        key: "total",
-                        render: (text) => (
-                          <span className="font-medium">
-                            ₹{Number(text).toFixed(2)}
-                          </span>
-                        ),
-                      },
-                    ]}
-                    dataSource={order.orderItems}
-                    rowKey={(record, idx) => `${record.styleNo}-${idx}`}
-                    pagination={false}
-                    size="small"
-                    bordered
-                  />
-                ) : (
-                  <div className="text-center py-4">
-                    <p style={{ color: colors.velvet }}>No order items found</p>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-        ) : (
-          <div className="text-center py-4">
-            <p style={{ color: colors.velvet }}>Order not found</p>
-          </div>
-        )}
+          <Divider />
+
+          <h4 className="font-medium" style={{ color: colors.velvet }}>
+            Order Items
+          </h4>
+          <Table
+            dataSource={order.orderItems}
+            columns={[
+              {
+                title: "SR No",
+                dataIndex: "srNo",
+                key: "srNo",
+              },
+              {
+                title: "Style No",
+                dataIndex: "styleNo",
+                key: "styleNo",
+              },
+              {
+                title: "Diamond Clarity",
+                dataIndex: "diamondClarity",
+                key: "diamondClarity",
+              },
+              {
+                title: "Diamond Color",
+                dataIndex: "diamondColor",
+                key: "diamondColor",
+              },
+              {
+                title: "Quantity",
+                dataIndex: "quantity",
+                key: "quantity",
+              },
+              {
+                title: "Amount (₹)",
+                dataIndex: "amount",
+                key: "amount",
+                render: (amount) => amount?.toFixed(2) || "0.00",
+              },
+            ]}
+            rowKey="srNo"
+            pagination={false}
+            size="small"
+          />
+        </div>
       </Modal>
     );
   };
@@ -1281,313 +1125,317 @@ const fetchOrderHistory = async (uniqueId) => {
 
       {/* Ongoing Order Modal */}
       <OngoingOrderModal
-        orderId={selectedOrder?._id}
+        order={selectedOrder}
         visible={ongoingOrderModalVisible}
         onClose={closeOrderModal}
       />
     </div>
   );
+const renderKYCForm = () => (
+  <div className="space-y-6">
+    <h3 className="text-2xl font-semibold" style={{ color: colors.velvet }}>
+      Client KYC Form
+    </h3>
 
-  const renderKYCForm = () => (
-    <div className="space-y-6">
-      <h3 className="text-2xl font-semibold" style={{ color: colors.velvet }}>
-        Client KYC Form
-      </h3>
-
-      <Form
-        form={kycForm}
-        onFinish={handleKYCSubmit}
-        layout="vertical"
-        className="rounded-lg shadow p-6 border"
-        style={{
-          backgroundColor: colors.diamond,
-          borderColor: colors.darkGold,
-        }}
-      >
-        <div className="grid grid-cols-1 md:grid-cols-2 p-6 gap-6">
-          {/* Name (Required) */}
-          <Form.Item
-            label="Full Name"
-            name="name"
-            rules={[{ required: true, message: "Please enter full name" }]}
-          >
-            <Input
-              placeholder="Enter full name"
-              style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
-            />
-          </Form.Item>
-
-          {/* Phone (Required) */}
-          <Form.Item
-            label="Mobile Number"
-            name="phone"
-            rules={[
-              { required: true, message: "Please enter mobile number" },
-              {
-                pattern: /^[0-9]{10}$/,
-                message: "Please enter valid 10-digit mobile number",
-              },
-            ]}
-          >
-            <Input
-              placeholder="Primary contact number"
-              style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
-              maxLength={10}
-            />
-          </Form.Item>
-
-          {/* Alternate Phone (Optional) */}
-          <Form.Item
-            label="Alternate Phone (Optional)"
-            name="mobile"
-            rules={[
-              {
-                pattern: /^[0-9]{10}$/,
-                message: "Please enter valid 10-digit mobile number",
-              },
-            ]}
-          >
-            <Input
-              placeholder="Secondary contact number"
-              style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
-              maxLength={10}
-            />
-          </Form.Item>
-
-          {/* Office Phone (Optional) */}
-          <Form.Item label="Office Phone (Optional)" name="officePhone">
-            <Input
-              placeholder="Office landline"
-              style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
-            />
-          </Form.Item>
-
-          {/* Landline (Optional) */}
-          <Form.Item label="Landline (Optional)" name="landline">
-            <Input
-              placeholder="Home landline"
-              style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
-            />
-          </Form.Item>
-
-          {/* Email (Optional) */}
-          <Form.Item
-            label="Email (Optional)"
-            name="email"
-            rules={[{ type: "email", message: "Please enter valid email" }]}
-          >
-            <Input
-              placeholder="Email address"
-              style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
-            />
-          </Form.Item>
-
-          {/* Address (Required) */}
-          <Form.Item
-            label="Complete Address"
-            name="address"
-            rules={[{ required: true, message: "Please enter address" }]}
-            className="md:col-span-2"
-          >
-            <Input.TextArea
-              placeholder="Full address with city, state, and pincode"
-              rows={3}
-              style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
-            />
-          </Form.Item>
-
-          {/* Business Documentation */}
-          <Form.Item
-            label="GST Number (Optional)"
-            name="gstNo"
-            rules={[{ validator: validateGST }]}
-          >
-            <Input
-              placeholder="22AAAAA0000A1Z5"
-              style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
-            />
-          </Form.Item>
-
-          <Form.Item
-            label="Company PAN (Optional)"
-            name="companyPAN"
-            rules={[{ validator: validatePAN }]}
-          >
-            <Input
-              placeholder="ABCDE1234F"
-              style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
-              maxLength={10}
-            />
-          </Form.Item>
-
-          <Form.Item
-            label="Owner PAN (Optional)"
-            name="ownerPAN"
-            rules={[{ validator: validatePAN }]}
-          >
-            <Input
-              placeholder="ABCDE1234F"
-              style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
-              maxLength={10}
-            />
-          </Form.Item>
-
-          <Form.Item
-            label="Aadhar Number (Optional)"
-            name="aadharNumber"
-            rules={[{ validator: validateAadhar }]}
-          >
-            <Input
-              placeholder="12-digit number"
-              style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
-              maxLength={12}
-            />
-          </Form.Item>
-
-          <Form.Item
-            label="Import/Export Code (Optional)"
-            name="importExportCode"
-          >
-            <Input
-              placeholder="IEC code"
-              style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
-            />
-          </Form.Item>
-        </div>
-
-        <div className="flex justify-end p-5">
-          <Button
-            type="primary"
-            htmlType="submit"
-            loading={loading}
-            style={{
-              backgroundColor: colors.darkGold,
-              color: colors.light,
-              padding: "8px 24px",
-              borderRadius: "6px",
-              fontWeight: "medium",
-            }}
-          >
-            Submit KYC
-          </Button>
-        </div>
-      </Form>
-
-      {/* Client List Table */}
-      <div className="mt-8">
-        <h4
-          className="text-lg font-semibold mb-4"
-          style={{ color: colors.velvet }}
+    <Form
+      form={kycForm}
+      onFinish={handleKYCSubmit}
+      layout="vertical"
+      className="rounded-lg shadow p-6 border"
+      style={{
+        backgroundColor: colors.diamond,
+        borderColor: colors.darkGold,
+      }}
+    >
+      <div className="grid grid-cols-1 md:grid-cols-2 p-6 gap-6">
+        {/* Name (Required) */}
+        <Form.Item
+          label="Full Name"
+          name="name"
+          rules={[{ required: true, message: "Please enter full name" }]}
         >
-          Existing Clients
-        </h4>
-        <Table
-          dataSource={clients}
-          columns={[
-            {
-              title: "Unique ID",
-              dataIndex: "uniqueId",
-              key: "uniqueId",
-              render: (text) => (
-                <span
-                  className="font-medium"
-                  style={{ color: colors.darkGold }}
-                >
-                  {text}
-                </span>
-              ),
-            },
-            {
-              title: "Name",
-              dataIndex: "name",
-              key: "name",
-              render: (text) => (
-                <span style={{ color: colors.velvet }}>{text}</span>
-              ),
-            },
-            {
-              title: "Phone",
-              dataIndex: "phone",
-              key: "phone",
-              render: (text) => <span className="text-gray-600">{text}</span>,
-            },
-            {
-              title: "GST No",
-              dataIndex: "gstNo",
-              key: "gstNo",
-              render: (text) => (
-                <span className="text-gray-600">{text || "N/A"}</span>
-              ),
-            },
-            {
-              title: "Status",
-              key: "status",
-              render: (_, client) => {
-                const orders = client.orders || [];
-                if (orders.length === 0)
-                  return (
-                    <Tag style={{ backgroundColor: colors.platinum }}>
-                      No orders
-                    </Tag>
-                  );
+          <Input
+            placeholder="Enter full name"
+            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
+          />
+        </Form.Item>
 
-                const statuses = orders.map((o) => o?.status).filter(Boolean);
-
-                if (statuses.includes("ongoing"))
-                  return (
-                    <Tag
-                      style={{
-                        backgroundColor: "#e6f4ff",
-                        color: colors.darkGold,
-                      }}
-                    >
-                      Active
-                    </Tag>
-                  );
-                if (statuses.every((s) => s === "completed"))
-                  return (
-                    <Tag
-                      style={{ backgroundColor: "#e6f7ee", color: "#08965b" }}
-                    >
-                      Completed
-                    </Tag>
-                  );
-                return (
-                  <Tag style={{ backgroundColor: "#fff7e6", color: "#d46b08" }}>
-                    Mixed
-                  </Tag>
-                );
-              },
-            },
+        {/* Phone (Required) */}
+        <Form.Item
+          label="Mobile Number"
+          name="phone"
+          rules={[
+            { required: true, message: "Please enter mobile number" },
             {
-              title: "Action",
-              key: "action",
-              render: (_, client) => (
-                <Button
-                  size="small"
-                  style={{
-                    backgroundColor: colors.platinum,
-                    color: colors.darkGold,
-                    borderColor: colors.darkGold,
-                  }}
-                  onClick={() => {
-                    setSelectedMenu("history");
-                    handleClientSelect(client.uniqueId);
-                  }}
-                >
-                  View Orders
-                </Button>
-              ),
+              pattern: /^[0-9]{10}$/,
+              message: "Please enter valid 10-digit mobile number",
             },
           ]}
-          rowKey="_id"
-          loading={loading}
-          scroll={{ x: true }}
-          pagination={{ pageSize: 5 }}
-        />
+        >
+          <Input
+            placeholder="Primary contact number"
+            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
+            maxLength={10}
+          />
+        </Form.Item>
+
+        {/* Alternate Phone (Optional) */}
+        <Form.Item
+          label="Alternate Phone (Optional)"
+          name="mobile"
+          rules={[
+            {
+              pattern: /^[0-9]{10}$/,
+              message: "Please enter valid 10-digit mobile number",
+            },
+          ]}
+        >
+          <Input
+            placeholder="Secondary contact number"
+            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
+            maxLength={10}
+          />
+        </Form.Item>
+
+        {/* Office Phone (Optional) */}
+        <Form.Item label="Office Phone (Optional)" name="officePhone">
+          <Input
+            placeholder="Office landline"
+            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
+          />
+        </Form.Item>
+
+        {/* Landline (Optional) */}
+        <Form.Item label="Landline (Optional)" name="landline">
+          <Input
+            placeholder="Home landline"
+            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
+          />
+        </Form.Item>
+
+        {/* Email (Optional) */}
+        <Form.Item
+          label="Email (Optional)"
+          name="email"
+          rules={[{ type: "email", message: "Please enter valid email" }]}
+        >
+          <Input
+            placeholder="Email address"
+            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
+          />
+        </Form.Item>
+
+        {/* Address (Required) */}
+        <Form.Item
+          label="Complete Address"
+          name="address"
+          rules={[{ required: true, message: "Please enter address" }]}
+          className="md:col-span-2"
+        >
+          <Input.TextArea
+            placeholder="Full address with city, state, and pincode"
+            rows={3}
+            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
+          />
+        </Form.Item>
+
+        {/* Business Documentation */}
+        <Form.Item
+          label="GST Number (Optional)"
+          name="gstNo"
+          rules={[{ validator: validateGST }]}
+        >
+          <Input
+            placeholder="22AAAAA0000A1Z5"
+            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
+          />
+        </Form.Item>
+
+        <Form.Item
+          label="Company PAN (Optional)"
+          name="companyPAN"
+          rules={[{ validator: validatePAN }]}
+        >
+          <Input
+            placeholder="ABCDE1234F"
+            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
+            maxLength={10}
+          />
+        </Form.Item>
+
+        <Form.Item
+          label="Owner PAN (Optional)"
+          name="ownerPAN"
+          rules={[{ validator: validatePAN }]}
+        >
+          <Input
+            placeholder="ABCDE1234F"
+            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
+            maxLength={10}
+          />
+        </Form.Item>
+
+        <Form.Item
+          label="Aadhar Number (Optional)"
+          name="aadharNumber"
+          rules={[{ validator: validateAadhar }]}
+        >
+          <Input
+            placeholder="12-digit number"
+            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
+            maxLength={12}
+          />
+        </Form.Item>
+
+        <Form.Item
+          label="Import/Export Code (Optional)"
+          name="importExportCode"
+        >
+          <Input
+            placeholder="IEC code"
+            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
+          />
+        </Form.Item>
       </div>
+
+      <div className="flex justify-end p-5">
+        <Button
+          type="primary"
+          htmlType="submit"
+          loading={loading}
+          style={{
+            backgroundColor: colors.darkGold,
+            color: colors.light,
+            padding: "8px 24px",
+            borderRadius: "6px",
+            fontWeight: "medium",
+          }}
+        >
+          Submit KYC
+        </Button>
+      </div>
+    </Form>
+
+    {/* Client List Table */}
+    <div className="mt-8">
+      <h4
+        className="text-lg font-semibold mb-4"
+        style={{ color: colors.velvet }}
+      >
+        Existing Clients
+      </h4>
+      <Table
+        dataSource={clients}
+        columns={[
+          {
+            title: "Unique ID",
+            dataIndex: "uniqueId",
+            key: "uniqueId",
+            render: (text) => (
+              <span
+                className="font-medium"
+                style={{ color: colors.darkGold }}
+              >
+                {text}
+              </span>
+            ),
+          },
+          {
+            title: "Name",
+            dataIndex: "name",
+            key: "name",
+            render: (text) => (
+              <span style={{ color: colors.velvet }}>{text}</span>
+            ),
+          },
+          {
+            title: "Phone",
+            dataIndex: "phone",
+            key: "phone",
+            render: (text) => <span className="text-gray-600">{text}</span>,
+          },
+          {
+            title: "GST No",
+            dataIndex: "gstNo",
+            key: "gstNo",
+            render: (text) => (
+              <span className="text-gray-600">{text || "N/A"}</span>
+            ),
+          },
+          {
+            title: "Status",
+            key: "status",
+            render: (_, client) => {
+              const orders = client.orders || [];
+              if (orders.length === 0)
+                return (
+                  <Tag style={{ backgroundColor: colors.platinum }}>
+                    No orders
+                  </Tag>
+                );
+
+              const statuses = orders.map((o) => o?.status).filter(Boolean);
+
+              if (statuses.includes("ongoing"))
+                return (
+                  <Tag
+                    style={{
+                      backgroundColor: "#e6f4ff",
+                      color: colors.darkGold,
+                    }}
+                  >
+                    Active
+                  </Tag>
+                );
+              if (statuses.every((s) => s === "completed"))
+                return (
+                  <Tag
+                    style={{ backgroundColor: "#e6f7ee", color: "#08965b" }}
+                  >
+                    Completed
+                  </Tag>
+                );
+              return (
+                <Tag style={{ backgroundColor: "#fff7e6", color: "#d46b08" }}>
+                  Mixed
+                </Tag>
+              );
+            },
+          },
+          {
+            title: "Action",
+            key: "action",
+            render: (_, client) => (
+              <Button
+                size="small"
+                style={{
+                  backgroundColor: colors.platinum,
+                  color: colors.darkGold,
+                  borderColor: colors.darkGold,
+                }}
+                onClick={() => {
+                  setSelectedMenu("history");
+                  handleClientSelect(client.uniqueId);
+                }}
+              >
+                View Orders
+              </Button>
+            ),
+          },
+        ]}
+        rowKey="_id"
+        loading={loading}
+        scroll={{ x: true }}
+        pagination={{ pageSize: 5 }}
+      />
     </div>
-  );
+  </div>
+);
+
+
+
+
+
 
   const diamondClarityOptions = [
     "FL",
@@ -2403,7 +2251,7 @@ const fetchOrderHistory = async (uniqueId) => {
           borderColor: colors.darkGold,
         }}
       >
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <Select
             style={{
               width: "100%",
@@ -2427,13 +2275,38 @@ const fetchOrderHistory = async (uniqueId) => {
               </Option>
             ))}
           </Select>
+
+          <Input
+            placeholder="Search by order ID or client"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            prefix={<Search className="h-4 w-4" style={{ color: colors.darkGold }} />}
+          />
+
+          <Select
+            placeholder="Filter by status"
+            value={statusFilter}
+            onChange={setStatusFilter}
+            style={{ width: "100%" }}
+          >
+            <Option value="all">All Statuses</Option>
+            <Option value="ongoing">Ongoing</Option>
+            <Option value="completed">Completed</Option>
+            <Option value="cancelled">Cancelled</Option>
+          </Select>
+
+          <RangePicker
+            style={{ width: "100%" }}
+            onChange={(dates) => setDateRange(dates)}
+            placeholder={["Start Date", "End Date"]}
+          />
         </div>
 
         {selectedClientId ? (
           isMobile ? (
             <div className="space-y-4">
-              {orderHistory.length > 0 ? (
-                orderHistory.map((order) => (
+              {getFilteredOrders().length > 0 ? (
+                getFilteredOrders().map((order) => (
                   <div
                     key={order.id}
                     className="border rounded-lg p-4"
@@ -2442,8 +2315,8 @@ const fetchOrderHistory = async (uniqueId) => {
                   >
                     <div className="space-y-2">
                       <div className="flex justify-between">
-                        <span className="font-medium">Order #:</span>
-                        <span>{order.orderNumber}</span>
+                        <span className="font-medium">Order ID:</span>
+                        <span>{order.orderId}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="font-medium">Date:</span>
@@ -2472,38 +2345,38 @@ const fetchOrderHistory = async (uniqueId) => {
                         <span className="font-medium">Items:</span>
                         <span>{order.orderItems?.length || 0}</span>
                       </div>
-                      <div className="flex justify-between">
+                      {/* <div className="flex justify-between">
                         <span className="font-medium">Total Amount:</span>
                         <span>₹{order.totalAmount?.toFixed(2) || "0.00"}</span>
-                      </div>
+                      </div> */}
                     </div>
                   </div>
                 ))
               ) : (
                 <div className="text-center py-4">
-                  <p>No orders found for this client</p>
+                  <p>No orders found matching your criteria</p>
                 </div>
               )}
             </div>
           ) : (
             <Table
               bordered
-              dataSource={orderHistory}
+              dataSource={getFilteredOrders()}
               rowKey="id"
               size="middle"
-              pagination={{ pageSize: 5 }}
+              pagination={{ pageSize: 10 }}
               style={{ marginTop: "1.5rem" }}
               onRow={(record) => ({
                 onClick: () => handleOrderClick(record),
               })}
               columns={[
                 {
-                  title: "Order #",
-                  dataIndex: "orderNumber",
-                  key: "orderNumber",
-                  render: (orderNumber) => (
+                  title: "Order ID",
+                  dataIndex: "orderId",
+                  key: "orderId",
+                  render: (orderId) => (
                     <span style={{ color: colors.darkGold, fontWeight: 600 }}>
-                      {orderNumber}
+                      {orderId}
                     </span>
                   ),
                 },
@@ -2529,6 +2402,12 @@ const fetchOrderHistory = async (uniqueId) => {
                       {status?.toUpperCase() || "UNKNOWN"}
                     </Tag>
                   ),
+                },
+                {
+                  title: "Client",
+                  dataIndex: "clientDetails",
+                  key: "client",
+                  render: (client) => client?.name || "N/A",
                 },
                 {
                   title: "Items",
@@ -2564,6 +2443,12 @@ const fetchOrderHistory = async (uniqueId) => {
           </div>
         )}
       </div>
+
+      <OngoingOrderModal
+        order={selectedOrder}
+        visible={ongoingOrderModalVisible}
+        onClose={closeOrderModal}
+      />
     </div>
   );
 
@@ -2880,7 +2765,7 @@ const fetchOrderHistory = async (uniqueId) => {
 
       {/* Ongoing Order Modal */}
       <OngoingOrderModal
-        orderId={selectedOrder?.id}
+        order={selectedOrder}
         visible={ongoingOrderModalVisible}
         onClose={closeOrderModal}
       />

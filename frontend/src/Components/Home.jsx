@@ -38,64 +38,64 @@ const Home = () => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
+ const handleSubmit = async (e) => {
+  e.preventDefault();
+  setError("");
 
-    if (!loginType) {
-      setError("Please select login type (Admin or Team)");
-      return;
+  if (!loginType) {
+    setError("Please select login type (Admin or Team)");
+    return;
+  }
+
+  setLoading(true);
+
+  try {
+    let endpoint, requestData;
+
+    if (loginType === "admin") {
+      endpoint = "/api/admin/login";
+      requestData = {
+        email: formData.username,
+        password: formData.password,
+        role: "admin", // Hardcoded to match ProtectedRoute
+      };
+    } else {
+      endpoint = "/api/admin/teamlogin";
+      requestData = {
+        email: formData.username,
+        password: formData.password,
+        role: "team", // Hardcoded to match ProtectedRoute
+      };
     }
 
-    setLoading(true);
+    const res = await axios.post(
+      `${import.meta.env.VITE_BASE_URL}${endpoint}`,
+      requestData,
+      { withCredentials: true }
+    );
 
-    try {
-      let endpoint, requestData;
+    // ✅ Save auth data to sessionStorage (CRITICAL FOR ProtectedRoute)
+    sessionStorage.setItem("isAuthenticated", "true");
+    sessionStorage.setItem("role", loginType === "admin" ? "admin" : "team"); // Must match `allowedRoles`
 
-      if (loginType === "admin") {
-        endpoint = "/api/admin/login";
-        requestData = {
-          email: formData.username,
-          password: formData.password,
-          role: loginType === "admin" ? "admin" : "team",
-        };
-      } else {
-        endpoint = "/api/admin/teamlogin";
-        requestData = {
-          email: formData.username,
-          password: formData.password,
-          role: loginType === "admin" ? "admin" : "team",
-        };
-      }
-
-      const res = await axios.post(
-  `${import.meta.env.VITE_BASE_URL}${endpoint}`,
-  requestData,
-  { withCredentials: true }
-);
-
-// ✅ Save token to sessionStorage (for future API use if needed)
-if (res.data.token) {
-  sessionStorage.setItem("authToken", res.data.token);
-}
-
-
-      // On successful login
-      if (loginType === "admin") {
-        navigate("/admindashboard");
-      } else {
-        navigate("/spteamlogin");
-      }
-    } catch (err) {
-      const errorMessage =
-        err.response?.data?.message ||
-        err.response?.data?.error ||
-        "Login failed. Please check your credentials and try again.";
-      setError(errorMessage);
-    } finally {
-      setLoading(false);
+    // Optional: Save token if needed for API calls
+    if (res.data.token) {
+      sessionStorage.setItem("authToken", res.data.token);
     }
-  };
+
+    // Redirect based on role
+    if (loginType === "admin") {
+      navigate("/admindashboard");
+    } else {
+      navigate("/spteamlogin");
+    }
+
+  } catch (err) {
+    setError(err.response?.data?.message || "Login failed");
+  } finally {
+    setLoading(false);
+  }
+};
 
   // Enhanced animations
   const fadeIn = {

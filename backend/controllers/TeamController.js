@@ -620,79 +620,52 @@ exports.addClientOrder = async (req, res) => {
 
 
 exports.getOrderHistory = async (req, res) => {
+  const { uniqueId } = req.params;
+
   try {
-    const { uniqueId } = req.params;
+    const client = await Clienttss.findOne({ uniqueId });
 
-    // 1. Validate input
-    if (!uniqueId) {
-      return res.status(400).json({
-        success: false,
-        error: "Validation Error",
-        message: "Client ID is required"
-      });
-    }
-
-    // 2. Find client with basic info and orders
-    const client = await Clienttss.findOne({ uniqueId })
-      .select('name phone gstNo uniqueId orders');
-    
     if (!client) {
       return res.status(404).json({
         success: false,
-        error: "Not Found",
-        message: "Client not found with the provided ID"
+        message: `Client with Unique ID ${uniqueId} not found`
       });
     }
 
-    // 3. Convert orders map to array and format response
-    const orders = Array.from(client.orders.entries()).map(([orderId, order]) => {
-      // Calculate order total if not already present
-      const orderTotal = order.orderItems.reduce((sum, item) => sum + (item.amount * item.quantity), 0);
-      
-      return {
-        id: orderId,
-        orderNumber: `ORD-${orderId.slice(-6).toUpperCase()}`, // Generate a readable order number
-        date: order.orderDate.toISOString().split('T')[0], // Format as YYYY-MM-DD
-        status: order.status || 'ongoing',
-        items: order.orderItems.map(item => ({
-          styleNo: item.styleNo,
-          description: item.description,
-          quantity: item.quantity,
-          amount: item.amount,
-          total: item.amount * item.quantity
-        })),
-        totalAmount: orderTotal,
-        clientDetails: {
-          name: client.name,
-          contact: client.phone,
-          gst: client.gstNo
-        }
-      };
-    });
+    const ordersMap = client.orders || new Map();
 
-    // 4. Sort by order date (newest first)
-    orders.sort((a, b) => new Date(b.date) - new Date(a.date));
+    // Convert Map to array
+    const ordersArray = Array.from(ordersMap.entries()).map(([orderId, order]) => ({
+      orderId,
+      orderDate: order.orderDate,
+      status: order.status,
+      orderItems: (order.orderItems || []).map(item => ({
+        srNo: item.srNo || 0,
+        styleNo: item.styleNo || '',
+        diamondClarity: item.diamondClarity || '',
+        diamondColor: item.diamondColor || '',
+        quantity: item.quantity || 0,
+        grossWeight: item.grossWeight || 0,
+        netWeight: item.netWeight || 0,
+        diaWeight: item.diaWeight || 0,
+        pcs: item.pcs || 0,
+        amount: item.amount || 0,
+        description: item.description || ''
+      }))
+    }));
 
-    return res.status(200).json({
+    res.json({
       success: true,
-      client: {
-        id: client.uniqueId,
-        name: client.name,
-        phone: client.phone,
-        gstNo: client.gstNo
-      },
-      orders,
-      totalOrders: orders.length,
-      message: "Order history retrieved successfully"
+      clientName: client.name,
+      uniqueId: client.uniqueId,
+      orders: ordersArray
     });
-
-  } catch (error) {
-    console.error("Order history error:", error);
-    return res.status(500).json({
+  } catch (err) {
+    console.error("Error fetching order history:", err);
+    res.status(500).json({
       success: false,
-      error: "Server Error",
-      message: "Failed to retrieve order history",
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      message: err.message,
+      error: process.env.NODE_ENV === 'development' ? err.stack : undefined
     });
   }
 };

@@ -14,20 +14,20 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
   useEffect(() => {
     const checkAccess = () => {
       const isAuthenticated = sessionStorage.getItem("isAuthenticated") === "true";
-      const role = sessionStorage.getItem("role");
+      const role = sessionStorage.getItem("role")?.trim()?.toLowerCase(); // Normalize role
 
-      if (!isAuthenticated || !role || !allowedRoles.includes(role)) {
-        console.warn("⛔ Access denied. Redirecting to login...");
+      const isAllowed = isAuthenticated && role && allowedRoles.map(r => r.toLowerCase()).includes(role);
+
+      if (!isAllowed) {
+        console.warn("⛔ Access denied. Redirecting...");
         navigate("/", { replace: true });
       } else {
         console.log("✅ Access granted for role:", role);
       }
-
       setIsLoading(false);
     };
 
-    const timeout = setTimeout(checkAccess, 100);
-    return () => clearTimeout(timeout);
+    checkAccess();
   }, [navigate, allowedRoles]);
 
   if (isLoading) {

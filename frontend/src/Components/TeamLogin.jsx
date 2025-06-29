@@ -84,6 +84,15 @@ const TeamLogin = () => {
     }
   };
 
+  const handleLogout = () => {
+    // Clear session storage
+    sessionStorage.removeItem('role');
+    sessionStorage.removeItem('team');
+    
+    // Redirect to home page
+    navigate('/');
+  };
+
   const handleChange = (e) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
   };
@@ -240,7 +249,7 @@ const TeamLogin = () => {
 
       {/* Luxury brand header with logo */}
       <motion.div 
-        className="absolute top-8 left-0 right-0 px-10 z-20 flex justify-start"
+        className="absolute top-8 left-0 right-0 px-10 z-20 flex justify-between items-center"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3, duration: 1 }}
@@ -265,6 +274,27 @@ const TeamLogin = () => {
             {/* Brand name can be added here */}
           </motion.h1>
         </div>
+
+        {/* Logout Button - positioned in the top right */}
+        <motion.button
+          onClick={handleLogout}
+          className="py-2 px-4 rounded-lg border flex items-center tracking-wider text-sm"
+          style={{ 
+            borderColor: `${colors.gold}80`,
+            color: colors.gold,
+            backgroundColor: 'transparent'
+          }}
+          whileHover={{ 
+            backgroundColor: `${colors.gold}15`,
+            boxShadow: `0 2px 15px ${colors.gold}20`
+          }}
+          whileTap={{ scale: 0.95 }}
+        >
+          <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+          </svg>
+          LOGOUT
+        </motion.button>
       </motion.div>
 
       {/* Main content container */}
@@ -676,17 +706,6 @@ const TeamLogin = () => {
           </motion.div>
         )}
       </div>
-
-      {/* Luxury footer */}
-      <motion.div 
-        className="absolute bottom-6 left-0 right-0 text-center text-xs tracking-widest font-light"
-        style={{ color: `${colors.gold}70` }}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 1, duration: 1.5 }}
-      >
-        
-      </motion.div>
     </div>
   );
 };

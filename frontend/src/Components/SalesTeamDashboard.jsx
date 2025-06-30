@@ -952,7 +952,7 @@ const OngoingOrderModal = ({ order, visible, onClose }) => {
 
         {/* Order Items Table */}
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-          <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-5 py-4 border-b border-gray-200">
+          <div className="bg-gradient-to-r from-gray-100 to-gray-200 px-5 py-4 border-2 border-gray-400">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between">
               <h3 className="text-lg font-semibold text-gray-800 flex items-center">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600 mr-2" viewBox="0 0 20 20" fill="currentColor">
@@ -976,7 +976,7 @@ const OngoingOrderModal = ({ order, visible, onClose }) => {
               size="middle"
               scroll={{ x: true }}
               className="rounded-none border-0"
-              rowClassName="hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0"
+              rowClassName="hover:bg-gray-50 transition-colors border-b border-gray-400 last:border-b-0"
             />
           </div>
         </div>

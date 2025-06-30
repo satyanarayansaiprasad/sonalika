@@ -682,137 +682,167 @@ const SalesDashboard = () => {
     );
   };
 
-  const OngoingOrderModal = ({ order, visible, onClose }) => {
-    if (!order || !visible) return null;
+const OngoingOrderModal = ({ order, visible, onClose }) => {
+  if (!order || !visible) return null;
 
-    return (
-      <Modal
-        title={`Order Details - ${order.orderId || "N/A"}`}
-        open={visible}
-        onCancel={onClose}
-        footer={null}
-        width={isMobile ? "90%" : 800}
-        style={{ top: 20 }}
-      >
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <p className="font-medium" style={{ color: colors.velvet }}>
-                Order ID:
-              </p>
-              <p>{order.orderId}</p>
-            </div>
-            <div>
-              <p className="font-medium" style={{ color: colors.velvet }}>
-                Order Date:
-              </p>
-              <p>{dayjs(order.orderDate).format("DD MMM YYYY, hh:mm A")}</p>
-            </div>
-            <div>
-              <p className="font-medium" style={{ color: colors.velvet }}>
-                Status:
-              </p>
-              <Tag
-                style={{
-                  backgroundColor:
-                    order.status === "completed" ? "#e6f7ee" : "#e6f4ff",
-                  color:
-                    order.status === "completed" ? "#08965b" : colors.darkGold,
-                }}
-              >
-                {order.status?.toUpperCase() || "UNKNOWN"}
-              </Tag>
-            </div>
-            <div>
-              <p className="font-medium" style={{ color: colors.velvet }}>
-                Total Amount:
-              </p>
-              <p>₹{order.totalAmount?.toFixed(2) || "0.00"}</p>
-            </div>
+  return (
+    <Modal
+      title={`Order Details - ${order.orderId || "N/A"}`}
+      open={visible}
+      onCancel={onClose}
+      footer={null}
+      width={isMobile ? "90%" : 800}
+      style={{ top: 20 }}
+    >
+      <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <p className="font-medium" style={{ color: colors.velvet }}>
+              Order ID:
+            </p>
+            <p>{order.orderId}</p>
           </div>
-
-          <Divider />
-
-         {order.client ? (
-  <>
-    <h4 className="font-medium" style={{ color: colors.velvet }}>
-      Client Details
-    </h4>
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div>
-        <p className="font-medium" style={{ color: colors.velvet }}>
-          Name:
-        </p>
-        <p>{order.client.name}</p>
-      </div>
-      <div>
-        <p className="font-medium" style={{ color: colors.velvet }}>
-          Unique ID:
-        </p>
-        <p>{order.client.uniqueId}</p>
-      </div>
-      <div>
-        <p className="font-medium" style={{ color: colors.velvet }}>
-          GST:
-        </p>
-        <p>{order.client.gstNo}</p>
-      </div>
-    </div>
-  </>
-) : (
-  <p className="text-sm text-gray-500">Client information not available.</p>
-)}
-
-
-          <Divider />
-
-          <h4 className="font-medium" style={{ color: colors.velvet }}>
-            Order Items
-          </h4>
-          <Table
-            dataSource={order.orderItems}
-            columns={[
-              {
-                title: "SR No",
-                dataIndex: "srNo",
-                key: "srNo",
-              },
-              {
-                title: "Style No",
-                dataIndex: "styleNo",
-                key: "styleNo",
-              },
-              {
-                title: "Diamond Clarity",
-                dataIndex: "diamondClarity",
-                key: "diamondClarity",
-              },
-              {
-                title: "Diamond Color",
-                dataIndex: "diamondColor",
-                key: "diamondColor",
-              },
-              {
-                title: "Quantity",
-                dataIndex: "quantity",
-                key: "quantity",
-              },
-              {
-                title: "Amount (₹)",
-                dataIndex: "amount",
-                key: "amount",
-                render: (amount) => amount?.toFixed(2) || "0.00",
-              },
-            ]}
-            rowKey="srNo"
-            pagination={false}
-            size="small"
-          />
+          <div>
+            <p className="font-medium" style={{ color: colors.velvet }}>
+              Order Date:
+            </p>
+            <p>{dayjs(order.orderDate).format("DD MMM YYYY, hh:mm A")}</p>
+          </div>
+          <div>
+            <p className="font-medium" style={{ color: colors.velvet }}>
+              Status:
+            </p>
+            <Tag
+              style={{
+                backgroundColor:
+                  order.status === "completed" ? "#e6f7ee" : "#e6f4ff",
+                color:
+                  order.status === "completed" ? "#08965b" : colors.darkGold,
+              }}
+            >
+              {order.status?.toUpperCase() || "UNKNOWN"}
+            </Tag>
+          </div>
+          <div>
+            <p className="font-medium" style={{ color: colors.velvet }}>
+              Total Amount:
+            </p>
+            <p>₹{order.totalAmount?.toFixed(2) || "0.00"}</p>
+          </div>
         </div>
-      </Modal>
-    );
-  };
 
+        <Divider />
+
+        {order.client ? (
+          <>
+            <h4 className="font-medium" style={{ color: colors.velvet }}>
+              Client Details
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <p className="font-medium" style={{ color: colors.velvet }}>
+                  Name:
+                </p>
+                <p>{order.client.name}</p>
+              </div>
+              <div>
+                <p className="font-medium" style={{ color: colors.velvet }}>
+                  Unique ID:
+                </p>
+                <p>{order.client.uniqueId}</p>
+              </div>
+              <div>
+                <p className="font-medium" style={{ color: colors.velvet }}>
+                  GST:
+                </p>
+                <p>{order.client.gstNo}</p>
+              </div>
+            </div>
+          </>
+        ) : (
+          <p className="text-sm text-gray-500">Client information not available.</p>
+        )}
+
+        <Divider />
+
+        <h4 className="font-medium" style={{ color: colors.velvet }}>
+          Order Items
+        </h4>
+        <Table
+          dataSource={order.orderItems}
+          columns={[
+            {
+              title: "SR No",
+              dataIndex: "srNo",
+              key: "srNo",
+            },
+            {
+              title: "Style No",
+              dataIndex: "styleNo",
+              key: "styleNo",
+            },
+            {
+              title: "Diamond Clarity",
+              dataIndex: "diamondClarity",
+              key: "diamondClarity",
+              // render: (text) => text || "-",
+            },
+            {
+              title: "Diamond Color",
+              dataIndex: "diamondColor",
+              key: "diamondColor",
+              // render: (text) => text || "-",
+            },
+            {
+              title: "Quantity",
+              dataIndex: "quantity",
+              key: "quantity",
+            },
+            {
+              title: "Gross WT",
+              dataIndex: "grossWeight",
+              key: "grossWeight",
+              render: (value) => (value ? value.toFixed(2) : "-"),
+            },
+            {
+              title: "Net WT",
+              dataIndex: "netWeight",
+              key: "netWeight",
+              render: (value) => (value ? value.toFixed(2) : "-"),
+            },
+            {
+              title: "DIA WT",
+              dataIndex: "diaWeight",
+              key: "diaWeight",
+              render: (value) => (value ? value.toFixed(2) : "-"),
+            },
+            {
+              title: "PCS",
+              dataIndex: "pcs",
+              key: "pcs",
+            },
+            {
+              title: "Amount (₹)",
+              dataIndex: "amount",
+              key: "amount",
+              render: (amount) => amount?.toFixed(2) || "0.00",
+            },
+            {
+              title: "Description",
+              dataIndex: "description",
+              key: "description",
+              render: (text) => text || "-",
+            },
+          ]}
+          rowKey="srNo"
+          pagination={false}
+          size="small"
+          scroll={{ x: true }}
+        />
+      </div>
+    </Modal>
+  );
+};
   const renderDashboard = () => (
     <div className="space-y-6">
       <h3 className="text-2xl font-semibold" style={{ color: colors.velvet }}>

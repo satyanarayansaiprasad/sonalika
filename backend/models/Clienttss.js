@@ -41,7 +41,11 @@ const clienttssSchema = new mongoose.Schema({
   type: Map,
   of: {
     orderDate: Date,
-    status: String,
+   status: {
+      type: String,
+      enum: ['ongoing', 'completed', 'cancelled'],
+      default: 'ongoing'
+    },
     orderItems: [
       {
         srNo: Number,

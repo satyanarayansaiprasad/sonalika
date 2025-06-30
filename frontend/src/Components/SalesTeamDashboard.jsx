@@ -501,28 +501,40 @@ const SalesDashboard = () => {
   };
 
   // Filter orders based on search term, status filter, and date range
-  const getFilteredOrders = () => {
-    return orderHistory.filter(order => {
-      // Filter by search term (matches order ID or client name)
-      const matchesSearch = searchTerm === "" || 
-        order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (order.clientDetails?.name && order.clientDetails.name.toLowerCase().includes(searchTerm.toLowerCase()));
-      
-      // Filter by status
-      const matchesStatus = statusFilter === "all" || 
-        order.status.toLowerCase() === statusFilter.toLowerCase();
-      
-      // Filter by date range
-      let matchesDate = true;
-      if (dateRange && dateRange.length === 2) {
-        const orderDate = dayjs(order.orderDate);
-        matchesDate = orderDate.isAfter(dateRange[0]) && orderDate.isBefore(dateRange[1]);
+const getFilteredOrders = () => {
+  // Get all orders from all clients
+  const allOrders = clients.flatMap(client => 
+    (client.orders || []).map(order => ({
+      ...order,
+      client: {
+        uniqueId: client.uniqueId,
+        name: client.name,
+        gstNo: client.gstNo,
+        address: client.address
       }
-      
-      return matchesSearch && matchesStatus && matchesDate;
-    });
-  };
+    }))
+  );
 
+  return allOrders.filter(order => {
+    // Filter by search term (matches unique ID or name)
+    const matchesSearch = searchTerm === '' || 
+      (order.client?.uniqueId && order.client.uniqueId.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (order.client?.name && order.client.name.toLowerCase().includes(searchTerm.toLowerCase()));
+    
+    // Filter by status
+    const matchesStatus = statusFilter === 'all' || 
+      order.status.toLowerCase() === statusFilter.toLowerCase();
+    
+    // Filter by date range
+    let matchesDate = true;
+    if (dateRange && dateRange.length === 2) {
+      const orderDate = dayjs(order.orderDate);
+      matchesDate = orderDate.isAfter(dateRange[0]) && orderDate.isBefore(dateRange[1]);
+    }
+    
+    return matchesSearch && matchesStatus && matchesDate;
+  });
+};
   useEffect(() => {
     fetchClients();
   }, []);
@@ -2411,72 +2423,87 @@ const renderKYCForm = () => (
     </div>
   );
 
-  const renderOrderHistory = () => (
-    <div className="space-y-6">
-      <h3 className="text-2xl font-semibold" style={{ color: colors.velvet }}>
-        Order History
-      </h3>
-      <div
-        className="rounded-lg shadow p-6 border"
-        style={{
-          backgroundColor: colors.diamond,
-          borderColor: colors.darkGold,
-        }}
-      >
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <Select
-            style={{
-              width: "100%",
-              borderColor: colors.darkGold,
-            }}
-            placeholder="Search client"
-            value={selectedClientId}
-            onChange={handleClientSelect}
-            showSearch
-            optionFilterProp="children"
-            filterOption={(input, option) =>
-              option.children.toLowerCase().includes(input.toLowerCase())
-            }
-            suffixIcon={
-              <Search className="h-4 w-4" style={{ color: colors.darkGold }} />
-            }
+const renderOrderHistory = () => (
+  <div className="space-y-6">
+    <h3 className="text-2xl font-semibold" style={{ color: colors.velvet }}>
+      Order History
+    </h3>
+    
+    <div
+      className="rounded-lg shadow p-6 border"
+      style={{
+        backgroundColor: colors.diamond,
+        borderColor: colors.darkGold,
+      }}
+    >
+      {/* Search and Filter Section */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <Select
+          showSearch
+          placeholder="Search by Client ID or Name"
+          value={searchTerm}
+          onChange={(value) => setSearchTerm(value)}
+          onSearch={(value) => setSearchTerm(value)}
+          filterOption={(input, option) =>
+            (option?.children ?? '').toLowerCase().includes(input.toLowerCase()) ||
+            (option?.value ?? '').toLowerCase().includes(input.toLowerCase())
+          }
+          style={{ width: '100%' }}
+          allowClear
+          notFoundContent={null}
+        >
+          {clients.map(client => (
+            <Option 
+              key={client.uniqueId} 
+              value={client.uniqueId}
+            >
+              <div className="flex justify-between">
+                <span>{client.uniqueId}</span>
+                <span className="text-gray-500 ml-2">{client.name}</span>
+              </div>
+            </Option>
+          ))}
+        </Select>
+
+        <Select
+          placeholder="Filter by status"
+          value={statusFilter}
+          onChange={setStatusFilter}
+          style={{ width: '100%' }}
+          allowClear
+        >
+          <Option value="all">All Statuses</Option>
+          <Option value="ongoing">Ongoing</Option>
+          <Option value="completed">Completed</Option>
+          <Option value="cancelled">Cancelled</Option>
+        </Select>
+
+        <RangePicker
+          style={{ width: '100%' }}
+          onChange={(dates) => setDateRange(dates)}
+          placeholder={['Start Date', 'End Date']}
+        />
+      </div>
+
+      {/* Orders Table */}
+      <div className="grid grid-cols-1 gap-6">
+        {/* All Orders */}
+        <div
+          className="rounded-2xl shadow-sm border"
+          style={{
+            backgroundColor: colors.diamond,
+            borderColor: colors.darkGold,
+          }}
+        >
+          <h2
+            className="text-lg font-semibold mb-3 border-b p-4 pb-2"
+            style={{ color: colors.velvet }}
           >
-            {clients.map((client) => (
-              <Option key={client.uniqueId} value={client.uniqueId}>
-                {client.uniqueId}
-              </Option>
-            ))}
-          </Select>
-
-          <Input
-            placeholder="Search by order ID or client"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            prefix={<Search className="h-4 w-4" style={{ color: colors.darkGold }} />}
-          />
-
-          <Select
-            placeholder="Filter by status"
-            value={statusFilter}
-            onChange={setStatusFilter}
-            style={{ width: "100%" }}
-          >
-            <Option value="all">All Statuses</Option>
-            <Option value="ongoing">Ongoing</Option>
-            <Option value="completed">Completed</Option>
-            <Option value="cancelled">Cancelled</Option>
-          </Select>
-
-          <RangePicker
-            style={{ width: "100%" }}
-            onChange={(dates) => setDateRange(dates)}
-            placeholder={["Start Date", "End Date"]}
-          />
-        </div>
-
-        {selectedClientId ? (
-          isMobile ? (
-            <div className="space-y-4">
+            All Orders
+          </h2>
+          
+          {isMobile ? (
+            <div className="space-y-4 p-4">
               {getFilteredOrders().length > 0 ? (
                 getFilteredOrders().map((order) => (
                   <div
@@ -2488,39 +2515,41 @@ const renderKYCForm = () => (
                     <div className="space-y-2">
                       <div className="flex justify-between">
                         <span className="font-medium">Order ID:</span>
-                        <span>{order.orderId}</span>
+                        <span style={{ color: colors.darkGold }}>{order.orderId}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="font-medium">Client ID:</span>
+                        <span>{order.client?.uniqueId || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="font-medium">Client Name:</span>
+                        <span>{order.client?.name || 'N/A'}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="font-medium">Date:</span>
-                        <span>
-                          {dayjs(order.orderDate).format("DD MMM YYYY")}
-                        </span>
+                        <span>{dayjs(order.orderDate).format('DD MMM YYYY')}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="font-medium">Status:</span>
                         <Tag
                           style={{
                             backgroundColor:
-                              order.status === "completed"
-                                ? "#e6f7ee"
-                                : "#e6f4ff",
+                              order.status === 'completed' ? '#e6f7ee' : '#e6f4ff',
                             color:
-                              order.status === "completed"
-                                ? "#08965b"
-                                : colors.darkGold,
+                              order.status === 'completed' ? '#08965b' : colors.darkGold,
                           }}
                         >
-                          {order.status?.toUpperCase() || "UNKNOWN"}
+                          {order.status?.toUpperCase() || 'UNKNOWN'}
                         </Tag>
                       </div>
                       <div className="flex justify-between">
                         <span className="font-medium">Items:</span>
                         <span>{order.orderItems?.length || 0}</span>
                       </div>
-                      {/* <div className="flex justify-between">
-                        <span className="font-medium">Total Amount:</span>
-                        <span>₹{order.totalAmount?.toFixed(2) || "0.00"}</span>
-                      </div> */}
+                      <div className="flex justify-between">
+                        <span className="font-medium">Amount:</span>
+                        <span>₹{order.totalAmount?.toFixed(2) || '0.00'}</span>
+                      </div>
                     </div>
                   </div>
                 ))
@@ -2532,98 +2561,117 @@ const renderKYCForm = () => (
             </div>
           ) : (
             <Table
-              bordered
               dataSource={getFilteredOrders()}
-              rowKey="id"
-              size="middle"
-              pagination={{ pageSize: 10 }}
-              style={{ marginTop: "1.5rem" }}
-              onRow={(record) => ({
-                onClick: () => handleOrderClick(record),
-              })}
               columns={[
                 {
-                  title: "Order ID",
-                  dataIndex: "orderId",
-                  key: "orderId",
-                  render: (orderId) => (
-                    <span style={{ color: colors.darkGold, fontWeight: 600 }}>
-                      {orderId}
+                  title: 'Order ID',
+                  dataIndex: 'orderId',
+                  key: 'orderId',
+                  render: (text) => (
+                    <span className="font-medium" style={{ color: colors.darkGold }}>
+                      {text}
                     </span>
                   ),
                 },
                 {
-                  title: "Date",
-                  dataIndex: "orderDate",
-                  key: "orderDate",
-                  render: (date) => dayjs(date).format("DD MMM YYYY"),
-                },
-                {
-                  title: "Status",
-                  dataIndex: "status",
-                  key: "status",
-                  render: (status) => (
-                    <Tag
-                      style={{
-                        backgroundColor:
-                          status === "completed" ? "#e6f7ee" : "#e6f4ff",
-                        color:
-                          status === "completed" ? "#08965b" : colors.darkGold,
-                      }}
-                    >
-                      {status?.toUpperCase() || "UNKNOWN"}
-                    </Tag>
+                  title: 'Client ID',
+                  dataIndex: ['client', 'uniqueId'],
+                  key: 'clientId',
+                  render: (text) => (
+                    <span className="text-gray-600">{text || 'N/A'}</span>
                   ),
                 },
                 {
-                  title: "Client",
-                  dataIndex: "clientDetails",
-                  key: "client",
-                  render: (client) => client?.name || "N/A",
+                  title: 'Client Name',
+                  dataIndex: ['client', 'name'],
+                  key: 'clientName',
+                  render: (text) => (
+                    <span className="text-gray-600">{text || 'N/A'}</span>
+                  ),
                 },
                 {
-                  title: "Items",
-                  dataIndex: "orderItems",
-                  key: "items",
+                  title: 'Date',
+                  dataIndex: 'orderDate',
+                  key: 'date',
+                  render: (date) => dayjs(date).format('DD MMM YYYY'),
+                },
+                {
+                  title: 'Status',
+                  key: 'status',
+                  render: (_, record) => {
+                    let statusColor = colors.darkGold;
+                    let backgroundColor = '#e6f4ff';
+
+                    if (record.status === 'completed') {
+                      statusColor = '#08965b';
+                      backgroundColor = '#e6f7ee';
+                    } else if (record.status === 'cancelled') {
+                      statusColor = '#cf1322';
+                      backgroundColor = '#fff2f0';
+                    }
+
+                    return (
+                      <Tag
+                        style={{
+                          backgroundColor,
+                          color: statusColor,
+                          borderColor: statusColor,
+                        }}
+                      >
+                        {record.status?.toUpperCase() || 'UNKNOWN'}
+                      </Tag>
+                    );
+                  },
+                },
+                {
+                  title: 'Items',
+                  dataIndex: 'orderItems',
+                  key: 'items',
                   render: (items) => items?.length || 0,
                 },
+                
                 {
-                  title: "Total Amount (₹)",
-                  dataIndex: "totalAmount",
-                  key: "amount",
-                  render: (amount) => amount?.toFixed(2) || "0.00",
-                },
-                {
-                  title: "Action",
-                  key: "action",
+                  title: 'Action',
+                  key: 'action',
                   render: (_, record) => (
                     <Button
-                      type="link"
+                      size="small"
+                      style={{
+                        backgroundColor: colors.platinum,
+                        color: colors.darkGold,
+                        borderColor: colors.darkGold,
+                      }}
                       onClick={() => handleOrderClick(record)}
-                      style={{ color: colors.darkGold }}
                     >
                       View Details
                     </Button>
                   ),
                 },
               ]}
+              rowKey="id"
+              loading={loading}
+              pagination={{ pageSize: 10 }}
+              scroll={{ y: 400 }}
+              size="small"
+              bordered
+              className="custom-table"
+              onRow={(record) => ({
+                onClick: () => handleOrderClick(record),
+                style: { cursor: 'pointer', backgroundColor: colors.light },
+              })}
             />
-          )
-        ) : (
-          <div className="text-center py-4">
-            <p>Please select a client to view order history</p>
-          </div>
-        )}
+          )}
+        </div>
       </div>
-
-      <OngoingOrderModal
-        order={selectedOrder}
-        visible={ongoingOrderModalVisible}
-        onClose={closeOrderModal}
-      />
     </div>
-  );
 
+    <OngoingOrderModal
+      order={selectedOrder}
+      visible={ongoingOrderModalVisible}
+      onClose={closeOrderModal}
+    />
+  </div>
+);
   const renderContent = () => {
     switch (selectedMenu) {
       case "dashboard":

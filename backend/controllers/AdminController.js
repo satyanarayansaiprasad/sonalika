@@ -23,11 +23,9 @@ exports.login = async (req, res) => {
 
 exports.loginteam = async (req, res) => {
   try {
-    const {  user } = await adminService.loginTeam(req.body);
-    
+    const { user } = await adminService.loginTeam(req.body);
     res.status(200).json({ 
       success: true,
-      
       user,
       message: 'Login successful' 
     });

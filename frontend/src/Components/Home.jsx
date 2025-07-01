@@ -38,65 +38,57 @@ const Home = () => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
- const handleSubmit = async (e) => {
+const handleSubmit = async (e) => {
   e.preventDefault();
   setError("");
+  console.time('loginProcess');
 
   if (!loginType) {
-    setError("Please select login type (Admin or Team)");
+    setError("Please select login type");
+    console.timeEnd('loginProcess');
     return;
   }
 
   setLoading(true);
 
   try {
-    let endpoint, requestData;
-
-    if (loginType === "admin") {
-      endpoint = "/api/admin/login";
-      requestData = {
-        email: formData.username,
-        password: formData.password,
-        role: "admin", // Hardcoded to match ProtectedRoute
-      };
-    } else {
-      endpoint = "/api/admin/teamlogin";
-      requestData = {
-        email: formData.username,
-        password: formData.password,
-        role: "team", // Hardcoded to match ProtectedRoute
-      };
-    }
-
+    console.time('axiosRequest');
+    const endpoint = loginType === "admin" 
+      ? "/api/admin/login" 
+      : "/api/admin/teamlogin";
+    
     const res = await axios.post(
       `${import.meta.env.VITE_BASE_URL}${endpoint}`,
-      requestData,
-      { withCredentials: true }
+      {
+        email: formData.username,
+        password: formData.password,
+        role: loginType
+      },
+      { 
+        withCredentials: true,
+        timeout: 10000
+      }
     );
+    console.timeEnd('axiosRequest');
 
-    // ✅ Save auth data to sessionStorage (CRITICAL FOR ProtectedRoute)
+    console.time('sessionStorage');
     sessionStorage.setItem("isAuthenticated", "true");
-    sessionStorage.setItem("role", loginType === "admin" ? "admin" : "team"); // Must match `allowedRoles`
-
-    // Optional: Save token if needed for API calls
+    sessionStorage.setItem("role", loginType);
     if (res.data.token) {
       sessionStorage.setItem("authToken", res.data.token);
     }
+    console.timeEnd('sessionStorage');
 
-    // Redirect based on role
-    if (loginType === "admin") {
-      navigate("/admindashboard");
-    } else {
-      navigate("/spteamlogin");
-    }
+    navigate(loginType === "admin" ? "/admindashboard" : "/spteamlogin");
+    console.timeEnd('loginProcess');
 
   } catch (err) {
+    console.timeEnd('loginProcess');
     setError(err.response?.data?.message || "Login failed");
   } finally {
     setLoading(false);
   }
 };
-
   // Enhanced animations
   const fadeIn = {
     hidden: { opacity: 0 },

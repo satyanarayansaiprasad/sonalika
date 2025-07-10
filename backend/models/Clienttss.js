@@ -12,287 +12,77 @@ const clienttssSchema = new mongoose.Schema({
     unique: true,
     trim: true
   },
+
+  // ✅ New Fields
+  companyName: {
+    type: String,
+    trim: true
+  },
+  msmeNumber: {
+    type: String,
+    trim: true
+  },
+
   // Contact Information
   phone: String,
-  mobile: String,//alternate phone
+  mobile: String,
   officePhone: String,
   landline: String,
   email: String,
-  
-  
-  // Address Information
+
+  // Address
   address: String,
-  
-  
-  // Government Identifiers (all optional)
+
+  // Government Identifiers
   gstNo: String,
   companyPAN: String,
   ownerPAN: String,
-  aadharNumber: {  // Aadhar card number (12 digits)
+  aadharNumber: {
     type: String,
     trim: true,
-    match: [/^\d{12}$/, 'Aadhar number must be 12 digits'] // Optional validation
+    match: [/^\d{12}$/, 'Aadhar number must be 12 digits']
   },
   importExportCode: String,
-  
- 
-  
+
+  // ✅ File Uploads (store path/URL as String)
+  gstCertificate: String,
+  companyPanDoc: String,
+  aadharDoc: String,
+  importExportDoc: String,
+  msmeCertificate: String,
+  visitingCard: String, // for address proof / visiting card
+
+  // Orders
   orders: {
-  type: Map,
-  of: {
-    orderDate: Date,
-   status: {
-      type: String,
-      enum: ['ongoing', 'completed', 'cancelled'],
-      default: 'ongoing'
+    type: Map,
+    of: {
+      orderDate: Date,
+      status: {
+        type: String,
+        enum: ['ongoing', 'completed', 'cancelled'],
+        default: 'ongoing'
+      },
+      orderItems: [
+        {
+          srNo: Number,
+          styleNo: String,
+          diamondClarity: String,
+          diamondColor: String,
+          quantity: Number,
+          grossWeight: Number,
+          netWeight: Number,
+          diaWeight: Number,
+          pcs: Number,
+          amount: Number,
+          total: Number,
+          description: String
+        }
+      ]
     },
-    orderItems: [
-      {
-        srNo: Number,
-        styleNo: String,
-        diamondClarity: String,
-        diamondColor: String,
-        quantity: Number,
-        grossWeight: Number,
-        netWeight: Number,
-        diaWeight: Number,
-        pcs: Number,
-        amount: Number,
-        total:Number,
-        description: String
-      }
-    ]
-  },
-  default: new Map()
-}
+    default: new Map()
+  }
 
 }, { timestamps: true });
- const Clienttss=mongoose.model('Clienttss',clienttssSchema)
-module.exports =Clienttss;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// const Team = mongoose.model('Team', TeamSchema);
-// module.exports=Team;
-
-
-
-
-
-
-// const mongoose = require("mongoose");
-// const clientSchema = new mongoose.Schema({
-//   name: {
-//     type: String,
-//     required: true,
-//     trim: true
-//   },
-//   uniqueId: {
-//     type: String,
-//     required: true,
-//     unique: true,
-//     trim: true
-//   },
-//   phone: String,
-//   address: String,
-//   gstNo: String,
-
-//   orders: {
-//   type: Map,
-//   of: {
-//     orderDate: Date,
-//     status: String,
-//     orderItems: [
-//       {
-//         srNo: Number,
-//         styleNo: String,
-//         clarity: String,
-//         grossWeight: Number,
-//         netWeight: Number,
-//         diaWeight: Number,
-//         pcs: Number,
-//         amount: Number,
-//         description: String
-//       }
-//     ]
-//   },
-//   default: new Map()
-// }
-
-// }, { timestamps: true });
-// module.exports = mongoose.model("Clients", clientSchema);
-
-
-
-
-// const mongoose = require("mongoose");
-
-// // Order Item Sub-schema
-// const orderItemSchema = new mongoose.Schema({
-//   srNo: Number,
-//   styleNo: String,
-//   clarity: String,
-//   grossWeight: Number,  // GR WT
-//   netWeight: Number,    // NT WT
-//   diaWeight: Number,    // DIA WT
-//   pcs: Number,
-//   amount: Number,
-//   description: String,
-// }, { _id: false });
-
-// // Order Sub-schema (embedded in Client)
-// const orderSchema = new mongoose.Schema({
- 
-//   orderDate: {
-//     type: Date,
-//     default: Date.now,
-//   },
-//   status: {
-//     type: String,
-//     enum: ["ongoing", "completed"],
-//     default: "ongoing",
-//   },
-//   orderItems: [orderItemSchema],
-// }, { _id: false });
-
-// // Main Client Schema
-// const clientsSchema = new mongoose.Schema(
-//   {
-//     name: {
-//       type: String,
-//       required: true,
-//       trim: true,
-//     },
-//     uniqueId: {
-//       type: String,
-//       required: true,
-//       unique: true, // like sonalika0001
-//       trim: true,
-//     },
-//     phone: {
-//       type: String,
-//       required: true,
-//       trim: true,
-//     },
-//     address: {
-//       type: String,
-//       required: true,
-//       trim: true,
-//     },
-//     gstNo: {
-//       type: String,
-//       trim: true,
-//       default: null,
-//     },
-//   orders: {
-//   type: [orderSchema],
-//   default: [],
-//   validate: {
-//     validator: function(v) {
-//       return Array.isArray(v);
-//     },
-//     message: props => `${props.value} is not a valid array!`
-//   }
-// },
-//   },
-//   {
-//     timestamps: true,
-//   }
-// );
-
-// module.exports = mongoose.model("Clients", clientsSchema);
-
-
-// const mongoose = require("mongoose");
-
-// // Order Item Sub-schema
-// const orderItemSchema = new mongoose.Schema({
-//   srNo: Number,
-//   styleNo: String,
-//   clarity: String,
-//   grossWeight: Number,  // GR WT
-//   netWeight: Number,    // NT WT
-//   diaWeight: Number,    // DIA WT
-//   pcs: Number,
-//   amount: Number,
-//   description: String,
-// }, { _id: false });
-
-// // Order Sub-schema (embedded in Client)
-// const orderSchema = new mongoose.Schema({
- 
-//   orderDate: {
-//     type: Date,
-//     default: Date.now,
-//   },
-//   status: {
-//     type: String,
-//     enum: ["ongoing", "completed"],
-//     default: "ongoing",
-//   },
-//   orderItems: [orderItemSchema],
-// }, { _id: false });
-
-// // Main Client Schema
-// const clientsSchema = new mongoose.Schema(
-//   {
-//     name: {
-//       type: String,
-//       required: true,
-//       trim: true,
-//     },
-//     uniqueId: {
-//       type: String,
-//       required: true,
-//       unique: true, // like sonalika0001
-//       trim: true,
-//     },
-//     phone: {
-//       type: String,
-//       required: true,
-//       trim: true,
-//     },
-//     address: {
-//       type: String,
-//       required: true,
-//       trim: true,
-//     },
-//     gstNo: {
-//       type: String,
-//       trim: true,
-//       default: null,
-//     },
-//   orders: {
-//   type: [orderSchema],
-//   default: [],
-//   validate: {
-//     validator: function(v) {
-//       return Array.isArray(v);
-//     },
-//     message: props => `${props.value} is not a valid array!`
-//   }
-// },
-//   },
-//   {
-//     timestamps: true,
-//   }
-// );
-
-// module.exports = mongoose.model("Clients", clientsSchema);
+const Clienttss = mongoose.model('Clienttss', clienttssSchema);
+module.exports = Clienttss;

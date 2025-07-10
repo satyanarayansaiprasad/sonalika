@@ -4,6 +4,8 @@
 const Clienttss = require('../models/Clienttss');
 const teamService = require('../services/teamService');
 
+const multer = require('multer');
+const path = require('path');
 exports.loginProduction = async (req, res) => {
   try {
     const productionteams = await teamService.loginProduction(req.body);
@@ -260,10 +262,74 @@ exports.loginSalesteam = async (req, res) => {
 
 
 
+// Configure Multer storage
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "uploads/");
+  },
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + path.extname(file.originalname));
+  },
+});
+
+// File filter for images
+const fileFilter = (req, file, cb) => {
+  const allowedTypes = ["image/jpeg", "image/png", "image/gif", "image/webp", "application/pdf"];
+  if (allowedTypes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error("Invalid file type. Only JPEG, PNG, GIF, WebP and PDF are allowed."), false);
+  }
+};
+
+// Initialize Multer upload for multiple fields
+const upload = multer({ 
+  storage: storage,
+  fileFilter: fileFilter,
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB limit
+  }
+}).fields([
+  { name: 'gstCertificate', maxCount: 1 },
+  { name: 'companyPanDoc', maxCount: 1 },
+  { name: 'aadharDoc', maxCount: 1 },
+  { name: 'importExportDoc', maxCount: 1 },
+  { name: 'msmeCertificate', maxCount: 1 },
+  { name: 'visitingCard', maxCount: 1 }
+]);
+
+// Create new client
 exports.createUser = async (req, res) => {
   try {
+    // First handle file uploads
+    await new Promise((resolve, reject) => {
+      upload(req, res, (err) => {
+        if (err) {
+          if (err instanceof multer.MulterError) {
+            reject({
+              status: 400,
+              message: "File upload error",
+              error: err.message
+            });
+          } else {
+            reject({
+              status: 500,
+              message: "File upload failed",
+              error: err.message
+            });
+          }
+        } else {
+          resolve();
+        }
+      });
+    });
+
+    // Parse the JSON data from the form
+    const formData = req.body.data ? JSON.parse(req.body.data) : req.body;
+    
     const {
       name,
+      companyName,
       phone,
       mobile,
       officePhone,
@@ -274,11 +340,20 @@ exports.createUser = async (req, res) => {
       companyPAN,
       ownerPAN,
       aadharNumber,
-      importExportCode
-    } = req.body;
+      importExportCode,
+      msmeNumber
+    } = formData;
 
-    // Check required fields (only name, phone, and address are required based on schema)
+    // Check required fields
     if (!name || !phone || !address) {
+      // Clean up uploaded files if validation fails
+      if (req.files) {
+        Object.values(req.files).forEach(fileArray => {
+          fileArray.forEach(file => {
+            fs.unlinkSync(file.path);
+          });
+        });
+      }
       return res.status(400).json({
         success: false,
         message: "Name, phone, and address are required fields",
@@ -287,6 +362,14 @@ exports.createUser = async (req, res) => {
 
     // Validate aadharNumber format if provided
     if (aadharNumber && !/^\d{12}$/.test(aadharNumber)) {
+      // Clean up uploaded files if validation fails
+      if (req.files) {
+        Object.values(req.files).forEach(fileArray => {
+          fileArray.forEach(file => {
+            fs.unlinkSync(file.path);
+          });
+        });
+      }
       return res.status(400).json({
         success: false,
         message: "Aadhar number must be 12 digits",
@@ -316,16 +399,26 @@ exports.createUser = async (req, res) => {
     } while (attempts < maxAttempts);
 
     if (attempts >= maxAttempts) {
+      // Clean up uploaded files if generation fails
+      if (req.files) {
+        Object.values(req.files).forEach(fileArray => {
+          fileArray.forEach(file => {
+            fs.unlinkSync(file.path);
+          });
+        });
+      }
       return res.status(500).json({
         success: false,
         message: "Failed to generate a unique ID after multiple attempts",
       });
     }
 
-    // Create new client document
+    // Create new client document with file paths
     const newClient = new Clienttss({
       name: name.trim(),
       uniqueId,
+      companyName: companyName?.trim(),
+      msmeNumber: msmeNumber?.trim(),
       phone: phone.trim(),
       mobile: mobile?.trim(),
       officePhone: officePhone?.trim(),
@@ -337,7 +430,14 @@ exports.createUser = async (req, res) => {
       ownerPAN: ownerPAN?.trim(),
       aadharNumber: aadharNumber?.trim(),
       importExportCode: importExportCode?.trim(),
-      orders: new Map() // Initialize empty orders map
+      // File paths from Multer
+      gstCertificate: req.files?.gstCertificate?.[0]?.path,
+      companyPanDoc: req.files?.companyPanDoc?.[0]?.path,
+      aadharDoc: req.files?.aadharDoc?.[0]?.path,
+      importExportDoc: req.files?.importExportDoc?.[0]?.path,
+      msmeCertificate: req.files?.msmeCertificate?.[0]?.path,
+      visitingCard: req.files?.visitingCard?.[0]?.path,
+      orders: new Map()
     });
 
     await newClient.save();
@@ -349,16 +449,34 @@ exports.createUser = async (req, res) => {
         _id: newClient._id,
         name: newClient.name,
         uniqueId: newClient.uniqueId,
+        companyName: newClient.companyName,
         phone: newClient.phone,
         address: newClient.address,
-        // Include other fields as needed
         createdAt: newClient.createdAt
       }
     });
   } catch (error) {
     console.error("Error creating client:", error);
     
-    // Handle duplicate key error (uniqueId)
+    // Clean up uploaded files if error occurs
+    if (req.files) {
+      Object.values(req.files).forEach(fileArray => {
+        fileArray.forEach(file => {
+          fs.unlinkSync(file.path);
+        });
+      });
+    }
+    
+    // Handle custom error object from file upload
+    if (error.status) {
+      return res.status(error.status).json({
+        success: false,
+        message: error.message,
+        error: error.error
+      });
+    }
+    
+    // Handle duplicate key error
     if (error.code === 11000) {
       return res.status(400).json({
         success: false,
@@ -382,8 +500,6 @@ exports.createUser = async (req, res) => {
     });
   }
 };
-
-
 
 
 

@@ -20,7 +20,9 @@ import {
   Tag,
   DatePicker,
   Modal,
+  Upload,
 } from "antd";
+import { UploadOutlined, PlusOutlined, MinusOutlined } from '@ant-design/icons';
 import axios from "axios";
 import dayjs from "dayjs";
 import {
@@ -116,29 +118,52 @@ const SalesDashboard = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [dateRange, setDateRange] = useState([]);
 
-  // KYC Form Submit Handler
+  // KYC Form Submit Handler with file uploads
   const handleKYCSubmit = async (values) => {
     try {
       setLoading(true);
 
-      const payload = {
-        name: values.name,
-        phone: values.phone,
-        mobile: values.mobile,
-        officePhone: values.officePhone,
-        landline: values.landline,
-        email: values.email,
-        address: values.address,
-        gstNo: values.gstNo,
-        companyPAN: values.companyPAN,
-        ownerPAN: values.ownerPAN,
-        aadharNumber: values.aadharNumber,
-        importExportCode: values.importExportCode,
-      };
+      // Create FormData object
+      const formData = new FormData();
+      
+      // Append all form fields
+      Object.keys(values).forEach(key => {
+        if (values[key] !== undefined && values[key] !== null) {
+          // Skip file fields as they will be handled separately
+          if (!['gstCertificate', 'companyPanDoc', 'aadharDoc', 'importExportDoc', 'msmeCertificate', 'visitingCard'].includes(key)) {
+            formData.append(key, values[key]);
+          }
+        }
+      });
+
+      // Append files if they exist
+      if (values.gstCertificate && values.gstCertificate[0]) {
+        formData.append('gstCertificate', values.gstCertificate[0].originFileObj);
+      }
+      if (values.companyPanDoc && values.companyPanDoc[0]) {
+        formData.append('companyPanDoc', values.companyPanDoc[0].originFileObj);
+      }
+      if (values.aadharDoc && values.aadharDoc[0]) {
+        formData.append('aadharDoc', values.aadharDoc[0].originFileObj);
+      }
+      if (values.importExportDoc && values.importExportDoc[0]) {
+        formData.append('importExportDoc', values.importExportDoc[0].originFileObj);
+      }
+      if (values.msmeCertificate && values.msmeCertificate[0]) {
+        formData.append('msmeCertificate', values.msmeCertificate[0].originFileObj);
+      }
+      if (values.visitingCard && values.visitingCard[0]) {
+        formData.append('visitingCard', values.visitingCard[0].originFileObj);
+      }
 
       const response = await axios.post(
         `${API_BASE_URL}/api/team/create-client`,
-        payload
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        }
       );
 
       if (response.data.success) {
@@ -222,6 +247,12 @@ const SalesDashboard = () => {
         ownerPAN: client.ownerPAN || "",
         aadharNumber: client.aadharNumber || "",
         importExportCode: client.importExportCode || "",
+        gstCertificate: client.gstCertificate || "",
+        companyPanDoc: client.companyPanDoc || "",
+        aadharDoc: client.aadharDoc || "",
+        importExportDoc: client.importExportDoc || "",
+        msmeCertificate: client.msmeCertificate || "",
+        visitingCard: client.visitingCard || "",
         orders: client.orders || [],
         createdAt: client.createdAt,
         updatedAt: client.updatedAt,
@@ -1316,349 +1347,440 @@ const OngoingOrderModal = ({ order, visible, onClose }) => {
     </div>
   );
 const renderKYCForm = () => (
-  <div className="space-y-6">
-    <h3 className="text-2xl font-semibold" style={{ color: colors.velvet }}>
-      Client KYC Form
-    </h3>
+    <div className="space-y-6">
+      <h3 className="text-2xl font-semibold" style={{ color: colors.velvet }}>
+        Client KYC Form
+      </h3>
 
-    <Form
-      form={kycForm}
-      onFinish={handleKYCSubmit}
-      layout="vertical"
-      className="rounded-lg shadow p-6 border"
-      style={{
-        backgroundColor: colors.diamond,
-        borderColor: colors.darkGold,
-      }}
-    >
-      <div className="grid grid-cols-1 md:grid-cols-2 p-6 gap-6">
-        {/* Name (Required) */}
-        <Form.Item
-          label="Full Name"
-          name="name"
-          rules={[{ required: true, message: "Please enter full name" }]}
-        >
-          <Input
-            placeholder="Enter full name"
-            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
-          />
-        </Form.Item>
-
-        {/* Phone (Required) */}
-        <Form.Item
-          label="Mobile Number"
-          name="phone"
-          rules={[
-            { required: true, message: "Please enter mobile number" },
-            {
-              pattern: /^[0-9]{10}$/,
-              message: "Please enter valid 10-digit mobile number",
-            },
-          ]}
-        >
-          <Input
-            placeholder="Primary contact number"
-            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
-            maxLength={10}
-          />
-        </Form.Item>
-
-        {/* Alternate Phone (Optional) */}
-        <Form.Item
-          label="Alternate Phone (Optional)"
-          name="mobile"
-          rules={[
-            {
-              pattern: /^[0-9]{10}$/,
-              message: "Please enter valid 10-digit mobile number",
-            },
-          ]}
-        >
-          <Input
-            placeholder="Secondary contact number"
-            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
-            maxLength={10}
-          />
-        </Form.Item>
-
-        {/* Office Phone (Optional) */}
-        <Form.Item label="Office Phone (Optional)" name="officePhone">
-          <Input
-            placeholder="Office landline"
-            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
-          />
-        </Form.Item>
-
-        {/* Landline (Optional) */}
-        <Form.Item label="Landline (Optional)" name="landline">
-          <Input
-            placeholder="Home landline"
-            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
-          />
-        </Form.Item>
-
-        {/* Email (Optional) */}
-        <Form.Item
-          label="Email (Optional)"
-          name="email"
-          rules={[{ type: "email", message: "Please enter valid email" }]}
-        >
-          <Input
-            placeholder="Email address"
-            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
-          />
-        </Form.Item>
-
-        {/* Address (Required) */}
-        <Form.Item
-          label="Complete Address"
-          name="address"
-          rules={[{ required: true, message: "Please enter address" }]}
-          className="md:col-span-2"
-        >
-          <Input.TextArea
-            placeholder="Full address with city, state, and pincode"
-            rows={3}
-            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
-          />
-        </Form.Item>
-
-        {/* Business Documentation */}
-        <Form.Item
-          label="GST Number (Optional)"
-          name="gstNo"
-          rules={[{ validator: validateGST }]}
-        >
-          <Input
-            placeholder="22AAAAA0000A1Z5"
-            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
-          />
-        </Form.Item>
-
-        <Form.Item
-          label="Company PAN (Optional)"
-          name="companyPAN"
-          rules={[{ validator: validatePAN }]}
-        >
-          <Input
-            placeholder="ABCDE1234F"
-            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
-            maxLength={10}
-          />
-        </Form.Item>
-
-        <Form.Item
-          label="Owner PAN (Optional)"
-          name="ownerPAN"
-          rules={[{ validator: validatePAN }]}
-        >
-          <Input
-            placeholder="ABCDE1234F"
-            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
-            maxLength={10}
-          />
-        </Form.Item>
-
-        <Form.Item
-          label="Aadhar Number (Optional)"
-          name="aadharNumber"
-          rules={[{ validator: validateAadhar }]}
-        >
-          <Input
-            placeholder="12-digit number"
-            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
-            maxLength={12}
-          />
-        </Form.Item>
-
-        <Form.Item
-          label="Import/Export Code (Optional)"
-          name="importExportCode"
-        >
-          <Input
-            placeholder="IEC code"
-            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
-          />
-        </Form.Item>
-      </div>
-
-      <div className="flex justify-end p-5">
-        <Button
-          type="primary"
-          htmlType="submit"
-          loading={loading}
-          style={{
-            backgroundColor: colors.darkGold,
-            color: colors.light,
-            padding: "8px 24px",
-            borderRadius: "6px",
-            fontWeight: "medium",
-          }}
-        >
-          Submit KYC
-        </Button>
-      </div>
-    </Form>
-
-    {/* Client List Table */}
-    <div className="mt-8">
-      <h4
-        className="text-lg font-semibold mb-4"
-        style={{ color: colors.velvet }}
+      <Form
+        form={kycForm}
+        onFinish={handleKYCSubmit}
+        layout="vertical"
+        className="rounded-lg shadow p-6 border"
+        style={{
+          backgroundColor: colors.diamond,
+          borderColor: colors.darkGold,
+        }}
       >
-        Existing Clients
-      </h4>
-      <Table
-        dataSource={clients}
-        columns={[
-          {
-            title: "Unique ID",
-            dataIndex: "uniqueId",
-            key: "uniqueId",
-            render: (text) => (
-              <span
-                className="font-medium"
-                style={{ color: colors.darkGold }}
-              >
-                {text}
-              </span>
-            ),
-          },
-          {
-            title: "Name",
-            dataIndex: "name",
-            key: "name",
-            render: (text) => (
-              <span style={{ color: colors.velvet }}>{text}</span>
-            ),
-          },
-          {
-            title: "Phone",
-            dataIndex: "phone",
-            key: "phone",
-            render: (text) => <span className="text-gray-600">{text}</span>,
-          },
-          {
-            title: "GST No",
-            dataIndex: "gstNo",
-            key: "gstNo",
-            render: (text) => (
-              <span className="text-gray-600">{text || "N/A"}</span>
-            ),
-          },
-          {
-            title: "Status",
-            key: "status",
-            render: (_, client) => {
-              const orders = client.orders || [];
-              if (orders.length === 0)
-                return (
-                  <Tag style={{ backgroundColor: colors.platinum }}>
-                    No orders
-                  </Tag>
-                );
+        <div className="grid grid-cols-1 md:grid-cols-2 p-6 gap-6">
+          {/* Name (Required) */}
+          <Form.Item
+            label="Full Name"
+            name="name"
+            rules={[{ required: true, message: "Please enter full name" }]}
+          >
+            <Input
+              placeholder="Enter full name"
+              style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
+            />
+          </Form.Item>
 
-              const statuses = orders.map((o) => o?.status).filter(Boolean);
+          {/* Phone (Required) */}
+          <Form.Item
+            label="Mobile Number"
+            name="phone"
+            rules={[
+              { required: true, message: "Please enter mobile number" },
+              {
+                pattern: /^[0-9]{10}$/,
+                message: "Please enter valid 10-digit mobile number",
+              },
+            ]}
+          >
+            <Input
+              placeholder="Primary contact number"
+              style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
+              maxLength={10}
+            />
+          </Form.Item>
 
-              if (statuses.includes("ongoing"))
-                return (
-                  <Tag
-                    style={{
-                      backgroundColor: "#e6f4ff",
-                      color: colors.darkGold,
-                    }}
-                  >
-                    Active
-                  </Tag>
-                );
-              if (statuses.every((s) => s === "completed"))
-                return (
-                  <Tag
-                    style={{ backgroundColor: "#e6f7ee", color: "#08965b" }}
-                  >
-                    Completed
-                  </Tag>
-                );
-              return (
-                <Tag style={{ backgroundColor: "#fff7e6", color: "#d46b08" }}>
-                  Mixed
-                </Tag>
-              );
+          {/* Alternate Phone (Optional) */}
+          <Form.Item
+            label="Alternate Phone (Optional)"
+            name="mobile"
+            rules={[
+              {
+                pattern: /^[0-9]{10}$/,
+                message: "Please enter valid 10-digit mobile number",
+              },
+            ]}
+          >
+            <Input
+              placeholder="Secondary contact number"
+              style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
+              maxLength={10}
+            />
+          </Form.Item>
+
+          {/* Office Phone (Optional) */}
+          <Form.Item label="Office Phone (Optional)" name="officePhone">
+            <Input
+              placeholder="Office landline"
+              style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
+            />
+          </Form.Item>
+
+          {/* Landline (Optional) */}
+          <Form.Item label="Landline (Optional)" name="landline">
+            <Input
+              placeholder="Home landline"
+              style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
+            />
+          </Form.Item>
+
+          {/* Email (Optional) */}
+          <Form.Item
+            label="Email (Optional)"
+            name="email"
+            rules={[{ type: "email", message: "Please enter valid email" }]}
+          >
+            <Input
+              placeholder="Email address"
+              style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
+            />
+          </Form.Item>
+
+          {/* Address (Required) */}
+          <Form.Item
+            label="Complete Address"
+            name="address"
+            rules={[{ required: true, message: "Please enter address" }]}
+            className="md:col-span-2"
+          >
+            <Input.TextArea
+              placeholder="Full address with city, state, and pincode"
+              rows={3}
+              style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
+            />
+          </Form.Item>
+
+          {/* Business Documentation */}
+          <Form.Item
+            label="GST Number (Optional)"
+            name="gstNo"
+            rules={[{ validator: validateGST }]}
+          >
+            <Input
+              placeholder="22AAAAA0000A1Z5"
+              style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
+            />
+          </Form.Item>
+
+          <Form.Item
+            label="Company PAN (Optional)"
+            name="companyPAN"
+            rules={[{ validator: validatePAN }]}
+          >
+            <Input
+              placeholder="ABCDE1234F"
+              style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
+              maxLength={10}
+            />
+          </Form.Item>
+
+          <Form.Item
+            label="Owner PAN (Optional)"
+            name="ownerPAN"
+            rules={[{ validator: validatePAN }]}
+          >
+            <Input
+              placeholder="ABCDE1234F"
+              style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
+              maxLength={10}
+            />
+          </Form.Item>
+
+          <Form.Item
+            label="Aadhar Number (Optional)"
+            name="aadharNumber"
+            rules={[{ validator: validateAadhar }]}
+          >
+            <Input
+              placeholder="12-digit number"
+              style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
+              maxLength={12}
+            />
+          </Form.Item>
+
+          <Form.Item
+            label="Import/Export Code (Optional)"
+            name="importExportCode"
+          >
+            <Input
+              placeholder="IEC code"
+              style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
+            />
+          </Form.Item>
+
+          {/* Document Uploads */}
+          <Form.Item
+            label="GST Certificate"
+            name="gstCertificate"
+            valuePropName="fileList"
+            getValueFromEvent={(e) => e.fileList}
+          >
+            <Upload
+              accept="image/*,.pdf"
+              beforeUpload={() => false} // Prevent auto upload
+              listType="picture-card"
+              maxCount={1}
+            >
+              <div>
+                <PlusOutlined />
+                <div style={{ marginTop: 8 }}>Upload</div>
+              </div>
+            </Upload>
+          </Form.Item>
+
+          <Form.Item
+            label="Company PAN Document"
+            name="companyPanDoc"
+            valuePropName="fileList"
+            getValueFromEvent={(e) => e.fileList}
+          >
+            <Upload
+              accept="image/*,.pdf"
+              beforeUpload={() => false}
+              listType="picture-card"
+              maxCount={1}
+            >
+              <div>
+                <PlusOutlined />
+                <div style={{ marginTop: 8 }}>Upload</div>
+              </div>
+            </Upload>
+          </Form.Item>
+
+          <Form.Item
+            label="Aadhar Document"
+            name="aadharDoc"
+            valuePropName="fileList"
+            getValueFromEvent={(e) => e.fileList}
+          >
+            <Upload
+              accept="image/*,.pdf"
+              beforeUpload={() => false}
+              listType="picture-card"
+              maxCount={1}
+            >
+              <div>
+                <PlusOutlined />
+                <div style={{ marginTop: 8 }}>Upload</div>
+              </div>
+            </Upload>
+          </Form.Item>
+
+          <Form.Item
+            label="Import/Export Document"
+            name="importExportDoc"
+            valuePropName="fileList"
+            getValueFromEvent={(e) => e.fileList}
+          >
+            <Upload
+              accept="image/*,.pdf"
+              beforeUpload={() => false}
+              listType="picture-card"
+              maxCount={1}
+            >
+              <div>
+                <PlusOutlined />
+                <div style={{ marginTop: 8 }}>Upload</div>
+              </div>
+            </Upload>
+          </Form.Item>
+
+          <Form.Item
+            label="MSME Certificate"
+            name="msmeCertificate"
+            valuePropName="fileList"
+            getValueFromEvent={(e) => e.fileList}
+          >
+            <Upload
+              accept="image/*,.pdf"
+              beforeUpload={() => false}
+              listType="picture-card"
+              maxCount={1}
+            >
+              <div>
+                <PlusOutlined />
+                <div style={{ marginTop: 8 }}>Upload</div>
+              </div>
+            </Upload>
+          </Form.Item>
+
+          <Form.Item
+            label="Visiting Card"
+            name="visitingCard"
+            valuePropName="fileList"
+            getValueFromEvent={(e) => e.fileList}
+          >
+            <Upload
+              accept="image/*,.pdf"
+              beforeUpload={() => false}
+              listType="picture-card"
+              maxCount={1}
+            >
+              <div>
+                <PlusOutlined />
+                <div style={{ marginTop: 8 }}>Upload</div>
+              </div>
+            </Upload>
+          </Form.Item>
+        </div>
+
+        <div className="flex justify-end p-5">
+          <Button
+            type="primary"
+            htmlType="submit"
+            loading={loading}
+            style={{
+              backgroundColor: colors.darkGold,
+              color: colors.light,
+              padding: "8px 24px",
+              borderRadius: "6px",
+              fontWeight: "medium",
+            }}
+          >
+            Submit KYC
+          </Button>
+        </div>
+      </Form>
+
+      {/* Client List Table */}
+      <div className="mt-8">
+        <h4
+          className="text-lg font-semibold mb-4"
+          style={{ color: colors.velvet }}
+        >
+          Existing Clients
+        </h4>
+        <Table
+          dataSource={clients}
+          columns={[
+            {
+              title: "Unique ID",
+              dataIndex: "uniqueId",
+              key: "uniqueId",
+              render: (text) => (
+                <span
+                  className="font-medium"
+                  style={{ color: colors.darkGold }}
+                >
+                  {text}
+                </span>
+              ),
             },
-          },
-          {
-            title: "Action",
-            key: "action",
-            render: (_, client) => (
-              <Button
-                size="small"
-                style={{
-                  backgroundColor: colors.platinum,
-                  color: colors.darkGold,
-                  borderColor: colors.darkGold,
-                }}
-                onClick={() => {
-                  setSelectedMenu("history");
-                  handleClientSelect(client.uniqueId);
-                }}
-              >
-                View Orders
-              </Button>
-            ),
-          },
-        ]}
-        rowKey="_id"
-        loading={loading}
-        scroll={{ x: true }}
-        pagination={{ pageSize: 5 }}
-      />
+            {
+              title: "Name",
+              dataIndex: "name",
+              key: "name",
+              render: (text) => (
+                <span style={{ color: colors.velvet }}>{text}</span>
+              ),
+            },
+            {
+              title: "Phone",
+              dataIndex: "phone",
+              key: "phone",
+              render: (text) => <span className="text-gray-600">{text}</span>,
+            },
+            {
+              title: "GST No",
+              dataIndex: "gstNo",
+              key: "gstNo",
+              render: (text) => (
+                <span className="text-gray-600">{text || "N/A"}</span>
+              ),
+            },
+            {
+              title: "Status",
+              key: "status",
+              render: (_, client) => {
+                const orders = client.orders || [];
+                if (orders.length === 0)
+                  return (
+                    <Tag style={{ backgroundColor: colors.platinum }}>
+                      No orders
+                    </Tag>
+                  );
+
+                const statuses = orders.map((o) => o?.status).filter(Boolean);
+
+                if (statuses.includes("ongoing"))
+                  return (
+                    <Tag
+                      style={{
+                        backgroundColor: "#e6f4ff",
+                        color: colors.darkGold,
+                      }}
+                    >
+                      Active
+                    </Tag>
+                  );
+                if (statuses.every((s) => s === "completed"))
+                  return (
+                    <Tag
+                      style={{ backgroundColor: "#e6f7ee", color: "#08965b" }}
+                    >
+                      Completed
+                    </Tag>
+                  );
+                return (
+                  <Tag style={{ backgroundColor: "#fff7e6", color: "#d46b08" }}>
+                    Mixed
+                  </Tag>
+                );
+              },
+            },
+            {
+              title: "Action",
+              key: "action",
+              render: (_, client) => (
+                <Button
+                  size="small"
+                  style={{
+                    backgroundColor: colors.platinum,
+                    color: colors.darkGold,
+                    borderColor: colors.darkGold,
+                  }}
+                  onClick={() => {
+                    setSelectedMenu("history");
+                    handleClientSelect(client.uniqueId);
+                  }}
+                >
+                  View Orders
+                </Button>
+              ),
+            },
+          ]}
+          rowKey="_id"
+          loading={loading}
+          scroll={{ x: true }}
+          pagination={{ pageSize: 5 }}
+        />
+      </div>
     </div>
-  </div>
-);
-
-
-
-
+  );
 
 
   const diamondClarityOptions = [
-    "FL",
-    "IF",
-    "VVS1",
-    "VVS2",
-    "VS1",
-    "VS2",
-    "SI1",
-    "SI2",
-    "I1",
-    "I2",
-    "I3",
+    "vvs",
+    "vvs-vs",
+    "vs",
+    "vs-si",
+    "si",
+    
   ];
 
   const diamondColorOptions = [
-    "D",
-    "E",
-    "F",
-    "G",
-    "H",
+    "e-f",
+    "f-g",
+    "g-h",
+    "h-i",
+    "i-j",
     "I",
-    "J",
-    "K",
-    "L",
-    "M",
-    "N",
-    "O",
-    "P",
-    "Q",
-    "R",
-    "S",
-    "T",
-    "U",
-    "V",
-    "W",
-    "X",
-    "Y",
-    "Z",
+    
+   
   ];
 
   const renderOrderForm = () => (

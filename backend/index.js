@@ -4,9 +4,8 @@ const cors = require('cors');
 require('dotenv').config();
 const path = require('path');
 const connectDB = require('./config/db');
-const adminRoutes= require('./routes/adminRoutes');
-const teamRoutes=require('./routes/teamRoutes')
-
+const adminRoutes = require('./routes/adminRoutes');
+const teamRoutes = require('./routes/teamRoutes');
 
 const app = express();
 
@@ -16,8 +15,9 @@ connectDB();
 // CORS Configuration
 app.use(cors({
   origin: process.env.ALLOWED_ORIGINS?.split(',') || 'http://localhost:5173',
-    methods: 'GET,POST,PUT,DELETE,PATCH',
-  credentials: true
+  methods: 'GET,POST,PUT,DELETE,PATCH',
+  credentials: true,
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 // Middleware
@@ -36,23 +36,15 @@ app.use(session({
   }
 }));
 
-app.get('/', (_req, res) => {
-  res.send('Backend is working! 🚀');
-});
-
-
 // Routes
 app.use('/api/admin', adminRoutes);
-app.use('/api/team',teamRoutes)
-
+app.use('/api/team', teamRoutes);
 
 // Start Server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`✅ Server running on ${process.env.VITE_BASE_URL}`);
 });
-
-
 
 
 

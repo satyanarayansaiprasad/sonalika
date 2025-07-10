@@ -66,7 +66,7 @@ const handleSubmit = async (e) => {
       },
       { 
         withCredentials: true,
-        timeout: 10000
+     
       }
     );
     console.timeEnd('axiosRequest');

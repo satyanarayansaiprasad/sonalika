@@ -267,37 +267,29 @@ exports.loginSalesteam = async (req, res) => {
 // Configure Multer storage
 
 // Configure Multer storage
+
+// Configure Multer storage
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const uploadDir = 'uploads/';
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
+    cb(null, "uploads/");
   },
   filename: (req, file, cb) => {
     cb(null, Date.now() + path.extname(file.originalname));
-  },
+  }
 });
 
-// File filter for images and PDFs
 const fileFilter = (req, file, cb) => {
   const allowedTypes = ["image/jpeg", "image/png", "image/gif", "image/webp", "application/pdf"];
   if (allowedTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error("Invalid file type. Only JPEG, PNG, GIF, WebP and PDF are allowed."), false);
+    cb(new Error("Invalid file type. Only JPEG, PNG, GIF, WebP, and PDF are allowed."), false);
   }
 };
 
-// Initialize Multer upload for multiple fields
-const upload = multer({ 
-  storage: storage,
-  fileFilter: fileFilter,
-  limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB limit
-    files: 6 // Maximum 6 files
-  }
+const upload = multer({
+  storage,
+  fileFilter,
 }).fields([
   { name: 'gstCertificate', maxCount: 1 },
   { name: 'companyPanDoc', maxCount: 1 },
@@ -307,53 +299,17 @@ const upload = multer({
   { name: 'visitingCard', maxCount: 1 }
 ]);
 
-// Create new client
-exports.createUser = async (req, res) => {
-  try {
-    // First handle file uploads
-    await new Promise((resolve, reject) => {
-      upload(req, res, (err) => {
-        if (err) {
-          console.error('Multer error:', err);
-          if (err instanceof multer.MulterError) {
-            return reject({
-              status: 400,
-              message: "File upload error",
-              error: err.message
-            });
-          } else {
-            return reject({
-              status: 500,
-              message: "File upload failed",
-              error: err.message
-            });
-          }
-        }
-        resolve();
-      });
-    });
-
-    // Parse the JSON data from the form
-    let formData;
-    try {
-      formData = req.body.data ? JSON.parse(req.body.data) : req.body;
-    } catch (parseError) {
-      console.error('JSON parse error:', parseError);
-      // Clean up uploaded files if parsing fails
-      if (req.files) {
-        Object.values(req.files).forEach(fileArray => {
-          fileArray.forEach(file => {
-            fs.unlinkSync(file.path);
-          });
-        });
-      }
-      return res.status(400).json({
+exports.createUser = (req, res) => {
+  upload(req, res, async (err) => {
+    if (err) {
+      console.error("File upload error:", err);
+      return res.status(500).json({
         success: false,
-        message: "Invalid form data format",
-        error: parseError.message
+        message: "File upload failed",
+        error: err.message,
       });
     }
-    
+
     const {
       name,
       companyName,
@@ -369,166 +325,113 @@ exports.createUser = async (req, res) => {
       aadharNumber,
       importExportCode,
       msmeNumber
-    } = formData;
+    } = req.body;
 
-    // Check required fields
+    // Required validation
     if (!name || !phone || !address) {
-      // Clean up uploaded files if validation fails
-      if (req.files) {
-        Object.values(req.files).forEach(fileArray => {
-          fileArray.forEach(file => {
-            fs.unlinkSync(file.path);
-          });
-        });
-      }
       return res.status(400).json({
         success: false,
-        message: "Name, phone, and address are required fields",
+        message: "Name, phone, and address are required fields"
       });
     }
 
-    // Validate aadharNumber format if provided
     if (aadharNumber && !/^\d{12}$/.test(aadharNumber)) {
-      // Clean up uploaded files if validation fails
-      if (req.files) {
-        Object.values(req.files).forEach(fileArray => {
-          fileArray.forEach(file => {
-            fs.unlinkSync(file.path);
-          });
-        });
-      }
       return res.status(400).json({
         success: false,
-        message: "Aadhar number must be 12 digits",
+        message: "Aadhar number must be 12 digits"
       });
     }
 
-    // Generate uniqueId (sonalika0001 format)
-    let uniqueId;
-    let attempts = 0;
-    const maxAttempts = 5;
+    try {
+      // Generate unique ID
+      let uniqueId;
+      let attempts = 0;
+      const maxAttempts = 5;
 
-    do {
-      const lastClient = await Clienttss.findOne().sort({ _id: -1 }).limit(1);
-      const lastSerial = lastClient
-        ? parseInt(lastClient.uniqueId?.replace("sonalika", "")) || 0
-        : 0;
+      do {
+        const lastClient = await Clienttss.findOne().sort({ _id: -1 }).limit(1);
+        const lastSerial = lastClient ? parseInt(lastClient.uniqueId?.replace("sonalika", "")) || 0 : 0;
+        const nextSerial = lastSerial + 1;
+        uniqueId = `sonalika${String(nextSerial).padStart(4, "0")}`;
 
-      const nextSerial = lastSerial + 1;
-      const paddedSerial = String(nextSerial).padStart(4, "0");
-      uniqueId = `sonalika${paddedSerial}`;
+        const exists = await Clienttss.exists({ uniqueId });
+        if (!exists) break;
 
-      // Check if uniqueId already exists
-      const exists = await Clienttss.exists({ uniqueId });
-      if (!exists) break;
+        attempts++;
+      } while (attempts < maxAttempts);
 
-      attempts++;
-    } while (attempts < maxAttempts);
-
-    if (attempts >= maxAttempts) {
-      // Clean up uploaded files if generation fails
-      if (req.files) {
-        Object.values(req.files).forEach(fileArray => {
-          fileArray.forEach(file => {
-            fs.unlinkSync(file.path);
-          });
+      if (attempts >= maxAttempts) {
+        return res.status(500).json({
+          success: false,
+          message: "Failed to generate unique ID"
         });
       }
+
+      const newClient = new Clienttss({
+        name: name.trim(),
+        uniqueId,
+        companyName: companyName?.trim(),
+        phone: phone.trim(),
+        mobile: mobile?.trim(),
+        officePhone: officePhone?.trim(),
+        landline: landline?.trim(),
+        email: email?.trim(),
+        address: address.trim(),
+        gstNo: gstNo?.trim(),
+        companyPAN: companyPAN?.trim(),
+        ownerPAN: ownerPAN?.trim(),
+        aadharNumber: aadharNumber?.trim(),
+        importExportCode: importExportCode?.trim(),
+        msmeNumber: msmeNumber?.trim(),
+        gstCertificate: req.files?.gstCertificate?.[0]?.path,
+        companyPanDoc: req.files?.companyPanDoc?.[0]?.path,
+        aadharDoc: req.files?.aadharDoc?.[0]?.path,
+        importExportDoc: req.files?.importExportDoc?.[0]?.path,
+        msmeCertificate: req.files?.msmeCertificate?.[0]?.path,
+        visitingCard: req.files?.visitingCard?.[0]?.path,
+        orders: new Map()
+      });
+
+      await newClient.save();
+
+      res.status(201).json({
+        success: true,
+        message: "Client created successfully",
+        client: {
+          _id: newClient._id,
+          name: newClient.name,
+          uniqueId: newClient.uniqueId,
+          phone: newClient.phone,
+          address: newClient.address,
+        }
+      });
+    } catch (error) {
+      console.error("Error creating client:", error);
+
+      if (error.code === 11000) {
+        return res.status(400).json({
+          success: false,
+          message: "Client with this unique ID already exists"
+        });
+      }
+
+      if (error.name === "ValidationError") {
+        return res.status(400).json({
+          success: false,
+          message: "Validation error",
+          error: error.message
+        });
+      }
+
       return res.status(500).json({
         success: false,
-        message: "Failed to generate a unique ID after multiple attempts",
-      });
-    }
-
-    // Create new client document with file paths
-    const newClient = new Clienttss({
-      name: name.trim(),
-      uniqueId,
-      companyName: companyName?.trim(),
-      msmeNumber: msmeNumber?.trim(),
-      phone: phone.trim(),
-      mobile: mobile?.trim(),
-      officePhone: officePhone?.trim(),
-      landline: landline?.trim(),
-      email: email?.trim(),
-      address: address.trim(),
-      gstNo: gstNo?.trim(),
-      companyPAN: companyPAN?.trim(),
-      ownerPAN: ownerPAN?.trim(),
-      aadharNumber: aadharNumber?.trim(),
-      importExportCode: importExportCode?.trim(),
-      // File paths from Multer
-      gstCertificate: req.files?.gstCertificate?.[0]?.path,
-      companyPanDoc: req.files?.companyPanDoc?.[0]?.path,
-      aadharDoc: req.files?.aadharDoc?.[0]?.path,
-      importExportDoc: req.files?.importExportDoc?.[0]?.path,
-      msmeCertificate: req.files?.msmeCertificate?.[0]?.path,
-      visitingCard: req.files?.visitingCard?.[0]?.path,
-      orders: new Map()
-    });
-
-    await newClient.save();
-
-    return res.status(201).json({
-      success: true,
-      message: "Client created successfully",
-      data: {
-        _id: newClient._id,
-        name: newClient.name,
-        uniqueId: newClient.uniqueId,
-        companyName: newClient.companyName,
-        phone: newClient.phone,
-        address: newClient.address,
-        createdAt: newClient.createdAt
-      }
-    });
-  } catch (error) {
-    console.error("Error creating client:", error);
-    
-    // Clean up uploaded files if error occurs
-    if (req.files) {
-      Object.values(req.files).forEach(fileArray => {
-        fileArray.forEach(file => {
-          if (fs.existsSync(file.path)) {
-            fs.unlinkSync(file.path);
-          }
-        });
-      });
-    }
-    
-    // Handle custom error object from file upload
-    if (error.status) {
-      return res.status(error.status).json({
-        success: false,
-        message: error.message,
-        error: error.error
-      });
-    }
-    
-    // Handle duplicate key error
-    if (error.code === 11000) {
-      return res.status(400).json({
-        success: false,
-        message: "Client with this unique ID already exists",
-      });
-    }
-    
-    // Handle validation errors
-    if (error.name === 'ValidationError') {
-      return res.status(400).json({
-        success: false,
-        message: "Validation error",
+        message: "Internal server error",
         error: error.message
       });
     }
-
-    return res.status(500).json({
-      success: false,
-      message: "Internal server error",
-      error: error.message
-    });
-  }
+  });
 };
+
 
 
 // exports.getAllClients = async (req, res) => {

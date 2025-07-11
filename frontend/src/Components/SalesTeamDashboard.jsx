@@ -12,6 +12,7 @@ import {
   Typography,
   Spin,
   Row,
+  
   Col,
   Statistic,
   Divider,
@@ -20,9 +21,10 @@ import {
   Tag,
   DatePicker,
   Modal,
-  Upload,
 } from "antd";
-import { UploadOutlined, PlusOutlined, MinusOutlined } from '@ant-design/icons';
+import { Upload } from "antd";
+import { UploadOutlined } from "@ant-design/icons";
+
 import axios from "axios";
 import dayjs from "dayjs";
 import {
@@ -118,95 +120,75 @@ const SalesDashboard = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [dateRange, setDateRange] = useState([]);
 
-  // KYC Form Submit Handler with file uploads
-  const handleKYCSubmit = async (values) => {
-    try {
-      setLoading(true);
+  // KYC Form Submit Handler
+ const handleKYCSubmit = async (values) => {
+  try {
+    setLoading(true);
 
-      // Validate files before submission
-      const validateFiles = (files) => {
-        const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf'];
-        const maxSize = 5 * 1024 * 1024; // 5MB
+    // Create FormData
+    const formData = new FormData();
 
-        const fileFields = ['gstCertificate', 'companyPanDoc', 'aadharDoc', 'importExportDoc', 'msmeCertificate', 'visitingCard'];
-        
-        fileFields.forEach(field => {
-          if (files[field] && files[field][0]) {
-            const file = files[field][0];
-            if (!allowedTypes.includes(file.type)) {
-              throw new Error(`Invalid file type for ${field}. Only JPEG, PNG, GIF, WebP and PDF are allowed.`);
-            }
-            if (file.size > maxSize) {
-              throw new Error(`File too large for ${field}. Maximum size is 5MB.`);
-            }
-          }
-        });
-      };
+    // Append text fields
+    formData.append("name", values.name);
+    formData.append("phone", values.phone);
+    formData.append("mobile", values.mobile || "");
+    formData.append("officePhone", values.officePhone || "");
+    formData.append("landline", values.landline || "");
+    formData.append("email", values.email || "");
+    formData.append("address", values.address);
+    formData.append("gstNo", values.gstNo || "");
+    formData.append("companyPAN", values.companyPAN || "");
+    formData.append("ownerPAN", values.ownerPAN || "");
+    formData.append("aadharNumber", values.aadharNumber || "");
+    formData.append("importExportCode", values.importExportCode || "");
+    formData.append("msmeNumber", values.msmeNumber || "");
 
-      validateFiles(values);
+    // Append files (from AntD's Upload or normal <input type="file">)
+    const fileFields = [
+      "gstCertificate",
+      "companyPanDoc",
+      "aadharDoc",
+      "importExportDoc",
+      "msmeCertificate",
+      "visitingCard",
+    ];
 
-      // Create FormData object
-      const formData = new FormData();
-      
-      // Prepare non-file fields
-      const formValues = { ...values };
-      const fileFields = ['gstCertificate', 'companyPanDoc', 'aadharDoc', 'importExportDoc', 'msmeCertificate', 'visitingCard'];
-      
-      // Remove file fields from the JSON data
-      fileFields.forEach(field => {
-        delete formValues[field];
-      });
-      
-      // Append the JSON data as a single field
-      formData.append('data', JSON.stringify(formValues));
-      
-      // Append files if they exist
-      fileFields.forEach(field => {
-        if (values[field] && values[field][0]?.originFileObj) {
-          formData.append(field, values[field][0].originFileObj);
-        }
-      });
-
-      const response = await axios.post(
-        `${API_BASE_URL}/api/team/create-client`,
-        formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data'
-          },
-          timeout: 30000 // 30 seconds timeout
-        }
-      );
-
-      if (response.data.success) {
-        message.success("Client KYC submitted successfully");
-        kycForm.resetFields();
-        fetchClients();
-      } else {
-        message.error(response.data.message || "Failed to submit KYC");
+    fileFields.forEach((field) => {
+      const file = values[field]?.file?.originFileObj;
+      if (file) {
+        formData.append(field, file);
       }
-    } catch (error) {
-      console.error("KYC Submission Error:", error);
-      if (error.response) {
-        if (error.response.status === 400) {
-          message.error(
-            error.response.data.message ||
-              "Validation failed. Please check your inputs."
-          );
-        } else if (error.response.status === 413) {
-          message.error("File size too large. Maximum size is 5MB per file.");
-        } else {
-          message.error(error.response.data.error || "KYC submission failed");
-        }
-      } else if (error.message) {
-        message.error(error.message);
-      } else {
-        message.error("An unexpected error occurred");
+    });
+
+    const response = await axios.post(
+      `${API_BASE_URL}/api/team/create-client`,
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
       }
-    } finally {
-      setLoading(false);
+    );
+
+    if (response.data.success) {
+      message.success("Client KYC submitted successfully");
+      kycForm.resetFields();
+      fetchClients();
+    } else {
+      message.error(response.data.message || "Failed to submit KYC");
     }
-  };
+  } catch (error) {
+    console.error("KYC Submission Error:", error);
+
+    if (error.response) {
+      message.error(error.response.data.message || error.response.data.error);
+    } else {
+      message.error(error.message || "An error occurred");
+    }
+  } finally {
+    setLoading(false);
+  }
+};
 
   // Validate Aadhar Number
   const validateAadhar = (_, value) => {
@@ -262,12 +244,6 @@ const SalesDashboard = () => {
         ownerPAN: client.ownerPAN || "",
         aadharNumber: client.aadharNumber || "",
         importExportCode: client.importExportCode || "",
-        gstCertificate: client.gstCertificate || "",
-        companyPanDoc: client.companyPanDoc || "",
-        aadharDoc: client.aadharDoc || "",
-        importExportDoc: client.importExportDoc || "",
-        msmeCertificate: client.msmeCertificate || "",
-        visitingCard: client.visitingCard || "",
         orders: client.orders || [],
         createdAt: client.createdAt,
         updatedAt: client.updatedAt,
@@ -331,7 +307,7 @@ const SalesDashboard = () => {
     setSelectedOrder(null);
   };
 
-  const handleOrderSubmit = async () => {
+   const handleOrderSubmit = async () => {
     try {
       setLoading(true);
 
@@ -444,7 +420,6 @@ const SalesDashboard = () => {
       setLoading(false);
     }
   };
-
   const fetchOrderHistory = async (uniqueId) => {
     setLoading(true);
     try {
@@ -483,6 +458,7 @@ const SalesDashboard = () => {
           (sum, item) => sum + (item.amount || 0) * (item.quantity || 1),
           0
         ),
+        
       }));
 
       // Sort by date (newest first)
@@ -547,41 +523,40 @@ const SalesDashboard = () => {
   };
 
   // Filter orders based on search term, status filter, and date range
-  const getFilteredOrders = () => {
-    // Get all orders from all clients
-    const allOrders = clients.flatMap(client => 
-      (client.orders || []).map(order => ({
-        ...order,
-        client: {
-          uniqueId: client.uniqueId,
-          name: client.name,
-          gstNo: client.gstNo,
-          address: client.address
-        }
-      }))
-    );
-
-    return allOrders.filter(order => {
-      // Filter by search term (matches unique ID or name)
-      const matchesSearch = searchTerm === '' || 
-        (order.client?.uniqueId && order.client.uniqueId.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (order.client?.name && order.client.name.toLowerCase().includes(searchTerm.toLowerCase()));
-      
-      // Filter by status
-      const matchesStatus = statusFilter === 'all' || 
-        order.status.toLowerCase() === statusFilter.toLowerCase();
-      
-      // Filter by date range
-      let matchesDate = true;
-      if (dateRange && dateRange.length === 2) {
-        const orderDate = dayjs(order.orderDate);
-        matchesDate = orderDate.isAfter(dateRange[0]) && orderDate.isBefore(dateRange[1]);
+const getFilteredOrders = () => {
+  // Get all orders from all clients
+  const allOrders = clients.flatMap(client => 
+    (client.orders || []).map(order => ({
+      ...order,
+      client: {
+        uniqueId: client.uniqueId,
+        name: client.name,
+        gstNo: client.gstNo,
+        address: client.address
       }
-      
-      return matchesSearch && matchesStatus && matchesDate;
-    });
-  };
+    }))
+  );
 
+  return allOrders.filter(order => {
+    // Filter by search term (matches unique ID or name)
+    const matchesSearch = searchTerm === '' || 
+      (order.client?.uniqueId && order.client.uniqueId.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (order.client?.name && order.client.name.toLowerCase().includes(searchTerm.toLowerCase()));
+    
+    // Filter by status
+    const matchesStatus = statusFilter === 'all' || 
+      order.status.toLowerCase() === statusFilter.toLowerCase();
+    
+    // Filter by date range
+    let matchesDate = true;
+    if (dateRange && dateRange.length === 2) {
+      const orderDate = dayjs(order.orderDate);
+      matchesDate = orderDate.isAfter(dateRange[0]) && orderDate.isBefore(dateRange[1]);
+    }
+    
+    return matchesSearch && matchesStatus && matchesDate;
+  });
+};
   useEffect(() => {
     fetchClients();
   }, []);
@@ -741,308 +716,308 @@ const SalesDashboard = () => {
     );
   };
 
-  const OngoingOrderModal = ({ order, visible, onClose }) => {
-    if (!order || !visible) return null;
+const OngoingOrderModal = ({ order, visible, onClose }) => {
+  if (!order || !visible) return null;
 
-    const getColorBadgeClass = (color) => {
-      const map = {
-        White: "bg-gray-100 text-gray-800 border-gray-200",
-        Yellow: "bg-yellow-50 text-yellow-700 border-yellow-200",
-        Pink: "bg-pink-50 text-pink-700 border-pink-200",
-        Blue: "bg-blue-50 text-blue-700 border-blue-200",
-        Green: "bg-green-50 text-green-700 border-green-200",
-      };
-      return map[color] || "bg-gray-50 text-gray-500 border-gray-200";
+  const getColorBadgeClass = (color) => {
+    const map = {
+      White: "bg-gray-100 text-gray-800 border-gray-200",
+      Yellow: "bg-yellow-50 text-yellow-700 border-yellow-200",
+      Pink: "bg-pink-50 text-pink-700 border-pink-200",
+      Blue: "bg-blue-50 text-blue-700 border-blue-200",
+      Green: "bg-green-50 text-green-700 border-green-200",
     };
+    return map[color] || "bg-gray-50 text-gray-500 border-gray-200";
+  };
 
-    const columns = [
-      { 
-        title: "SR No", 
-        dataIndex: "srNo", 
-        key: "srNo",
-        className: "font-medium text-gray-600 bg-gray-50"
-      },
-      { 
-        title: "Style No", 
-        dataIndex: "styleNo", 
-        key: "styleNo",
-        className: "font-medium text-gray-600 bg-gray-50" 
-      },
-      {
-        title: "Diamond Clarity",
-        dataIndex: "diamondClarity",
-        key: "diamondClarity",
-        className: "font-medium text-gray-600 bg-gray-50",
-        render: (text) => <span className="text-gray-700">{text || "-"}</span>,
-      },
-      {
-        title: "Diamond Color",
-        dataIndex: "diamondColor",
-        key: "diamondColor",
-        className: "font-medium text-gray-600 bg-gray-50",
-        render: (text) =>
-          text ? (
-            <span
-              className={`px-2.5 py-1 text-xs font-medium rounded-full border ${getColorBadgeClass(
-                text
-              )}`}
-            >
-              {text}
-            </span>
-          ) : (
-            "-"
-          ),
-      },
-      { 
-        title: "Quantity", 
-        dataIndex: "quantity", 
-        key: "quantity",
-        className: "font-medium text-gray-600 bg-gray-50",
-      },
-      {
-        title: "Gross WT",
-        dataIndex: "grossWeight",
-        key: "grossWeight",
-        className: "font-medium text-gray-600 bg-gray-50",
-        render: (val) => <span className="text-gray-700">{val?.toFixed(2) || "-"}</span>,
-      },
-      {
-        title: "Net WT",
-        dataIndex: "netWeight",
-        key: "netWeight",
-        className: "font-medium text-gray-600 bg-gray-50",
-        render: (val) => <span className="text-gray-700">{val?.toFixed(2) || "-"}</span>,
-      },
-      {
-        title: "DIA WT",
-        dataIndex: "diaWeight",
-        key: "diaWeight",
-        className: "font-medium text-gray-600 bg-gray-50",
-        render: (val) => <span className="text-gray-700">{val?.toFixed(2) || "-"}</span>,
-      },
-      { 
-        title: "DIA PCS", 
-        dataIndex: "pcs", 
-        key: "pcs",
-        className: "font-medium text-gray-600 bg-gray-50",
-        render: (text) => <span className="text-gray-700">{text}</span>,
-      },
-      {
-        title: "Amount (₹)",
-        dataIndex: "amount",
-        key: "amount",
-        className: "font-medium text-gray-600 bg-gray-50",
-        render: (val) => <span className="font-medium text-gray-800">{val?.toFixed(2) || "0.00"}</span>,
-      },
-      {
-        title: "Description",
-        dataIndex: "description",
-        key: "description",
-        className: "font-medium text-gray-600 bg-gray-50",
-        render: (val) => <span className="text-gray-700">{val || "-"}</span>,
-      },
-    ];
+  const columns = [
+    { 
+      title: "SR No", 
+      dataIndex: "srNo", 
+      key: "srNo",
+      className: "font-medium text-gray-600 bg-gray-50"
+    },
+    { 
+      title: "Style No", 
+      dataIndex: "styleNo", 
+      key: "styleNo",
+      className: "font-medium text-gray-600 bg-gray-50" 
+    },
+    {
+      title: "Diamond Clarity",
+      dataIndex: "diamondClarity",
+      key: "diamondClarity",
+      className: "font-medium text-gray-600 bg-gray-50",
+      render: (text) => <span className="text-gray-700">{text || "-"}</span>,
+    },
+    {
+      title: "Diamond Color",
+      dataIndex: "diamondColor",
+      key: "diamondColor",
+      className: "font-medium text-gray-600 bg-gray-50",
+      render: (text) =>
+        text ? (
+          <span
+            className={`px-2.5 py-1 text-xs font-medium rounded-full border ${getColorBadgeClass(
+              text
+            )}`}
+          >
+            {text}
+          </span>
+        ) : (
+          "-"
+        ),
+    },
+    { 
+      title: "Quantity", 
+      dataIndex: "quantity", 
+      key: "quantity",
+      className: "font-medium text-gray-600 bg-gray-50",
+    },
+    {
+      title: "Gross WT",
+      dataIndex: "grossWeight",
+      key: "grossWeight",
+      className: "font-medium text-gray-600 bg-gray-50",
+      render: (val) => <span className="text-gray-700">{val?.toFixed(2) || "-"}</span>,
+    },
+    {
+      title: "Net WT",
+      dataIndex: "netWeight",
+      key: "netWeight",
+      className: "font-medium text-gray-600 bg-gray-50",
+      render: (val) => <span className="text-gray-700">{val?.toFixed(2) || "-"}</span>,
+    },
+    {
+      title: "DIA WT",
+      dataIndex: "diaWeight",
+      key: "diaWeight",
+      className: "font-medium text-gray-600 bg-gray-50",
+      render: (val) => <span className="text-gray-700">{val?.toFixed(2) || "-"}</span>,
+    },
+    { 
+      title: "DIA PCS", 
+      dataIndex: "pcs", 
+      key: "pcs",
+      className: "font-medium text-gray-600 bg-gray-50",
+      render: (text) => <span className="text-gray-700">{text}</span>,
+    },
+    {
+      title: "Amount (₹)",
+      dataIndex: "amount",
+      key: "amount",
+      className: "font-medium text-gray-600 bg-gray-50",
+      render: (val) => <span className="font-medium text-gray-800">{val?.toFixed(2) || "0.00"}</span>,
+    },
+    {
+      title: "Description",
+      dataIndex: "description",
+      key: "description",
+      className: "font-medium text-gray-600 bg-gray-50",
+      render: (val) => <span className="text-gray-700">{val || "-"}</span>,
+    },
+  ];
 
-    return (
-      <Modal
-        title={null}
-        open={visible}
-        onCancel={onClose}
-        footer={null}
-        width={isMobile ? "95%" : "80%"}
-        style={{ top: 20 }}
-        className="rounded-2xl overflow-hidden border-0"
-        closable={false}
-      >
-        {/* Custom header with decorative elements */}
-        <div className="relative">
-          <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-purple-500 via-pink-500 to-amber-500"></div>
-          <div className="absolute top-2 right-2">
-            <button 
-              onClick={onClose}
-              className="p-2 rounded-full hover:bg-gray-100 transition-colors group"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-500 group-hover:text-gray-700 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
+  return (
+    <Modal
+      title={null}
+      open={visible}
+      onCancel={onClose}
+      footer={null}
+      width={isMobile ? "95%" : "80%"}
+      style={{ top: 20 }}
+      className="rounded-2xl overflow-hidden border-0"
+      closable={false}
+    >
+      {/* Custom header with decorative elements */}
+      <div className="relative">
+        <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-purple-500 via-pink-500 to-amber-500"></div>
+        <div className="absolute top-2 right-2">
+          <button 
+            onClick={onClose}
+            className="p-2 rounded-full hover:bg-gray-100 transition-colors group"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-500 group-hover:text-gray-700 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
+      </div>
 
-        <div className="px-6 pb-6">
-          {/* Client Details First */}
-          {order.client ? (
-            <div className="mt-8 mb-6 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-              <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-5 py-4 border-b border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-800 flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-purple-600 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                  </svg>
-                  Client Information
-                </h3>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-0 divide-y md:divide-y-0 md:divide-x divide-gray-200">
-                <div className="p-4">
-                  <div className="flex items-center space-x-3">
-                    <div className="p-2 rounded-lg bg-purple-50">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                      </svg>
-                    </div>
-                    <div>
-                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Client Name</p>
-                      <p className="text-base font-medium text-gray-800 mt-1">{order.client.name}</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="p-4">
-                  <div className="flex items-center space-x-3">
-                    <div className="p-2 rounded-lg bg-blue-50">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />
-                      </svg>
-                    </div>
-                    <div>
-                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Unique ID</p>
-                      <p className="text-base font-medium text-gray-800 mt-1">{order.client.uniqueId}</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="p-4">
-                  <div className="flex items-center space-x-3">
-                    <div className="p-2 rounded-lg bg-green-50">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z" />
-                      </svg>
-                    </div>
-                    <div>
-                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">GST Number</p>
-                      <p className="text-base font-medium text-gray-800 mt-1">{order.client.gstNo || "-"}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="mt-8 mb-6 bg-yellow-50 border border-yellow-100 rounded-xl p-4 text-yellow-800 flex items-center">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-              </svg>
-              <span>Client information not available</span>
-            </div>
-          )}
-
-          {/* Order Details Section */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden mb-6">
+      <div className="px-6 pb-6">
+        {/* Client Details First */}
+        {order.client ? (
+          <div className="mt-8 mb-6 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
             <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-5 py-4 border-b border-gray-200">
               <h3 className="text-lg font-semibold text-gray-800 flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-amber-600 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-purple-600 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
                 </svg>
-                Order Summary
+                Client Information
               </h3>
             </div>
-            <div className="p-5">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
-                <div className="mb-4 md:mb-0">
-                  <h2 className="text-xl font-bold text-gray-800">
-                    Order #{order.orderId || "N/A"}
-                  </h2>
-                  <p className="text-sm text-gray-500 mt-1">
-                    Created on {dayjs(order.orderDate).format("DD MMM YYYY, hh:mm A")}
-                  </p>
-                </div>
-                <div className={`px-4 py-2 rounded-full ${order.status === "completed" ? "bg-green-100 text-green-800" : "bg-amber-100 text-amber-800"} font-medium`}>
-                  {order.status?.charAt(0).toUpperCase() + order.status?.slice(1) || "Unknown"}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-0 divide-y md:divide-y-0 md:divide-x divide-gray-200">
+              <div className="p-4">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 rounded-lg bg-purple-50">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Client Name</p>
+                    <p className="text-base font-medium text-gray-800 mt-1">{order.client.name}</p>
+                  </div>
                 </div>
               </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-                <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-gray-500">Total Amount</p>
-                      <p className="text-2xl font-bold text-gray-800 mt-1">
-                        ₹{order.totalAmount?.toFixed(2) || "0.00"}
-                      </p>
-                    </div>
-                    <div className="p-2 rounded-lg bg-blue-50">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </div>
+              <div className="p-4">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 rounded-lg bg-blue-50">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Unique ID</p>
+                    <p className="text-base font-medium text-gray-800 mt-1">{order.client.uniqueId}</p>
                   </div>
                 </div>
-
-                <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-gray-500">Total Items</p>
-                      <p className="text-2xl font-bold text-gray-800 mt-1">
-                        {order.orderItems?.length || 0}
-                      </p>
-                    </div>
-                    <div className="p-2 rounded-lg bg-purple-50">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                      </svg>
-                    </div>
+              </div>
+              <div className="p-4">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 rounded-lg bg-green-50">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z" />
+                    </svg>
                   </div>
-                </div>
-
-                <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-gray-500">Order Date</p>
-                      <p className="text-lg font-medium text-gray-800 mt-1">
-                        {dayjs(order.orderDate).format("DD MMM YYYY")}
-                      </p>
-                    </div>
-                    <div className="p-2 rounded-lg bg-green-50">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                    </div>
+                  <div>
+                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">GST Number</p>
+                    <p className="text-base font-medium text-gray-800 mt-1">{order.client.gstNo || "-"}</p>
                   </div>
                 </div>
               </div>
             </div>
           </div>
+        ) : (
+          <div className="mt-8 mb-6 bg-yellow-50 border border-yellow-100 rounded-xl p-4 text-yellow-800 flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+            <span>Client information not available</span>
+          </div>
+        )}
 
-          {/* Order Items Table */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="bg-gradient-to-r from-gray-100 to-gray-200 px-5 py-4 border-2 border-gray-400">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-                <h3 className="text-lg font-semibold text-gray-800 flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                    <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
-                    <path fillRule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clipRule="evenodd" />
-                  </svg>
-                  Order Items
-                </h3>
-                <span className="text-sm text-gray-500 mt-1 md:mt-0">
-                  Showing {order.orderItems?.length || 0} items
-                </span>
+        {/* Order Details Section */}
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden mb-6">
+          <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-5 py-4 border-b border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-800 flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-amber-600 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+              </svg>
+              Order Summary
+            </h3>
+          </div>
+          <div className="p-5">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
+              <div className="mb-4 md:mb-0">
+                <h2 className="text-xl font-bold text-gray-800">
+                  Order #{order.orderId || "N/A"}
+                </h2>
+                <p className="text-sm text-gray-500 mt-1">
+                  Created on {dayjs(order.orderDate).format("DD MMM YYYY, hh:mm A")}
+                </p>
+              </div>
+              <div className={`px-4 py-2 rounded-full ${order.status === "completed" ? "bg-green-100 text-green-800" : "bg-amber-100 text-amber-800"} font-medium`}>
+                {order.status?.charAt(0).toUpperCase() + order.status?.slice(1) || "Unknown"}
               </div>
             </div>
-            
-            <div className="overflow-x-auto">
-              <Table
-                dataSource={order.orderItems}
-                columns={columns}
-                rowKey="srNo"
-                pagination={false}
-                size="middle"
-                scroll={{ x: true }}
-                className="rounded-none border-0"
-                rowClassName="hover:bg-gray-50 transition-colors border-b border-gray-400 last:border-b-0"
-              />
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Total Amount</p>
+                    <p className="text-2xl font-bold text-gray-800 mt-1">
+                      ₹{order.totalAmount?.toFixed(2) || "0.00"}
+                    </p>
+                  </div>
+                  <div className="p-2 rounded-lg bg-blue-50">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Total Items</p>
+                    <p className="text-2xl font-bold text-gray-800 mt-1">
+                      {order.orderItems?.length || 0}
+                    </p>
+                  </div>
+                  <div className="p-2 rounded-lg bg-purple-50">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Order Date</p>
+                    <p className="text-lg font-medium text-gray-800 mt-1">
+                      {dayjs(order.orderDate).format("DD MMM YYYY")}
+                    </p>
+                  </div>
+                  <div className="p-2 rounded-lg bg-green-50">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
-      </Modal>
-    );
-  };
+
+        {/* Order Items Table */}
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+          <div className="bg-gradient-to-r from-gray-100 to-gray-200 px-5 py-4 border-2 border-gray-400">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+              <h3 className="text-lg font-semibold text-gray-800 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
+                  <path fillRule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clipRule="evenodd" />
+                </svg>
+                Order Items
+              </h3>
+              <span className="text-sm text-gray-500 mt-1 md:mt-0">
+                Showing {order.orderItems?.length || 0} items
+              </span>
+            </div>
+          </div>
+          
+          <div className="overflow-x-auto">
+            <Table
+              dataSource={order.orderItems}
+              columns={columns}
+              rowKey="srNo"
+              pagination={false}
+              size="middle"
+              scroll={{ x: true }}
+              className="rounded-none border-0"
+              rowClassName="hover:bg-gray-50 transition-colors border-b border-gray-400 last:border-b-0"
+            />
+          </div>
+        </div>
+      </div>
+    </Modal>
+  );
+};
 
   const renderDashboard = () => (
     <div className="space-y-6">
@@ -1362,422 +1337,371 @@ const SalesDashboard = () => {
       />
     </div>
   );
+const renderKYCForm = () => (
+  <div className="space-y-6">
+    <h3 className="text-2xl font-semibold" style={{ color: colors.velvet }}>
+      Client KYC Form
+    </h3>
 
-  const renderKYCForm = () => (
-    <div className="space-y-6">
-      <h3 className="text-2xl font-semibold" style={{ color: colors.velvet }}>
-        Client KYC Form
-      </h3>
-
-      <Form
-        form={kycForm}
-        onFinish={handleKYCSubmit}
-        layout="vertical"
-        className="rounded-lg shadow p-6 border"
-        style={{
-          backgroundColor: colors.diamond,
-          borderColor: colors.darkGold,
-        }}
-      >
-        <div className="grid grid-cols-1 md:grid-cols-2 p-6 gap-6">
-          {/* Name (Required) */}
-          <Form.Item
-            label="Full Name"
-            name="name"
-            rules={[{ required: true, message: "Please enter full name" }]}
-          >
-            <Input
-              placeholder="Enter full name"
-              style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
-            />
-          </Form.Item>
-
-          {/* Phone (Required) */}
-          <Form.Item
-            label="Mobile Number"
-            name="phone"
-            rules={[
-              { required: true, message: "Please enter mobile number" },
-              {
-                pattern: /^[0-9]{10}$/,
-                message: "Please enter valid 10-digit mobile number",
-              },
-            ]}
-          >
-            <Input
-              placeholder="Primary contact number"
-              style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
-              maxLength={10}
-            />
-          </Form.Item>
-
-          {/* Alternate Phone (Optional) */}
-          <Form.Item
-            label="Alternate Phone (Optional)"
-            name="mobile"
-            rules={[
-              {
-                pattern: /^[0-9]{10}$/,
-                message: "Please enter valid 10-digit mobile number",
-              },
-            ]}
-          >
-            <Input
-              placeholder="Secondary contact number"
-              style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
-              maxLength={10}
-            />
-          </Form.Item>
-
-          {/* Office Phone (Optional) */}
-          <Form.Item label="Office Phone (Optional)" name="officePhone">
-            <Input
-              placeholder="Office landline"
-              style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
-            />
-          </Form.Item>
-
-          {/* Landline (Optional) */}
-          <Form.Item label="Landline (Optional)" name="landline">
-            <Input
-              placeholder="Home landline"
-              style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
-            />
-          </Form.Item>
-
-          {/* Email (Optional) */}
-          <Form.Item
-            label="Email (Optional)"
-            name="email"
-            rules={[{ type: "email", message: "Please enter valid email" }]}
-          >
-            <Input
-              placeholder="Email address"
-              style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
-            />
-          </Form.Item>
-
-          {/* Address (Required) */}
-          <Form.Item
-            label="Complete Address"
-            name="address"
-            rules={[{ required: true, message: "Please enter address" }]}
-            className="md:col-span-2"
-          >
-            <Input.TextArea
-              placeholder="Full address with city, state, and pincode"
-              rows={3}
-              style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
-            />
-          </Form.Item>
-
-          {/* Business Documentation */}
-          <Form.Item
-            label="GST Number (Optional)"
-            name="gstNo"
-            rules={[{ validator: validateGST }]}
-          >
-            <Input
-              placeholder="22AAAAA0000A1Z5"
-              style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
-            />
-          </Form.Item>
-
-          <Form.Item
-            label="Company PAN (Optional)"
-            name="companyPAN"
-            rules={[{ validator: validatePAN }]}
-          >
-            <Input
-              placeholder="ABCDE1234F"
-              style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
-              maxLength={10}
-            />
-          </Form.Item>
-
-          <Form.Item
-            label="Owner PAN (Optional)"
-            name="ownerPAN"
-            rules={[{ validator: validatePAN }]}
-          >
-            <Input
-              placeholder="ABCDE1234F"
-              style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
-              maxLength={10}
-            />
-          </Form.Item>
-
-          <Form.Item
-            label="Aadhar Number (Optional)"
-            name="aadharNumber"
-            rules={[{ validator: validateAadhar }]}
-          >
-            <Input
-              placeholder="12-digit number"
-              style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
-              maxLength={12}
-            />
-          </Form.Item>
-
-          <Form.Item
-            label="Import/Export Code (Optional)"
-            name="importExportCode"
-          >
-            <Input
-              placeholder="IEC code"
-              style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
-            />
-          </Form.Item>
-
-          {/* Document Uploads */}
-          <Form.Item
-            label="GST Certificate"
-            name="gstCertificate"
-            valuePropName="fileList"
-            getValueFromEvent={(e) => e.fileList}
-          >
-            <Upload
-              accept="image/*,.pdf"
-              beforeUpload={() => false} // Prevent auto upload
-              listType="picture-card"
-              maxCount={1}
-            >
-              <div>
-                <PlusOutlined />
-                <div style={{ marginTop: 8 }}>Upload</div>
-              </div>
-            </Upload>
-          </Form.Item>
-
-          <Form.Item
-            label="Company PAN Document"
-            name="companyPanDoc"
-            valuePropName="fileList"
-            getValueFromEvent={(e) => e.fileList}
-          >
-            <Upload
-              accept="image/*,.pdf"
-              beforeUpload={() => false}
-              listType="picture-card"
-              maxCount={1}
-            >
-              <div>
-                <PlusOutlined />
-                <div style={{ marginTop: 8 }}>Upload</div>
-              </div>
-            </Upload>
-          </Form.Item>
-
-          <Form.Item
-            label="Aadhar Document"
-            name="aadharDoc"
-            valuePropName="fileList"
-            getValueFromEvent={(e) => e.fileList}
-          >
-            <Upload
-              accept="image/*,.pdf"
-              beforeUpload={() => false}
-              listType="picture-card"
-              maxCount={1}
-            >
-              <div>
-                <PlusOutlined />
-                <div style={{ marginTop: 8 }}>Upload</div>
-              </div>
-            </Upload>
-          </Form.Item>
-
-          <Form.Item
-            label="Import/Export Document"
-            name="importExportDoc"
-            valuePropName="fileList"
-            getValueFromEvent={(e) => e.fileList}
-          >
-            <Upload
-              accept="image/*,.pdf"
-              beforeUpload={() => false}
-              listType="picture-card"
-              maxCount={1}
-            >
-              <div>
-                <PlusOutlined />
-                <div style={{ marginTop: 8 }}>Upload</div>
-              </div>
-            </Upload>
-          </Form.Item>
-
-          <Form.Item
-            label="MSME Certificate"
-            name="msmeCertificate"
-            valuePropName="fileList"
-            getValueFromEvent={(e) => e.fileList}
-          >
-            <Upload
-              accept="image/*,.pdf"
-              beforeUpload={() => false}
-              listType="picture-card"
-              maxCount={1}
-            >
-              <div>
-                <PlusOutlined />
-                <div style={{ marginTop: 8 }}>Upload</div>
-              </div>
-            </Upload>
-          </Form.Item>
-
-          <Form.Item
-            label="Visiting Card"
-            name="visitingCard"
-            valuePropName="fileList"
-            getValueFromEvent={(e) => e.fileList}
-          >
-            <Upload
-              accept="image/*,.pdf"
-              beforeUpload={() => false}
-              listType="picture-card"
-              maxCount={1}
-            >
-              <div>
-                <PlusOutlined />
-                <div style={{ marginTop: 8 }}>Upload</div>
-              </div>
-            </Upload>
-          </Form.Item>
-        </div>
-
-        <div className="flex justify-end p-5">
-          <Button
-            type="primary"
-            htmlType="submit"
-            loading={loading}
-            style={{
-              backgroundColor: colors.darkGold,
-              color: colors.light,
-              padding: "8px 24px",
-              borderRadius: "6px",
-              fontWeight: "medium",
-            }}
-          >
-            Submit KYC
-          </Button>
-        </div>
-      </Form>
-
-      {/* Client List Table */}
-      <div className="mt-8">
-        <h4
-          className="text-lg font-semibold mb-4"
-          style={{ color: colors.velvet }}
+    <Form
+      form={kycForm}
+      onFinish={handleKYCSubmit}
+      layout="vertical"
+      className="rounded-lg shadow p-6 border"
+      style={{
+        backgroundColor: colors.diamond,
+        borderColor: colors.darkGold,
+      }}
+    >
+      <div className="grid grid-cols-1 md:grid-cols-2 p-6 gap-6">
+        {/* Name (Required) */}
+        <Form.Item
+          label="Full Name"
+          name="name"
+          rules={[{ required: true, message: "Please enter full name" }]}
         >
-          Existing Clients
-        </h4>
-        <Table
-          dataSource={clients}
-          columns={[
-            {
-              title: "Unique ID",
-              dataIndex: "uniqueId",
-              key: "uniqueId",
-              render: (text) => (
-                <span
-                  className="font-medium"
-                  style={{ color: colors.darkGold }}
-                >
-                  {text}
-                </span>
-              ),
-            },
-            {
-              title: "Name",
-              dataIndex: "name",
-              key: "name",
-              render: (text) => (
-                <span style={{ color: colors.velvet }}>{text}</span>
-              ),
-            },
-            {
-              title: "Phone",
-              dataIndex: "phone",
-              key: "phone",
-              render: (text) => <span className="text-gray-600">{text}</span>,
-            },
-            {
-              title: "GST No",
-              dataIndex: "gstNo",
-              key: "gstNo",
-              render: (text) => (
-                <span className="text-gray-600">{text || "N/A"}</span>
-              ),
-            },
-            {
-              title: "Status",
-              key: "status",
-              render: (_, client) => {
-                const orders = client.orders || [];
-                if (orders.length === 0)
-                  return (
-                    <Tag style={{ backgroundColor: colors.platinum }}>
-                      No orders
-                    </Tag>
-                  );
+          <Input
+            placeholder="Enter full name"
+            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
+          />
+        </Form.Item>
 
-                const statuses = orders.map((o) => o?.status).filter(Boolean);
-
-                if (statuses.includes("ongoing"))
-                  return (
-                    <Tag
-                      style={{
-                        backgroundColor: "#e6f4ff",
-                        color: colors.darkGold,
-                      }}
-                    >
-                      Active
-                    </Tag>
-                  );
-                if (statuses.every((s) => s === "completed"))
-                  return (
-                    <Tag
-                      style={{ backgroundColor: "#e6f7ee", color: "#08965b" }}
-                    >
-                      Completed
-                    </Tag>
-                  );
-                return (
-                  <Tag style={{ backgroundColor: "#fff7e6", color: "#d46b08" }}>
-                    Mixed
-                  </Tag>
-                );
-              },
-            },
+        {/* Phone (Required) */}
+        <Form.Item
+          label="Mobile Number"
+          name="phone"
+          rules={[
+            { required: true, message: "Please enter mobile number" },
             {
-              title: "Action",
-              key: "action",
-              render: (_, client) => (
-                <Button
-                  size="small"
-                  style={{
-                    backgroundColor: colors.platinum,
-                    color: colors.darkGold,
-                    borderColor: colors.darkGold,
-                  }}
-                  onClick={() => {
-                    setSelectedMenu("history");
-                    handleClientSelect(client.uniqueId);
-                  }}
-                >
-                  View Orders
-                </Button>
-              ),
+              pattern: /^[0-9]{10}$/,
+              message: "Please enter valid 10-digit mobile number",
             },
           ]}
-          rowKey="_id"
-          loading={loading}
-          scroll={{ x: true }}
-          pagination={{ pageSize: 5 }}
-        />
+        >
+          <Input
+            placeholder="Primary contact number"
+            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
+            maxLength={10}
+          />
+        </Form.Item>
+
+        {/* Alternate Phone (Optional) */}
+        <Form.Item
+          label="Alternate Phone (Optional)"
+          name="mobile"
+          rules={[
+            {
+              pattern: /^[0-9]{10}$/,
+              message: "Please enter valid 10-digit mobile number",
+            },
+          ]}
+        >
+          <Input
+            placeholder="Secondary contact number"
+            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
+            maxLength={10}
+          />
+        </Form.Item>
+
+        {/* Office Phone (Optional) */}
+        <Form.Item label="Office Phone (Optional)" name="officePhone">
+          <Input
+            placeholder="Office landline"
+            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
+          />
+        </Form.Item>
+
+        {/* Landline (Optional) */}
+        <Form.Item label="Landline (Optional)" name="landline">
+          <Input
+            placeholder="Home landline"
+            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
+          />
+        </Form.Item>
+
+        {/* Email (Optional) */}
+        <Form.Item
+          label="Email (Optional)"
+          name="email"
+          rules={[{ type: "email", message: "Please enter valid email" }]}
+        >
+          <Input
+            placeholder="Email address"
+            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
+          />
+        </Form.Item>
+
+        {/* Address (Required) */}
+        <Form.Item
+          label="Complete Address"
+          name="address"
+          rules={[{ required: true, message: "Please enter address" }]}
+          className="md:col-span-2"
+        >
+          <Input.TextArea
+            placeholder="Full address with city, state, and pincode"
+            rows={3}
+            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
+          />
+        </Form.Item>
+
+        {/* Business Documentation */}
+        <Form.Item
+          label="GST Number (Optional)"
+          name="gstNo"
+          rules={[{ validator: validateGST }]}
+        >
+          <Input
+            placeholder="22AAAAA0000A1Z5"
+            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
+          />
+        </Form.Item>
+
+        <Form.Item
+          label="Company PAN (Optional)"
+          name="companyPAN"
+          rules={[{ validator: validatePAN }]}
+        >
+          <Input
+            placeholder="ABCDE1234F"
+            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
+            maxLength={10}
+          />
+        </Form.Item>
+
+        <Form.Item
+          label="Owner PAN (Optional)"
+          name="ownerPAN"
+          rules={[{ validator: validatePAN }]}
+        >
+          <Input
+            placeholder="ABCDE1234F"
+            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
+            maxLength={10}
+          />
+        </Form.Item>
+
+        <Form.Item
+          label="Aadhar Number (Optional)"
+          name="aadharNumber"
+          rules={[{ validator: validateAadhar }]}
+        >
+          <Input
+            placeholder="12-digit number"
+            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
+            maxLength={12}
+          />
+        </Form.Item>
+
+        <Form.Item
+          label="Import/Export Code (Optional)"
+          name="importExportCode"
+        >
+          <Input
+            placeholder="IEC code"
+            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
+          />
+        </Form.Item>
+        <Form.Item
+  label="GST Certificate"
+  name="gstCertificate"
+  valuePropName="file"
+>
+  <Upload beforeUpload={() => false} maxCount={1}>
+    <Button icon={<UploadOutlined />}>Upload GST Certificate</Button>
+  </Upload>
+</Form.Item>
+
+<Form.Item
+  label="Company PAN Document"
+  name="companyPanDoc"
+  valuePropName="file"
+>
+  <Upload beforeUpload={() => false} maxCount={1}>
+    <Button icon={<UploadOutlined />}>Upload Company PAN</Button>
+  </Upload>
+</Form.Item>
+
+<Form.Item
+  label="Aadhar Document"
+  name="aadharDoc"
+  valuePropName="file"
+>
+  <Upload beforeUpload={() => false} maxCount={1}>
+    <Button icon={<UploadOutlined />}>Upload Aadhar</Button>
+  </Upload>
+</Form.Item>
+
+<Form.Item
+  label="Import/Export Document"
+  name="importExportDoc"
+  valuePropName="file"
+>
+  <Upload beforeUpload={() => false} maxCount={1}>
+    <Button icon={<UploadOutlined />}>Upload Import/Export</Button>
+  </Upload>
+</Form.Item>
+
+<Form.Item
+  label="MSME Certificate"
+  name="msmeCertificate"
+  valuePropName="file"
+>
+  <Upload beforeUpload={() => false} maxCount={1}>
+    <Button icon={<UploadOutlined />}>Upload MSME Certificate</Button>
+  </Upload>
+</Form.Item>
+
+<Form.Item
+  label="Visiting Card"
+  name="visitingCard"
+  valuePropName="file"
+>
+  <Upload beforeUpload={() => false} maxCount={1}>
+    <Button icon={<UploadOutlined />}>Upload Visiting Card</Button>
+  </Upload>
+</Form.Item>
+
       </div>
+
+      <div className="flex justify-end p-5">
+        <Button
+          type="primary"
+          htmlType="submit"
+          loading={loading}
+          style={{
+            backgroundColor: colors.darkGold,
+            color: colors.light,
+            padding: "8px 24px",
+            borderRadius: "6px",
+            fontWeight: "medium",
+          }}
+        >
+          Submit KYC
+        </Button>
+      </div>
+    </Form>
+
+    {/* Client List Table */}
+    <div className="mt-8">
+      <h4
+        className="text-lg font-semibold mb-4"
+        style={{ color: colors.velvet }}
+      >
+        Existing Clients
+      </h4>
+      <Table
+        dataSource={clients}
+        columns={[
+          {
+            title: "Unique ID",
+            dataIndex: "uniqueId",
+            key: "uniqueId",
+            render: (text) => (
+              <span
+                className="font-medium"
+                style={{ color: colors.darkGold }}
+              >
+                {text}
+              </span>
+            ),
+          },
+          {
+            title: "Name",
+            dataIndex: "name",
+            key: "name",
+            render: (text) => (
+              <span style={{ color: colors.velvet }}>{text}</span>
+            ),
+          },
+          {
+            title: "Phone",
+            dataIndex: "phone",
+            key: "phone",
+            render: (text) => <span className="text-gray-600">{text}</span>,
+          },
+          {
+            title: "GST No",
+            dataIndex: "gstNo",
+            key: "gstNo",
+            render: (text) => (
+              <span className="text-gray-600">{text || "N/A"}</span>
+            ),
+          },
+          {
+            title: "Status",
+            key: "status",
+            render: (_, client) => {
+              const orders = client.orders || [];
+              if (orders.length === 0)
+                return (
+                  <Tag style={{ backgroundColor: colors.platinum }}>
+                    No orders
+                  </Tag>
+                );
+
+              const statuses = orders.map((o) => o?.status).filter(Boolean);
+
+              if (statuses.includes("ongoing"))
+                return (
+                  <Tag
+                    style={{
+                      backgroundColor: "#e6f4ff",
+                      color: colors.darkGold,
+                    }}
+                  >
+                    Active
+                  </Tag>
+                );
+              if (statuses.every((s) => s === "completed"))
+                return (
+                  <Tag
+                    style={{ backgroundColor: "#e6f7ee", color: "#08965b" }}
+                  >
+                    Completed
+                  </Tag>
+                );
+              return (
+                <Tag style={{ backgroundColor: "#fff7e6", color: "#d46b08" }}>
+                  Mixed
+                </Tag>
+              );
+            },
+          },
+          {
+            title: "Action",
+            key: "action",
+            render: (_, client) => (
+              <Button
+                size="small"
+                style={{
+                  backgroundColor: colors.platinum,
+                  color: colors.darkGold,
+                  borderColor: colors.darkGold,
+                }}
+                onClick={() => {
+                  setSelectedMenu("history");
+                  handleClientSelect(client.uniqueId);
+                }}
+              >
+                View Orders
+              </Button>
+            ),
+          },
+        ]}
+        rowKey="_id"
+        loading={loading}
+        scroll={{ x: true }}
+        pagination={{ pageSize: 5 }}
+      />
     </div>
-  );
+  </div>
+);
+
+
+
+
+
 
   const diamondClarityOptions = [
     "vvs",
@@ -1785,6 +1709,7 @@ const SalesDashboard = () => {
     "vs",
     "vs-si",
     "si",
+    
   ];
 
   const diamondColorOptions = [
@@ -1794,6 +1719,8 @@ const SalesDashboard = () => {
     "h-i",
     "i-j",
     "I",
+    
+   
   ];
 
   const renderOrderForm = () => (
@@ -2558,256 +2485,255 @@ const SalesDashboard = () => {
     </div>
   );
 
-  const renderOrderHistory = () => (
-    <div className="space-y-6">
-      <h3 className="text-2xl font-semibold" style={{ color: colors.velvet }}>
-        Order History
-      </h3>
-      
-      <div
-        className="rounded-lg shadow p-6 border"
-        style={{
-          backgroundColor: colors.diamond,
-          borderColor: colors.darkGold,
-        }}
-      >
-        {/* Search and Filter Section */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <Select
-            showSearch
-            placeholder="Search by Client ID or Name"
-            value={searchTerm}
-            onChange={(value) => setSearchTerm(value)}
-            onSearch={(value) => setSearchTerm(value)}
-            filterOption={(input, option) =>
-              (option?.children ?? '').toLowerCase().includes(input.toLowerCase()) ||
-              (option?.value ?? '').toLowerCase().includes(input.toLowerCase())
-            }
-            style={{ width: '100%' }}
-            allowClear
-            notFoundContent={null}
-          >
-            {clients.map(client => (
-              <Option 
-                key={client.uniqueId} 
-                value={client.uniqueId}
-              >
-                <div className="flex justify-between">
-                  <span>{client.uniqueId}</span>
-                  <span className="text-gray-500 ml-2">{client.name}</span>
-                </div>
-              </Option>
-            ))}
-          </Select>
-
-          <Select
-            placeholder="Filter by status"
-            value={statusFilter}
-            onChange={setStatusFilter}
-            style={{ width: '100%' }}
-            allowClear
-          >
-            <Option value="all">All Statuses</Option>
-            <Option value="ongoing">Ongoing</Option>
-            <Option value="completed">Completed</Option>
-            <Option value="cancelled">Cancelled</Option>
-          </Select>
-
-          <RangePicker
-            style={{ width: '100%' }}
-            onChange={(dates) => setDateRange(dates)}
-            placeholder={['Start Date', 'End Date']}
-          />
-        </div>
-
-        {/* Orders Table */}
-        <div className="grid grid-cols-1 gap-6">
-          {/* All Orders */}
-          <div
-            className="rounded-2xl shadow-sm border"
-            style={{
-              backgroundColor: colors.diamond,
-              borderColor: colors.darkGold,
-            }}
-          >
-            <h2
-              className="text-lg font-semibold mb-3 border-b p-4 pb-2"
-              style={{ color: colors.velvet }}
+const renderOrderHistory = () => (
+  <div className="space-y-6">
+    <h3 className="text-2xl font-semibold" style={{ color: colors.velvet }}>
+      Order History
+    </h3>
+    
+    <div
+      className="rounded-lg shadow p-6 border"
+      style={{
+        backgroundColor: colors.diamond,
+        borderColor: colors.darkGold,
+      }}
+    >
+      {/* Search and Filter Section */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <Select
+          showSearch
+          placeholder="Search by Client ID or Name"
+          value={searchTerm}
+          onChange={(value) => setSearchTerm(value)}
+          onSearch={(value) => setSearchTerm(value)}
+          filterOption={(input, option) =>
+            (option?.children ?? '').toLowerCase().includes(input.toLowerCase()) ||
+            (option?.value ?? '').toLowerCase().includes(input.toLowerCase())
+          }
+          style={{ width: '100%' }}
+          allowClear
+          notFoundContent={null}
+        >
+          {clients.map(client => (
+            <Option 
+              key={client.uniqueId} 
+              value={client.uniqueId}
             >
-              All Orders
-            </h2>
-            
-            {isMobile ? (
-              <div className="space-y-4 p-4">
-                {getFilteredOrders().length > 0 ? (
-                  getFilteredOrders().map((order) => (
-                    <div
-                      key={order.id}
-                      className="border rounded-lg p-4"
-                      style={{ borderColor: colors.darkGold }}
-                      onClick={() => handleOrderClick(order)}
-                    >
-                      <div className="space-y-2">
-                        <div className="flex justify-between">
-                          <span className="font-medium">Order ID:</span>
-                          <span style={{ color: colors.darkGold }}>{order.orderId}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="font-medium">Client ID:</span>
-                          <span>{order.client?.uniqueId || 'N/A'}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="font-medium">Client Name:</span>
-                          <span>{order.client?.name || 'N/A'}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="font-medium">Date:</span>
-                          <span>{dayjs(order.orderDate).format('DD MMM YYYY')}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="font-medium">Status:</span>
-                          <Tag
-                            style={{
-                              backgroundColor:
-                                order.status === 'completed' ? '#e6f7ee' : '#e6f4ff',
-                              color:
-                                order.status === 'completed' ? '#08965b' : colors.darkGold,
-                            }}
-                          >
-                            {order.status?.toUpperCase() || 'UNKNOWN'}
-                          </Tag>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="font-medium">Items:</span>
-                          <span>{order.orderItems?.length || 0}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="font-medium">Amount:</span>
-                          <span>₹{order.totalAmount?.toFixed(2) || '0.00'}</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-center py-4">
-                    <p>No orders found matching your criteria</p>
-                  </div>
-                )}
+              <div className="flex justify-between">
+                <span>{client.uniqueId}</span>
+                <span className="text-gray-500 ml-2">{client.name}</span>
               </div>
-            ) : (
-              <Table
-                dataSource={getFilteredOrders()}
-                columns={[
-                  {
-                    title: 'Order ID',
-                    dataIndex: 'orderId',
-                    key: 'orderId',
-                    render: (text) => (
-                      <span className="font-medium" style={{ color: colors.darkGold }}>
-                        {text}
-                      </span>
-                    ),
-                  },
-                  {
-                    title: 'Client ID',
-                    dataIndex: ['client', 'uniqueId'],
-                    key: 'clientId',
-                    render: (text) => (
-                      <span className="text-gray-600">{text || 'N/A'}</span>
-                    ),
-                  },
-                  {
-                    title: 'Client Name',
-                    dataIndex: ['client', 'name'],
-                    key: 'clientName',
-                    render: (text) => (
-                      <span className="text-gray-600">{text || 'N/A'}</span>
-                    ),
-                  },
-                  {
-                    title: 'Date',
-                    dataIndex: 'orderDate',
-                    key: 'date',
-                    render: (date) => dayjs(date).format('DD MMM YYYY'),
-                  },
-                  {
-                    title: 'Status',
-                    key: 'status',
-                    render: (_, record) => {
-                      let statusColor = colors.darkGold;
-                      let backgroundColor = '#e6f4ff';
+            </Option>
+          ))}
+        </Select>
 
-                      if (record.status === 'completed') {
-                        statusColor = '#08965b';
-                        backgroundColor = '#e6f7ee';
-                      } else if (record.status === 'cancelled') {
-                        statusColor = '#cf1322';
-                        backgroundColor = '#fff2f0';
-                      }
+        <Select
+          placeholder="Filter by status"
+          value={statusFilter}
+          onChange={setStatusFilter}
+          style={{ width: '100%' }}
+          allowClear
+        >
+          <Option value="all">All Statuses</Option>
+          <Option value="ongoing">Ongoing</Option>
+          <Option value="completed">Completed</Option>
+          <Option value="cancelled">Cancelled</Option>
+        </Select>
 
-                      return (
-                        <Tag
-                          style={{
-                            backgroundColor,
-                            color: statusColor,
-                            borderColor: statusColor,
-                          }}
-                        >
-                          {record.status?.toUpperCase() || 'UNKNOWN'}
-                        </Tag>
-                      );
-                    },
-                  },
-                  {
-                    title: 'Items',
-                    dataIndex: 'orderItems',
-                    key: 'items',
-                    render: (items) => items?.length || 0,
-                  },
-                  
-                  {
-                    title: 'Action',
-                    key: 'action',
-                    render: (_, record) => (
-                      <Button
-                        size="small"
-                        style={{
-                          backgroundColor: colors.platinum,
-                          color: colors.darkGold,
-                          borderColor: colors.darkGold,
-                        }}
-                        onClick={() => handleOrderClick(record)}
-                      >
-                        View Details
-                      </Button>
-                    ),
-                  },
-                ]}
-                rowKey="id"
-                loading={loading}
-                pagination={{ pageSize: 10 }}
-                scroll={{ y: 400 }}
-                size="small"
-                bordered
-                className="custom-table"
-                onRow={(record) => ({
-                  onClick: () => handleOrderClick(record),
-                  style: { cursor: 'pointer', backgroundColor: colors.light },
-                })}
-              />
-            )}
-          </div>
-        </div>
+        <RangePicker
+          style={{ width: '100%' }}
+          onChange={(dates) => setDateRange(dates)}
+          placeholder={['Start Date', 'End Date']}
+        />
       </div>
 
-      <OngoingOrderModal
-        order={selectedOrder}
-        visible={ongoingOrderModalVisible}
-        onClose={closeOrderModal}
-      />
-    </div>
-  );
+      {/* Orders Table */}
+      <div className="grid grid-cols-1 gap-6">
+        {/* All Orders */}
+        <div
+          className="rounded-2xl shadow-sm border"
+          style={{
+            backgroundColor: colors.diamond,
+            borderColor: colors.darkGold,
+          }}
+        >
+          <h2
+            className="text-lg font-semibold mb-3 border-b p-4 pb-2"
+            style={{ color: colors.velvet }}
+          >
+            All Orders
+          </h2>
+          
+          {isMobile ? (
+            <div className="space-y-4 p-4">
+              {getFilteredOrders().length > 0 ? (
+                getFilteredOrders().map((order) => (
+                  <div
+                    key={order.id}
+                    className="border rounded-lg p-4"
+                    style={{ borderColor: colors.darkGold }}
+                    onClick={() => handleOrderClick(order)}
+                  >
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span className="font-medium">Order ID:</span>
+                        <span style={{ color: colors.darkGold }}>{order.orderId}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="font-medium">Client ID:</span>
+                        <span>{order.client?.uniqueId || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="font-medium">Client Name:</span>
+                        <span>{order.client?.name || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="font-medium">Date:</span>
+                        <span>{dayjs(order.orderDate).format('DD MMM YYYY')}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="font-medium">Status:</span>
+                        <Tag
+                          style={{
+                            backgroundColor:
+                              order.status === 'completed' ? '#e6f7ee' : '#e6f4ff',
+                            color:
+                              order.status === 'completed' ? '#08965b' : colors.darkGold,
+                          }}
+                        >
+                          {order.status?.toUpperCase() || 'UNKNOWN'}
+                        </Tag>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="font-medium">Items:</span>
+                        <span>{order.orderItems?.length || 0}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="font-medium">Amount:</span>
+                        <span>₹{order.totalAmount?.toFixed(2) || '0.00'}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-4">
+                  <p>No orders found matching your criteria</p>
+                </div>
+              )}
+            </div>
+          ) : (
+            <Table
+              dataSource={getFilteredOrders()}
+              columns={[
+                {
+                  title: 'Order ID',
+                  dataIndex: 'orderId',
+                  key: 'orderId',
+                  render: (text) => (
+                    <span className="font-medium" style={{ color: colors.darkGold }}>
+                      {text}
+                    </span>
+                  ),
+                },
+                {
+                  title: 'Client ID',
+                  dataIndex: ['client', 'uniqueId'],
+                  key: 'clientId',
+                  render: (text) => (
+                    <span className="text-gray-600">{text || 'N/A'}</span>
+                  ),
+                },
+                {
+                  title: 'Client Name',
+                  dataIndex: ['client', 'name'],
+                  key: 'clientName',
+                  render: (text) => (
+                    <span className="text-gray-600">{text || 'N/A'}</span>
+                  ),
+                },
+                {
+                  title: 'Date',
+                  dataIndex: 'orderDate',
+                  key: 'date',
+                  render: (date) => dayjs(date).format('DD MMM YYYY'),
+                },
+                {
+                  title: 'Status',
+                  key: 'status',
+                  render: (_, record) => {
+                    let statusColor = colors.darkGold;
+                    let backgroundColor = '#e6f4ff';
 
+                    if (record.status === 'completed') {
+                      statusColor = '#08965b';
+                      backgroundColor = '#e6f7ee';
+                    } else if (record.status === 'cancelled') {
+                      statusColor = '#cf1322';
+                      backgroundColor = '#fff2f0';
+                    }
+
+                    return (
+                      <Tag
+                        style={{
+                          backgroundColor,
+                          color: statusColor,
+                          borderColor: statusColor,
+                        }}
+                      >
+                        {record.status?.toUpperCase() || 'UNKNOWN'}
+                      </Tag>
+                    );
+                  },
+                },
+                {
+                  title: 'Items',
+                  dataIndex: 'orderItems',
+                  key: 'items',
+                  render: (items) => items?.length || 0,
+                },
+                
+                {
+                  title: 'Action',
+                  key: 'action',
+                  render: (_, record) => (
+                    <Button
+                      size="small"
+                      style={{
+                        backgroundColor: colors.platinum,
+                        color: colors.darkGold,
+                        borderColor: colors.darkGold,
+                      }}
+                      onClick={() => handleOrderClick(record)}
+                    >
+                      View Details
+                    </Button>
+                  ),
+                },
+              ]}
+              rowKey="id"
+              loading={loading}
+              pagination={{ pageSize: 10 }}
+              scroll={{ y: 400 }}
+              size="small"
+              bordered
+              className="custom-table"
+              onRow={(record) => ({
+                onClick: () => handleOrderClick(record),
+                style: { cursor: 'pointer', backgroundColor: colors.light },
+              })}
+            />
+          )}
+        </div>
+      </div>
+    </div>
+
+    <OngoingOrderModal
+      order={selectedOrder}
+      visible={ongoingOrderModalVisible}
+      onClose={closeOrderModal}
+    />
+  </div>
+);
   const renderContent = () => {
     switch (selectedMenu) {
       case "dashboard":

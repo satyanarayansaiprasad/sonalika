@@ -1,67 +1,34 @@
 const mongoose = require("mongoose");
-
-const clienttssSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true,
-    trim: true
-  },
-  uniqueId: {
-    type: String,
-    required: true,
-    unique: true,
-    trim: true
-  },
-
-  // ✅ New Fields
-  companyName: {
-    type: String,
-    trim: true
-  },
-  msmeNumber: {
-    type: String,
-    trim: true
-  },
-
-  // Contact Information
-  phone: String,
+const clientSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  uniqueId: { type: String, required: true, unique: true },
+  companyName: String,
+  phone: { type: String, required: true },
   mobile: String,
   officePhone: String,
   landline: String,
   email: String,
-
-  // Address
-  address: String,
-
-  // Government Identifiers
+  address: { type: String, required: true },
   gstNo: String,
   companyPAN: String,
   ownerPAN: String,
-  aadharNumber: {
-    type: String,
-    trim: true,
-    match: [/^\d{12}$/, 'Aadhar number must be 12 digits']
-  },
+  aadharNumber: String,
   importExportCode: String,
+  msmeNumber: String,
 
-  // ✅ File Uploads (store path/URL as String)
+  // 🔽 Add these if you're uploading files
   gstCertificate: String,
   companyPanDoc: String,
   aadharDoc: String,
   importExportDoc: String,
   msmeCertificate: String,
-  visitingCard: String, // for address proof / visiting card
+  visitingCard: String,
 
-  // Orders
   orders: {
     type: Map,
     of: {
-      orderDate: Date,
-      status: {
-        type: String,
-        enum: ['ongoing', 'completed', 'cancelled'],
-        default: 'ongoing'
-      },
+      orderDate: String,
+      status: String,
       orderItems: [
         {
           srNo: Number,
@@ -74,15 +41,12 @@ const clienttssSchema = new mongoose.Schema({
           diaWeight: Number,
           pcs: Number,
           amount: Number,
-          total: Number,
           description: String
         }
       ]
     },
-    default: new Map()
-  }
+    default: {},
+  },
 
-}, { timestamps: true });
-
-const Clienttss = mongoose.model('Clienttss', clienttssSchema);
-module.exports = Clienttss;
+  createdAt: { type: Date, default: Date.now },
+});

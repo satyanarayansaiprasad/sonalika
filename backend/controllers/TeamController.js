@@ -6,6 +6,8 @@ const teamService = require('../services/teamService');
 
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
+
 exports.loginProduction = async (req, res) => {
   try {
     const productionteams = await teamService.loginProduction(req.body);
@@ -263,16 +265,22 @@ exports.loginSalesteam = async (req, res) => {
 
 
 // Configure Multer storage
+
+// Configure Multer storage
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, "uploads/");
+    const uploadDir = 'uploads/';
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
     cb(null, Date.now() + path.extname(file.originalname));
   },
 });
 
-// File filter for images
+// File filter for images and PDFs
 const fileFilter = (req, file, cb) => {
   const allowedTypes = ["image/jpeg", "image/png", "image/gif", "image/webp", "application/pdf"];
   if (allowedTypes.includes(file.mimetype)) {
@@ -287,7 +295,8 @@ const upload = multer({
   storage: storage,
   fileFilter: fileFilter,
   limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB limit
+    fileSize: 5 * 1024 * 1024, // 5MB limit
+    files: 6 // Maximum 6 files
   }
 }).fields([
   { name: 'gstCertificate', maxCount: 1 },
@@ -305,27 +314,45 @@ exports.createUser = async (req, res) => {
     await new Promise((resolve, reject) => {
       upload(req, res, (err) => {
         if (err) {
+          console.error('Multer error:', err);
           if (err instanceof multer.MulterError) {
-            reject({
+            return reject({
               status: 400,
               message: "File upload error",
               error: err.message
             });
           } else {
-            reject({
+            return reject({
               status: 500,
               message: "File upload failed",
               error: err.message
             });
           }
-        } else {
-          resolve();
         }
+        resolve();
       });
     });
 
     // Parse the JSON data from the form
-    const formData = req.body.data ? JSON.parse(req.body.data) : req.body;
+    let formData;
+    try {
+      formData = req.body.data ? JSON.parse(req.body.data) : req.body;
+    } catch (parseError) {
+      console.error('JSON parse error:', parseError);
+      // Clean up uploaded files if parsing fails
+      if (req.files) {
+        Object.values(req.files).forEach(fileArray => {
+          fileArray.forEach(file => {
+            fs.unlinkSync(file.path);
+          });
+        });
+      }
+      return res.status(400).json({
+        success: false,
+        message: "Invalid form data format",
+        error: parseError.message
+      });
+    }
     
     const {
       name,
@@ -462,7 +489,9 @@ exports.createUser = async (req, res) => {
     if (req.files) {
       Object.values(req.files).forEach(fileArray => {
         fileArray.forEach(file => {
-          fs.unlinkSync(file.path);
+          if (fs.existsSync(file.path)) {
+            fs.unlinkSync(file.path);
+          }
         });
       });
     }
@@ -500,7 +529,6 @@ exports.createUser = async (req, res) => {
     });
   }
 };
-
 
 
 // exports.getAllClients = async (req, res) => {

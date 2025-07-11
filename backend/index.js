@@ -6,23 +6,27 @@ const path = require('path');
 const connectDB = require('./config/db');
 const adminRoutes = require('./routes/adminRoutes');
 const teamRoutes = require('./routes/teamRoutes');
+const multer = require('multer');
+const fs = require('fs');
 
 const app = express();
 
 // Connect MongoDB
 connectDB();
 
+// Increase payload size limit for file uploads
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
+
 // CORS Configuration
 app.use(cors({
   origin: process.env.ALLOWED_ORIGINS?.split(',') || 'http://localhost:5173',
   methods: 'GET,POST,PUT,DELETE,PATCH',
   credentials: true,
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept']
 }));
 
 // Middleware
-app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.use(session({
@@ -40,13 +44,21 @@ app.use(session({
 app.use('/api/admin', adminRoutes);
 app.use('/api/team', teamRoutes);
 
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ 
+    success: false,
+    message: 'Internal Server Error',
+    error: err.message 
+  });
+});
+
 // Start Server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`✅ Server running on ${process.env.VITE_BASE_URL}`);
 });
-
-
 
 
 

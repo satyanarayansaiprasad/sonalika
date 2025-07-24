@@ -336,8 +336,8 @@ const ProductionTeam = () => {
         (isMobileMenuOpen ? 'fixed inset-0 z-40 w-64' : 'hidden') 
         : 'w-64'} bg-[#05054D] text-[#FFF2A6] shadow-xl`}>
         <div className="p-6 border-b border-[#1A1A6E]">
-          <h2 className="text-xl font-bold text-center text-[#FFD700] flex items-center justify-center">
-            <FaGem className="mr-2" />
+          <h2 className="text-xl font-bold text-center text-[#FFD700] flex ">
+          
             SONALIKA JEWELLERS
           </h2>
         </div>

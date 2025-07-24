@@ -39,6 +39,8 @@ const clientSchema = new mongoose.Schema({
           grossWeight: Number,
           netWeight: Number,
           diaWeight: Number,
+          goldPurity: String,
+          goldColor: String,
           pcs: Number,
           amount: Number,
           description: String

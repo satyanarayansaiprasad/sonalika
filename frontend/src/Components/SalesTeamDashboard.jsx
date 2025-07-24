@@ -95,6 +95,8 @@ const SalesDashboard = () => {
       styleNo: "",
       diamondClarity: "",
       diamondColor: "",
+      goldPurity: "",
+      goldColor: "",  
       quantity: 1,
       grossWeight: 0,
       netWeight: 0,
@@ -104,6 +106,14 @@ const SalesDashboard = () => {
       description: "",
     },
   ]);
+  const [design, setDesign] = useState({
+  styleNo: '',
+  grossWt: 0,
+  netWt: 0,
+  diaWt: 0,
+  diaPcs: 1,
+});
+
   const [orderHistory, setOrderHistory] = useState([]);
   const [selectedClientId, setSelectedClientId] = useState(null);
   const [stats, setStats] = useState({
@@ -120,6 +130,15 @@ const SalesDashboard = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [dateRange, setDateRange] = useState([]);
 
+
+
+
+
+
+ 
+
+
+
   // KYC Form Submit Handler
  const handleKYCSubmit = async (values) => {
   try {
@@ -130,6 +149,7 @@ const SalesDashboard = () => {
 
     // Append text fields
     formData.append("name", values.name);
+    formData.append("companyName", values.companyName || "");
     formData.append("phone", values.phone);
     formData.append("mobile", values.mobile || "");
     formData.append("officePhone", values.officePhone || "");
@@ -232,6 +252,8 @@ const SalesDashboard = () => {
       const clientData = res.data.clients.map((client) => ({
         _id: client._id,
         name: client.name || "No Name",
+        companyName: client.companyName || "N/A",
+        msmeNumber: client.msmeNumber || "",
         uniqueId: client.uniqueId || "",
         phone: client.phone || "",
         mobile: client.mobile || "",
@@ -362,6 +384,8 @@ const SalesDashboard = () => {
           styleNo: item.styleNo.trim(),
           diamondClarity: item.diamondClarity?.trim() || "",
           diamondColor: item.diamondColor?.trim() || "",
+          goldPurity: item.goldPurity?.trim() || "",
+          goldColor: item.goldColor?.trim() || "",
           quantity: item.quantity || 1,
           grossWeight: item.grossWeight || 0,
           netWeight: item.netWeight || 0,
@@ -386,6 +410,8 @@ const SalesDashboard = () => {
             styleNo: "",
             diamondClarity: "",
             diamondColor: "",
+            goldPurity: "",
+            goldColor: "",
             quantity: 1,
             grossWeight: 0,
             netWeight: 0,
@@ -446,6 +472,8 @@ const SalesDashboard = () => {
           styleNo: item.styleNo || "",
           diamondClarity: item.diamondClarity || "",
           diamondColor: item.diamondColor || "",
+          goldPurity: item.goldPurity || "",
+          goldColor: item.goldColor || "",
           quantity: item.quantity || 0,
           grossWeight: item.grossWeight || 0,
           netWeight: item.netWeight || 0,
@@ -482,6 +510,8 @@ const SalesDashboard = () => {
         styleNo: "",
         diamondClarity: "",
         diamondColor: "",
+        goldPurity: "",
+        goldColor: "",
         quantity: 1,
         grossWeight: 0,
         netWeight: 0,
@@ -799,6 +829,20 @@ const OngoingOrderModal = ({ order, visible, onClose }) => {
       title: "DIA PCS", 
       dataIndex: "pcs", 
       key: "pcs",
+      className: "font-medium text-gray-600 bg-gray-50",
+      render: (text) => <span className="text-gray-700">{text}</span>,
+    },
+     { 
+      title: "GOLD PURITY", 
+      dataIndex: "goldPurity", 
+      key: "goldPurity",
+      className: "font-medium text-gray-600 bg-gray-50",
+      render: (text) => <span className="text-gray-700">{text}</span>,
+    },
+    { 
+      title: "GOLD COLOR", 
+      dataIndex: "goldColor", 
+      key: "goldColor",
       className: "font-medium text-gray-600 bg-gray-50",
       render: (text) => <span className="text-gray-700">{text}</span>,
     },
@@ -1338,368 +1382,362 @@ const OngoingOrderModal = ({ order, visible, onClose }) => {
     </div>
   );
 const renderKYCForm = () => (
-  <div className="space-y-6">
-    <h3 className="text-2xl font-semibold" style={{ color: colors.velvet }}>
-      Client KYC Form
-    </h3>
+  <Form
+    form={kycForm}
+    onFinish={handleKYCSubmit}
+    layout="vertical"
+    className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
+  >
+    {/* Header */}
+    <div className="text-center mb-12">
+      <h1 className="text-3xl font-extrabold text-gray-900 sm:text-4xl">
+        Client <span className="text-[#050d3f]">KYC</span> Form
+      </h1>
+      <p className="mt-3 text-xl text-gray-500 max-w-2xl mx-auto">
+        Complete the form below to verify your client information
+      </p>
+    </div>
 
-    <Form
-      form={kycForm}
-      onFinish={handleKYCSubmit}
-      layout="vertical"
-      className="rounded-lg shadow p-6 border"
-      style={{
-        backgroundColor: colors.diamond,
-        borderColor: colors.darkGold,
-      }}
+    {/* Form Container */}
+    <div className="bg-white shadow-xl rounded-2xl overflow-hidden">
+      {/* Form Sections */}
+      <div className="divide-y divide-gray-200">
+        {/* Personal Information Section */}
+<div className="py-8 px-6 sm:p-10">
+  <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
+    <span className="bg-blue-100 text-[#050d3f] p-2 rounded-full mr-3">
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+      </svg>
+    </span>
+    Personal Information
+  </h2>
+
+  <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-3">
+    <Form.Item
+      name="name"
+      label="Full Name"
+      rules={[{ required: true, message: 'Please enter full name' }]}
+      className="block text-sm font-medium text-gray-700 mb-1"
     >
-      <div className="grid grid-cols-1 md:grid-cols-2 p-6 gap-6">
-        {/* Name (Required) */}
-        <Form.Item
-          label="Full Name"
-          name="name"
-          rules={[{ required: true, message: "Please enter full name" }]}
-        >
-          <Input
-            placeholder="Enter full name"
-            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
-          />
-        </Form.Item>
-
-        {/* Phone (Required) */}
-        <Form.Item
-          label="Mobile Number"
-          name="phone"
-          rules={[
-            { required: true, message: "Please enter mobile number" },
-            {
-              pattern: /^[0-9]{10}$/,
-              message: "Please enter valid 10-digit mobile number",
-            },
-          ]}
-        >
-          <Input
-            placeholder="Primary contact number"
-            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
-            maxLength={10}
-          />
-        </Form.Item>
-
-        {/* Alternate Phone (Optional) */}
-        <Form.Item
-          label="Alternate Phone (Optional)"
-          name="mobile"
-          rules={[
-            {
-              pattern: /^[0-9]{10}$/,
-              message: "Please enter valid 10-digit mobile number",
-            },
-          ]}
-        >
-          <Input
-            placeholder="Secondary contact number"
-            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
-            maxLength={10}
-          />
-        </Form.Item>
-
-        {/* Office Phone (Optional) */}
-        <Form.Item label="Office Phone (Optional)" name="officePhone">
-          <Input
-            placeholder="Office landline"
-            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
-          />
-        </Form.Item>
-
-        {/* Landline (Optional) */}
-        <Form.Item label="Landline (Optional)" name="landline">
-          <Input
-            placeholder="Home landline"
-            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
-          />
-        </Form.Item>
-
-        {/* Email (Optional) */}
-        <Form.Item
-          label="Email (Optional)"
-          name="email"
-          rules={[{ type: "email", message: "Please enter valid email" }]}
-        >
-          <Input
-            placeholder="Email address"
-            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
-          />
-        </Form.Item>
-
-        {/* Address (Required) */}
-        <Form.Item
-          label="Complete Address"
-          name="address"
-          rules={[{ required: true, message: "Please enter address" }]}
-          className="md:col-span-2"
-        >
-          <Input.TextArea
-            placeholder="Full address with city, state, and pincode"
-            rows={3}
-            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
-          />
-        </Form.Item>
-
-        {/* Business Documentation */}
-        <Form.Item
-          label="GST Number (Optional)"
-          name="gstNo"
-          rules={[{ validator: validateGST }]}
-        >
-          <Input
-            placeholder="22AAAAA0000A1Z5"
-            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
-          />
-        </Form.Item>
-
-        <Form.Item
-          label="Company PAN (Optional)"
-          name="companyPAN"
-          rules={[{ validator: validatePAN }]}
-        >
-          <Input
-            placeholder="ABCDE1234F"
-            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
-            maxLength={10}
-          />
-        </Form.Item>
-
-        <Form.Item
-          label="Owner PAN (Optional)"
-          name="ownerPAN"
-          rules={[{ validator: validatePAN }]}
-        >
-          <Input
-            placeholder="ABCDE1234F"
-            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
-            maxLength={10}
-          />
-        </Form.Item>
-
-        <Form.Item
-          label="Aadhar Number (Optional)"
-          name="aadharNumber"
-          rules={[{ validator: validateAadhar }]}
-        >
-          <Input
-            placeholder="12-digit number"
-            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
-            maxLength={12}
-          />
-        </Form.Item>
-
-        <Form.Item
-          label="Import/Export Code (Optional)"
-          name="importExportCode"
-        >
-          <Input
-            placeholder="IEC code"
-            style={{ borderColor: colors.darkGold, borderRadius: "6px" }}
-          />
-        </Form.Item>
-        <Form.Item
-  label="GST Certificate"
-  name="gstCertificate"
-  valuePropName="file"
->
-  <Upload beforeUpload={() => false} maxCount={1}>
-    <Button icon={<UploadOutlined />}>Upload GST Certificate</Button>
-  </Upload>
-</Form.Item>
-
-<Form.Item
-  label="Company PAN Document"
-  name="companyPanDoc"
-  valuePropName="file"
->
-  <Upload beforeUpload={() => false} maxCount={1}>
-    <Button icon={<UploadOutlined />}>Upload Company PAN</Button>
-  </Upload>
-</Form.Item>
-
-<Form.Item
-  label="Aadhar Document"
-  name="aadharDoc"
-  valuePropName="file"
->
-  <Upload beforeUpload={() => false} maxCount={1}>
-    <Button icon={<UploadOutlined />}>Upload Aadhar</Button>
-  </Upload>
-</Form.Item>
-
-<Form.Item
-  label="Import/Export Document"
-  name="importExportDoc"
-  valuePropName="file"
->
-  <Upload beforeUpload={() => false} maxCount={1}>
-    <Button icon={<UploadOutlined />}>Upload Import/Export</Button>
-  </Upload>
-</Form.Item>
-
-<Form.Item
-  label="MSME Certificate"
-  name="msmeCertificate"
-  valuePropName="file"
->
-  <Upload beforeUpload={() => false} maxCount={1}>
-    <Button icon={<UploadOutlined />}>Upload MSME Certificate</Button>
-  </Upload>
-</Form.Item>
-
-<Form.Item
-  label="Visiting Card"
-  name="visitingCard"
-  valuePropName="file"
->
-  <Upload beforeUpload={() => false} maxCount={1}>
-    <Button icon={<UploadOutlined />}>Upload Visiting Card</Button>
-  </Upload>
-</Form.Item>
-
-      </div>
-
-      <div className="flex justify-end p-5">
-        <Button
-          type="primary"
-          htmlType="submit"
-          loading={loading}
-          style={{
-            backgroundColor: colors.darkGold,
-            color: colors.light,
-            padding: "8px 24px",
-            borderRadius: "6px",
-            fontWeight: "medium",
-          }}
-        >
-          Submit KYC
-        </Button>
-      </div>
-    </Form>
-
-    {/* Client List Table */}
-    <div className="mt-8">
-      <h4
-        className="text-lg font-semibold mb-4"
-        style={{ color: colors.velvet }}
-      >
-        Existing Clients
-      </h4>
-      <Table
-        dataSource={clients}
-        columns={[
-          {
-            title: "Unique ID",
-            dataIndex: "uniqueId",
-            key: "uniqueId",
-            render: (text) => (
-              <span
-                className="font-medium"
-                style={{ color: colors.darkGold }}
-              >
-                {text}
-              </span>
-            ),
-          },
-          {
-            title: "Name",
-            dataIndex: "name",
-            key: "name",
-            render: (text) => (
-              <span style={{ color: colors.velvet }}>{text}</span>
-            ),
-          },
-          {
-            title: "Phone",
-            dataIndex: "phone",
-            key: "phone",
-            render: (text) => <span className="text-gray-600">{text}</span>,
-          },
-          {
-            title: "GST No",
-            dataIndex: "gstNo",
-            key: "gstNo",
-            render: (text) => (
-              <span className="text-gray-600">{text || "N/A"}</span>
-            ),
-          },
-          {
-            title: "Status",
-            key: "status",
-            render: (_, client) => {
-              const orders = client.orders || [];
-              if (orders.length === 0)
-                return (
-                  <Tag style={{ backgroundColor: colors.platinum }}>
-                    No orders
-                  </Tag>
-                );
-
-              const statuses = orders.map((o) => o?.status).filter(Boolean);
-
-              if (statuses.includes("ongoing"))
-                return (
-                  <Tag
-                    style={{
-                      backgroundColor: "#e6f4ff",
-                      color: colors.darkGold,
-                    }}
-                  >
-                    Active
-                  </Tag>
-                );
-              if (statuses.every((s) => s === "completed"))
-                return (
-                  <Tag
-                    style={{ backgroundColor: "#e6f7ee", color: "#08965b" }}
-                  >
-                    Completed
-                  </Tag>
-                );
-              return (
-                <Tag style={{ backgroundColor: "#fff7e6", color: "#d46b08" }}>
-                  Mixed
-                </Tag>
-              );
-            },
-          },
-          {
-            title: "Action",
-            key: "action",
-            render: (_, client) => (
-              <Button
-                size="small"
-                style={{
-                  backgroundColor: colors.platinum,
-                  color: colors.darkGold,
-                  borderColor: colors.darkGold,
-                }}
-                onClick={() => {
-                  setSelectedMenu("history");
-                  handleClientSelect(client.uniqueId);
-                }}
-              >
-                View Orders
-              </Button>
-            ),
-          },
-        ]}
-        rowKey="_id"
-        loading={loading}
-        scroll={{ x: true }}
-        pagination={{ pageSize: 5 }}
+      <Input
+        placeholder="John Doe"
+        className="py-3 px-4 block w-full border-2 border-gray-700 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
       />
+    </Form.Item>
+
+    <Form.Item
+      name="companyName"
+      label="Company Name"
+      className="block text-sm font-medium text-gray-700 mb-1"
+    >
+      <Input
+        placeholder="Acme Inc."
+        className="py-3 px-4 block w-full border-2 border-gray-700 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+      />
+    </Form.Item>
+
+    <Form.Item
+      name="phone"
+      label="Mobile Number"
+      rules={[
+        { required: true, message: 'Please enter mobile number' },
+        { pattern: /^[0-9]{10}$/, message: 'Please enter valid 10 digit mobile number' }
+      ]}
+      className="block text-sm font-medium text-gray-700 mb-1"
+    >
+      <Input
+        type="tel"
+        placeholder="9876543210"
+        className="py-3 px-4 block w-full border-2 border-gray-700 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+      />
+    </Form.Item>
+
+    <Form.Item
+      name="mobile"
+      label="Alternate Phone"
+      rules={[
+        { pattern: /^[0-9]{10}$/, message: 'Please enter valid 10 digit mobile number' }
+      ]}
+      className="block text-sm font-medium text-gray-700 mb-1"
+    >
+      <Input
+        type="tel"
+        placeholder="9876543210"
+        className="py-3 px-4 block w-full border-2 border-gray-700 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+      />
+    </Form.Item>
+
+    <Form.Item
+      name="officePhone"
+      label="Office Phone"
+      className="block text-sm font-medium text-gray-700 mb-1"
+    >
+      <Input
+        type="tel"
+        placeholder="022-1234567"
+        className="py-3 px-4 block w-full border-2 border-gray-700 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+      />
+    </Form.Item>
+
+    <Form.Item
+      name="landline"
+      label="Landline"
+      className="block text-sm font-medium text-gray-700 mb-1"
+    >
+      <Input
+        type="tel"
+        placeholder="022-1234567"
+        className="py-3 px-4 block w-full border-2 border-gray-700 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+      />
+    </Form.Item>
+
+    {/* Email Field - 1/3 width */}
+    <Form.Item
+      name="email"
+      label="Email Address"
+      rules={[
+        { type: 'email', message: 'Please enter valid email' }
+      ]}
+      className="block text-sm font-medium text-gray-700 mb-1"
+    >
+      <Input
+        type="email"
+        placeholder="john@example.com"
+        className="py-3 px-4 block w-full border-2 border-gray-700 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+      />
+    </Form.Item>
+
+    {/* Address Field - 2/3 width */}
+    <Form.Item
+      name="address"
+      label="Complete Address"
+      rules={[{ required: true, message: 'Please enter address' }]}
+      className="sm:col-span-2 block text-sm font-medium text-gray-700 mb-1"
+    >
+      <Input.TextArea
+        rows={3}
+        placeholder="123 Main St, City, State, PIN Code"
+        className="py-3 px-4 block w-full border-2 border-gray-700 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+      />
+    </Form.Item>
+  </div>
+</div>
+
+
+       {/* Business Information Section */}
+<div className="py-8 px-6 sm:p-10 bg-white rounded-2xl border border-gray-200 shadow-sm">
+  <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
+    <span className="bg-blue-100 text-[#050d3f] p-2 rounded-full mr-3">
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+      </svg>
+    </span>
+    Business Information
+  </h2>
+
+  {/* Row 1: GST, Company PAN, Owner PAN */}
+  <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-3 mb-6">
+    <Form.Item
+      name="gstNo"
+      label="GST Number"
+      rules={[{ validator: validateGST }]}
+      className="block text-sm font-medium text-gray-700 mb-1"
+    >
+      <Input
+        placeholder="22AAAAA0000A1Z5"
+        className="py-3 px-4 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 uppercase"
+      />
+    </Form.Item>
+
+    <Form.Item
+      name="companyPAN"
+      label="Company PAN"
+      rules={[{ validator: validatePAN }]}
+      className="block text-sm font-medium text-gray-700 mb-1"
+    >
+      <Input
+        maxLength={10}
+        placeholder="ABCDE1234F"
+        className="py-3 px-4 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 uppercase"
+      />
+    </Form.Item>
+
+    <Form.Item
+      name="ownerPAN"
+      label="Owner PAN"
+      rules={[{ validator: validatePAN }]}
+      className="block text-sm font-medium text-gray-700 mb-1"
+    >
+      <Input
+        maxLength={10}
+        placeholder="ABCDE1234F"
+        className="py-3 px-4 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 uppercase"
+      />
+    </Form.Item>
+  </div>
+
+  {/* Row 2: Aadhar, MSME, IEC */}
+  <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-3">
+    <Form.Item
+      name="aadharNumber"
+      label="Aadhar Number"
+      rules={[{ validator: validateAadhar }]}
+      className="block text-sm font-medium text-gray-700 mb-1"
+    >
+      <Input
+        maxLength={12}
+        placeholder="1234 5678 9012"
+        className="py-3 px-4 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+      />
+    </Form.Item>
+
+    <Form.Item
+      name="msmeNumber"
+      label="MSME Registration"
+      className="block text-sm font-medium text-gray-700 mb-1"
+    >
+      <Input
+        placeholder="UDYAM-XX-XX-XXXXXX"
+        className="py-3 px-4 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+      />
+    </Form.Item>
+
+    <Form.Item
+      name="importExportCode"
+      label="Import/Export Code"
+      className="block text-sm font-medium text-gray-700 mb-1"
+    >
+      <Input
+        placeholder="IEC-XXXXXXXXXX"
+        className="py-3 px-4 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+      />
+    </Form.Item>
+  </div>
+</div>
+
+
+   {/* Document Upload Section */}
+<div className="py-8 px-6 sm:p-10 border border-gray-200 rounded-lg bg-white">
+  <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
+    <span className="bg-blue-100 text-[#050d3f] p-2 rounded-full mr-3">
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+      </svg>
+    </span>
+    Document Upload
+  </h2>
+
+  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+    {/* GST Certificate */}
+    <div className="border border-gray-300 rounded-md p-4">
+      <label className="block text-sm font-medium text-gray-700 mb-2">
+        GST Certificate <span className="text-red-500">*</span>
+      </label>
+      <div className="flex items-center">
+        <label className="px-4 py-2 bg-[#2b3153] border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-100 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer">
+          Choose File
+          <input type="file" className="sr-only" />
+        </label>
+        <span className="ml-2 text-sm text-gray-500">No file chosen</span>
+      </div>
+    </div>
+
+    {/* Company PAN */}
+    <div className="border border-gray-300 rounded-md p-4">
+      <label className="block text-sm font-medium text-gray-700 mb-2">
+        Company PAN <span className="text-red-500">*</span>
+      </label>
+      <div className="flex items-center">
+        <label className="px-4 py-2 bg-[#2b3153] border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-100 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer">
+          Choose File
+          <input type="file" className="sr-only" />
+        </label>
+        <span className="ml-2 text-sm text-gray-500">No file chosen</span>
+      </div>
+    </div>
+
+    {/* Aadhar Document */}
+    <div className="border border-gray-300 rounded-md p-4">
+      <label className="block text-sm font-medium text-gray-700 mb-2">
+        Aadhar Document <span className="text-red-500">*</span>
+      </label>
+      <div className="flex items-center">
+        <label className="px-4 py-2 bg-[#2b3153] border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-100 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer">
+          Choose File
+          <input type="file" className="sr-only" />
+        </label>
+        <span className="ml-2 text-sm text-gray-500">No file chosen</span>
+      </div>
+    </div>
+
+    {/* Import/Export Doc */}
+    <div className="border border-gray-300 rounded-md p-4">
+      <label className="block text-sm font-medium text-gray-700 mb-2">
+        Import/Export Doc
+      </label>
+      <div className="flex items-center">
+        <label className="px-4 py-2 bg-[#2b3153] border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-100 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer">
+          Choose File
+          <input type="file" className="sr-only" />
+        </label>
+        <span className="ml-2 text-sm text-gray-500">No file chosen</span>
+      </div>
+    </div>
+
+    {/* MSME Certificate */}
+    <div className="border border-gray-300 rounded-md p-4">
+      <label className="block text-sm font-medium text-gray-700 mb-2">
+        MSME Certificate
+      </label>
+      <div className="flex items-center">
+        <label className="px-4 py-2 bg-[#2b3153] border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-100 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer">
+          Choose File
+          <input type="file" className="sr-only" />
+        </label>
+        <span className="ml-2 text-sm text-gray-500">No file chosen</span>
+      </div>
+    </div>
+
+    {/* Visiting Card */}
+    <div className="border border-gray-300 rounded-md p-4">
+      <label className="block text-sm font-medium text-gray-700 mb-2">
+        Visiting Card
+      </label>
+      <div className="flex items-center">
+        <label className="px-4 py-2 bg-[#2b3153] border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-100 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer">
+          Choose File
+          <input type="file" className="sr-only" />
+        </label>
+        <span className="ml-2 text-sm text-gray-500">No file chosen</span>
+      </div>
     </div>
   </div>
+
+  <div className="mt-6 text-sm text-gray-500">
+    <p><span className="text-red-500">*</span> indicates required documents</p>
+    <p className="mt-1">All documents should be clear and legible. Blurry or incomplete documents will be rejected.</p>
+  </div>
+</div>
+
+        {/* Submit Button */}
+        <div className="py-6 px-6 sm:px-10 bg-gray-50 text-right">
+          <Button
+            type="primary"
+            htmlType="submit"
+            loading={loading}
+            className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-[#050d3f] hover:bg-[#050d3f] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+          >
+            Submit KYC
+            <svg xmlns="http://www.w3.org/2000/svg" className="ml-2 -mr-1 h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
+            </svg>
+          </Button>
+        </div>
+      </div>
+    </div>
+  </Form>
 );
-
-
-
 
 
 
@@ -1723,13 +1761,35 @@ const renderKYCForm = () => (
    
   ];
 
+
+  
+  const goldPuritOptions = [
+    "18K",
+    "22K",
+    "24K",
+    
+    
+  ];
+
+  const goldColorOptions = [
+    "White",
+    "Yellow",
+    "Rose",
+   
+    
+    
+   
+  ];
+
+
+
   const renderOrderForm = () => (
     <div>
       <h3 className="text-2xl font-semibold" style={{ color: colors.velvet }}>
         Create New Order
       </h3>
       <div
-        className="rounded-lg shadow p-6 border"
+        className="rounded-lg shadow  "
         style={{
           backgroundColor: colors.diamond,
           borderColor: colors.darkGold,
@@ -1893,7 +1953,7 @@ const renderKYCForm = () => (
             {orderItems.map((item, index) => (
               <div
                 key={index}
-                className="border rounded-lg p-4"
+                className="rounded-lg p-4"
                 style={{ borderColor: colors.darkGold }}
               >
                 <div className="grid grid-cols-1 gap-3">
@@ -1968,6 +2028,51 @@ const renderKYCForm = () => (
                       placeholder="Select color"
                     >
                       {diamondColorOptions.map((option) => (
+                        <Option key={option} value={option}>
+                          {option}
+                        </Option>
+                      ))}
+                    </Select>
+                  </div>
+                  
+                  <div>
+                    <label
+                      className="block text-sm font-medium"
+                      style={{ color: colors.velvet }}
+                    >
+                   Gold Purity
+                    </label>
+                    <Select
+                      value={item.goldPurity}
+                      onChange={(val) =>
+                        updateOrderItem(index, "goldPurity", val)
+                      }
+                      style={{ width: "100%", borderColor: colors.darkGold }}
+                      placeholder="Select purity"
+                    >
+                      {goldPuritOptions.map((option) => (
+                        <Option key={option} value={option}>
+                          {option}
+                        </Option>
+                      ))}
+                    </Select>
+                  </div>
+                   <div>
+                    <label
+                      className="block text-sm font-medium"
+                      style={{ color: colors.velvet }}
+                    >
+                   Gold Purity
+                    </label>
+                    <Select
+                      value={item.goldColor}
+                      onChange={(val) =>
+                        updateOrderItem(index, "goldColor", val)
+                      }
+                      style={{ width: "100%", borderColor: colors.darkGold }}
+                      placeholder="Select color"
+                    >
+                      {goldColorOptions.map((option) => (
                         <Option key={option} value={option}>
                           {option}
                         </Option>
@@ -2061,7 +2166,7 @@ const renderKYCForm = () => (
                       min={1}
                     />
                   </div>
-
+                 
                   <div>
                     <label
                       className="block text-sm font-medium"
@@ -2167,6 +2272,18 @@ const renderKYCForm = () => (
                   style={{ borderColor: colors.darkGold, color: colors.velvet }}
                 >
                   Diamond Color
+                </th>
+                <th
+                  className="p-2 text-left font-medium border"
+                  style={{ borderColor: colors.darkGold, color: colors.velvet }}
+                >
+                  Gold Purity
+                </th>
+                <th
+                  className="p-2 text-left font-medium border"
+                  style={{ borderColor: colors.darkGold, color: colors.velvet }}
+                >
+               Gold Color
                 </th>
                 <th
                   className="p-2 text-left font-medium border"
@@ -2296,6 +2413,50 @@ const renderKYCForm = () => (
                       placeholder="Select color"
                     >
                       {diamondColorOptions.map((option) => (
+                        <Option key={option} value={option}>
+                          {option}
+                        </Option>
+                      ))}
+                    </Select>
+                  </td>
+                   <td
+                    className="p-2 border"
+                    style={{ borderColor: colors.darkGold }}
+                  >
+                    <Select
+                      value={item.goldPurity}
+                      onChange={(val) =>
+                        updateOrderItem(index, "goldPurity", val)
+                      }
+                      style={{
+                        width: "100%",
+                        borderColor: colors.darkGold,
+                      }}
+                      placeholder="Select purity"
+                    >
+                      {goldPuritOptions.map((option) => (
+                        <Option key={option} value={option}>
+                          {option}
+                        </Option>
+                      ))}
+                    </Select>
+                  </td>
+                   <td
+                    className="p-2 border"
+                    style={{ borderColor: colors.darkGold }}
+                  >
+                    <Select
+                      value={item.goldColor}
+                      onChange={(val) =>
+                        updateOrderItem(index, "goldColor", val)
+                      }
+                      style={{
+                        width: "100%",
+                        borderColor: colors.darkGold,
+                      }}
+                      placeholder="Select color"
+                    >
+                      {goldColorOptions.map((option) => (
                         <Option key={option} value={option}>
                           {option}
                         </Option>
@@ -2740,6 +2901,7 @@ const renderOrderHistory = () => (
         return renderDashboard();
       case "kyc":
         return renderKYCForm();
+       
       case "order":
         return renderOrderForm();
       case "history":
@@ -3053,7 +3215,7 @@ const renderOrderHistory = () => (
       />
 
       {/* Custom Table Styling */}
-      <style jsx global>{`
+      {/* <style jsx global>{`
         .custom-table .ant-table-thead > tr > th {
           background-color: ${colors.platinum} !important;
           color: ${colors.velvet} !important;
@@ -3093,7 +3255,7 @@ const renderOrderHistory = () => (
           background-color: ${colors.roseGold} !important;
           border-color: ${colors.roseGold} !important;
         }
-      `}</style>
+      `}</style> */}
     </div>
   );
 };

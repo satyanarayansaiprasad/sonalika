@@ -1,155 +1,144 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import SonalikaLogo from './SonalikaLogo.png';
+import { FaThLarge } from 'react-icons/fa';
 
 const ProductionTeam = () => {
-  const colors = {
-    gold: '#D4AF37',
-    darkGold: '#996515',
-    roseGold: '#B76E79',
-    platinum: '#E5E4E2',
-    deepNavy: '#00072D',
-    velvet: '#3D0C02',
-    light: '#F8F8F8',
-    diamond: 'rgba(255,255,255,0.9)'
-  };
+  const [activeSection, setActiveSection] = useState('dashboard');
+  const [activeForm, setActiveForm] = useState(null);
 
   return (
-    <div 
-      className="relative w-full h-screen overflow-hidden flex items-center justify-center"
-      style={{ 
-        backgroundColor: colors.deepNavy,
-        color: colors.light,
-        backgroundImage: `url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M50 0 L100 50 L50 100 L0 50 Z' fill='none' stroke='${colors.gold.replace('#', '%23')}' stroke-width='0.1'/%3E%3C/svg%3E")`,
-        backgroundSize: '120px'
-      }}
-    >
-      <div className="absolute inset-0 opacity-15 pointer-events-none"></div>
-
-      <motion.div
-        className="relative p-10 rounded-2xl text-center max-w-md w-full"
-        style={{ 
-          backgroundColor: `${colors.deepNavy}DD`,
-          border: `1px solid ${colors.gold}60`,
-          boxShadow: `0 10px 50px ${colors.gold}10`
-        }}
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8 }}
-      >
-        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r" 
-          style={{ backgroundImage: `linear-gradient(90deg, transparent, ${colors.gold}20, ${colors.gold}80, ${colors.gold}20, transparent)` }} />
-        <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r" 
-          style={{ backgroundImage: `linear-gradient(90deg, transparent, ${colors.gold}20, ${colors.gold}80, ${colors.gold}20, transparent)` }} />
-
-        <motion.div 
-          className="flex justify-center mb-6"
-          initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ delay: 0.2 }}
-        >
-          <img 
-            src={SonalikaLogo} 
-            alt="Sonalika Jewellers" 
-            style={{ filter: 'brightness(0) invert(1)' }} 
-            className="w-40 h-auto"
-          />
-        </motion.div>
-
-        <motion.div 
-          className="relative mb-6"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.4 }}
-        >
-          <div className="absolute -inset-1 rounded-lg overflow-hidden">
-            <motion.div 
-              className="absolute inset-0"
-              style={{
-                background: `linear-gradient(90deg, transparent, ${colors.gold}40, ${colors.roseGold}40, ${colors.gold}40, transparent)`
-              }}
-              animate={{
-                x: ['-100%', '100%']
-              }}
-              transition={{
-                duration: 4,
-                repeat: Infinity,
-                ease: "linear"
-              }}
-            />
-          </div>
-          <p className="relative text-lg tracking-widest px-4 py-3 rounded-lg"
-            style={{ 
-              color: colors.platinum,
-              backgroundColor: `rgba(0, 7, 45, 0.7)`,
-              border: `1px solid ${colors.gold}50`
+    <div className="flex h-screen">
+      {/* Left Sidebar */}
+      <div className="w-64 bg-[#05054D] text-[#FFF2A6] p-6">
+        <h2 className="text-xl font-bold mb-8 text-center">SONALIKA JEWELLERS</h2>
+        <div className="space-y-4">
+          <div
+            className="bg-[#FFF2A6] text-[#05054D] rounded-lg flex items-center px-4 py-2 cursor-pointer"
+            onClick={() => {
+              setActiveSection('dashboard');
+              setActiveForm(null);
             }}
           >
-            PRODUCTION TEAM COMING SOON
-          </p>
-        </motion.div>
-
-        <motion.div 
-          className="flex justify-center mb-8"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.6 }}
-        >
-          <div className="w-3/4 h-1.5 rounded-full overflow-hidden relative"
-            style={{ backgroundColor: `${colors.gold}20` }}>
-            <motion.div
-              className="h-full rounded-full absolute top-0 left-0"
-              style={{ 
-                background: `linear-gradient(90deg, ${colors.darkGold}, ${colors.gold}, ${colors.platinum})`,
-                width: '65%'
-              }}
-              initial={{ width: 0 }}
-              animate={{ width: '65%' }}
-              transition={{ duration: 1.5, delay: 0.8 }}
-            />
+            <FaThLarge className="mr-2" />
+            <span className="font-medium">Dashboard</span>
           </div>
-        </motion.div>
+          <div
+            className="bg-[#FFF2A6] text-[#05054D] rounded-lg flex items-center px-4 py-2 cursor-pointer"
+            onClick={() => {
+              setActiveSection('master');
+              setActiveForm(null);
+            }}
+          >
+            <FaThLarge className="mr-2" />
+            <span className="font-medium">Master</span>
+          </div>
+        </div>
+      </div>
 
-        <motion.p 
-          className="text-xs tracking-wider opacity-70"
-          style={{ color: colors.gold }}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 0.7 }}
-          transition={{ delay: 1 }}
-        >
-          We're crafting a luxurious experience for your team
-        </motion.p>
-      </motion.div>
+      {/* Right Main Content */}
+      <div className="flex-1 p-8 bg-gray-100 overflow-auto">
+        {activeSection === 'dashboard' && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="text-2xl font-semibold text-gray-800"
+          >
+            Welcome to Sonalika Jewellers Dashboard
+          </motion.div>
+        )}
 
-      {[...Array(6)].map((_, i) => (
-        <motion.div
-          key={`sparkle-${i}`}
-          className="absolute pointer-events-none"
-          style={{
-            width: '6px',
-            height: '6px',
-            background: `linear-gradient(45deg, ${colors.diamond}, ${colors.platinum})`,
-            clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)',
-            opacity: 0
-          }}
-          initial={{
-            x: `${Math.random() * 100}%`,
-            y: `${Math.random() * 100}%`,
-            rotate: Math.random() * 360
-          }}
-          animate={{
-            opacity: [0, 0.8, 0],
-            scale: [0.5, 1.2, 0.5],
-            rotate: [0, 180]
-          }}
-          transition={{
-            duration: 4 + Math.random() * 3,
-            delay: Math.random() * 2,
-            repeat: Infinity,
-            repeatDelay: Math.random() * 5
-          }}
-        />
-      ))}
+        {activeSection === 'master' && (
+          <>
+            <h1 className="text-2xl font-semibold mb-6">Production Team</h1>
+
+            {/* Buttons */}
+            <div className="mb-6 space-x-4">
+              <button
+                onClick={() => setActiveForm('design')}
+                className={`px-4 py-2 rounded transition duration-300 ${
+                  activeForm === 'design'
+                    ? 'bg-yellow-500 text-white'
+                    : 'bg-white border border-yellow-500 text-yellow-700'
+                }`}
+              >
+                Create Design Master
+              </button>
+
+              <button
+                onClick={() => setActiveForm('product')}
+                className={`px-4 py-2 rounded transition duration-300 ${
+                  activeForm === 'product'
+                    ? 'bg-green-600 text-white'
+                    : 'bg-white border border-green-600 text-green-600'
+                }`}
+              >
+                Create Product Master
+              </button>
+            </div>
+
+            {/* Design Master Form */}
+            {activeForm === 'design' && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white p-6 rounded shadow-md w-full max-w-2xl"
+              >
+                <h2 className="text-xl font-semibold mb-4">Design Master</h2>
+                <form className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block mb-1 font-medium">Style Number</label>
+                    <input type="text" className="w-full border p-2 rounded" />
+                  </div>
+                  <div>
+                    <label className="block mb-1 font-medium">Gross WT</label>
+                    <input type="number" className="w-full border p-2 rounded" />
+                  </div>
+                  <div>
+                    <label className="block mb-1 font-medium">Net WT</label>
+                    <input type="number" className="w-full border p-2 rounded" />
+                  </div>
+                  <div>
+                    <label className="block mb-1 font-medium">Dia WT</label>
+                    <input type="number" className="w-full border p-2 rounded" />
+                  </div>
+                  <div>
+                    <label className="block mb-1 font-medium">Dia PCS</label>
+                    <input type="number" className="w-full border p-2 rounded" />
+                  </div>
+                  <div>
+                    <label className="block mb-1 font-medium">Diamond Clarity</label>
+                    <select className="w-full border p-2 rounded">
+                      {['vvs', 'vvs-vs', 'vs', 'vs-si', 'si'].map(option => (
+                        <option key={option} value={option}>{option}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block mb-1 font-medium">Diamond Color</label>
+                    <select className="w-full border p-2 rounded">
+                      {['e-f', 'f-g', 'g-h', 'h-i', 'i-j', 'I'].map(color => (
+                        <option key={color} value={color}>{color}</option>
+                      ))}
+                    </select>
+                  </div>
+                </form>
+              </motion.div>
+            )}
+
+            {/* Product Master Form */}
+            {activeForm === 'product' && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white p-6 rounded shadow-md w-full max-w-2xl"
+              >
+                <h2 className="text-xl font-semibold mb-4">Product Master (Coming Soon)</h2>
+                <p>This section is under development.</p>
+              </motion.div>
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 };

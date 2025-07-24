@@ -97,63 +97,68 @@ const TeamLogin = () => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
+ const handleSubmit = async (e) => {
+  e.preventDefault();
+  setError('');
+  
+  if (!selectedTeam) {
+    setError('Please select a team type');
+    return;
+  }
+
+  if (!formData.username || !formData.password) {
+    setError('Please enter both user ID and password');
+    return;
+  }
+
+  setLoading(true);
+
+  try {
+    let endpoint, requestData;
     
-    if (!selectedTeam) {
-      setError('Please select a team type');
-      return;
+    if (selectedTeam === 'salesteam') {
+      endpoint = "/api/team/salesteam-login";
+      requestData = {
+        email: formData.username,
+        password: formData.password,
+        role: 'salesteam'
+      };
+    } else {
+      endpoint = "/api/team/productionteam-login";
+      requestData = {
+        email: formData.username,
+        password: formData.password,
+        role: 'productionteam'
+      };
     }
 
-    if (!formData.username || !formData.password) {
-      setError('Please enter both user ID and password');
-      return;
+    const res = await axios.post(
+      `${import.meta.env.VITE_BASE_URL}${endpoint}`,
+      requestData,
+      { withCredentials: true }
+    );
+
+    // On successful login
+    if (selectedTeam === 'salesteam') {
+      navigate("/salesteamdashboard");
+    } else {
+      navigate("/productiondashboard");
     }
 
-    setLoading(true);
-
-    try {
-      let endpoint, requestData;
-      
-      if (selectedTeam === 'salesteam') {
-        endpoint = "/api/team/salesteam-login";
-        requestData = {
-          email: formData.username,
-          password: formData.password,
-          role: 'salesteam'
-        };
-      } else {
-        endpoint = "/api/team/productionteam-login";
-        requestData = {
-          email: formData.username,
-          password: formData.password,
-          role: 'productionteam'
-        };
-      }
-
-      const res = await axios.post(
-        `${import.meta.env.VITE_BASE_URL}${endpoint}`,
-        requestData,
-        { withCredentials: true }
-      );
-
-      // On successful login
-      if (selectedTeam === 'salesteam') {
-        navigate("/salesteamdashboard");
-      } else {
-        navigate("/productiondashboard");
-      }
-
-    } catch (err) {
+  } catch (err) {
+    // Updated error handling to show specific message for invalid credentials
+    if (err.response && err.response.status === 401) {
+      setError("Invalid credentials. Please check your login details and try again.");
+    } else {
       const errorMessage = err.response?.data?.message || 
-                          err.response?.data?.error || 
-                          "Login failed. Please check your credentials and try again.";
+                        err.response?.data?.error || 
+                        "Login failed. Please try again later.";
       setError(errorMessage);
-    } finally {
-      setLoading(false);
     }
-  };
+  } finally {
+    setLoading(false);
+  }
+};
 
   // Diamond particle generator
   const generateDiamonds = () => {
@@ -627,15 +632,15 @@ const TeamLogin = () => {
                 </motion.div>
 
                 {error && (
-                  <motion.p 
-                    className="text-red-300 text-sm text-center"
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    {error}
-                  </motion.p>
-                )}
+  <motion.p 
+    className="text-red-300 text-sm text-center"
+    initial={{ opacity: 0, y: -10 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.3 }}
+  >
+    {error}
+  </motion.p>
+)}
 
                 <motion.button
                   type="submit"

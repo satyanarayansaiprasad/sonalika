@@ -429,10 +429,10 @@ const ProductionTeam = () => {
             <div className="max-w-6xl mx-auto">
               <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-[#E0E0E0]">
                 {/* Master Header */}
-                <div className="bg-[#05054D] px-4 md:px-6 py-3 md:py-4">
+                {/* <div className="bg-[#05054D] px-4 md:px-6 py-3 md:py-4">
                   <h1 className="text-lg md:text-xl font-semibold text-[#FFF2A6]">Production Team Master</h1>
                 </div>
-                
+                 */}
                 <div className="p-4 md:p-6">
                   {/* Centered Buttons */}
                   <div className="flex flex-col sm:flex-row justify-center gap-4 md:gap-6 mb-6 md:mb-8">
@@ -796,7 +796,15 @@ const ProductionTeam = () => {
               {Object.keys(sizeData).map(category => (
                 <button
                   key={category}
-                  onClick={() => handleSizeSelection(item.id, category, sizeData[category].types[0], '')}
+                  onClick={() => {
+                    // Auto-select first size type but allow changing
+                    handleSizeSelection(
+                      item.id, 
+                      category, 
+                      sizeData[category].types[0], 
+                      ''
+                    );
+                  }}
                   className={`p-3 rounded-lg border-2 transition-all duration-200 flex items-center justify-center ${
                     item.category === category
                       ? 'border-[#05054D] bg-[#05054D] text-white shadow-md'
@@ -815,27 +823,33 @@ const ProductionTeam = () => {
             </div>
           </div>
 
-          {/* Size Type Selection (auto-selected default) */}
+          {/* Size Type Selection (clickable) */}
           {item.category && (
             <div className="mb-6">
-              <h4 className="text-sm font-medium text-gray-700 mb-3">2. Size Type (Auto-selected)</h4>
+              <h4 className="text-sm font-medium text-gray-700 mb-3">2. Select Size Type</h4>
               <div className="flex flex-wrap gap-3">
                 {sizeData[item.category]?.types.map(type => (
-                  <div
+                  <button
                     key={type}
-                    className={`px-4 py-2 rounded-lg border-2 ${
+                    onClick={() => handleSizeSelection(
+                      item.id, 
+                      item.category, 
+                      type, 
+                      ''
+                    )}
+                    className={`px-4 py-2 rounded-lg border-2 transition-all duration-200 ${
                       item.sizeType === type
                         ? 'border-[#1A6E1A] bg-[#1A6E1A] text-white shadow-md'
-                        : 'border-gray-300 bg-gray-100 text-gray-500'
+                        : 'border-gray-300 hover:border-[#1A6E1A] hover:bg-gray-50'
                     }`}
                   >
                     {type}
-                  </div>
+                  </button>
                 ))}
               </div>
               <p className="text-xs text-gray-500 mt-2">
                 {sizeData[item.category]?.types.length > 1 
-                  ? "Change type by selecting a different category" 
+                  ? "Click to change size type" 
                   : "This category has only one size type"}
               </p>
             </div>
@@ -868,7 +882,7 @@ const ProductionTeam = () => {
             </div>
           )}
 
-          {/* Selected Size Details with Visual Guide */}
+          {/* Selected Size Details */}
           {item.description && (
             <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
               <h4 className="text-sm font-medium text-gray-700 mb-2">Selected Size Details</h4>

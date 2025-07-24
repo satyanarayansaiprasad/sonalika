@@ -153,7 +153,6 @@ const ProductionTeam = () => {
       types: ['Size'],
       values: {
         'Size': [
-          // Typically gents rings are larger, we can use the same sizes as ladies but starting from a larger size
           { value: '10', description: '16mm' },
           { value: '11', description: '16.2mm' },
           { value: '12', description: '16.5mm' },
@@ -200,32 +199,119 @@ const ProductionTeam = () => {
     }
   };
 
-  const handleCategoryChange = (id, value) => {
-    const updatedItems = productItems.map(item => 
-      item.id === id ? {...item, category: value, sizeType: '', sizeValue: ''} : item
-    );
+  const handleSizeSelection = (itemId, category, sizeType, sizeValue) => {
+    const updatedItems = productItems.map(item => {
+      if (item.id === itemId) {
+        const description = sizeData[category]?.values[sizeType]?.find(
+          size => size.value === sizeValue
+        )?.description || '';
+        
+        return {
+          ...item,
+          category,
+          sizeType,
+          sizeValue,
+          description
+        };
+      }
+      return item;
+    });
     setProductItems(updatedItems);
   };
 
-  const handleSizeTypeChange = (id, value) => {
-    const updatedItems = productItems.map(item => 
-      item.id === id ? {...item, sizeType: value, sizeValue: ''} : item
-    );
-    setProductItems(updatedItems);
-  };
+  const ProductSizeCard = ({ item }) => {
+    return (
+      <div className="bg-white rounded-xl shadow-md p-6 mb-6 border border-gray-200">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold text-gray-800">Product Size #{item.id}</h3>
+          {productItems.length > 1 && (
+            <button 
+              onClick={() => removeProductItem(item.id)}
+              className="text-red-500 hover:text-red-700 transition-colors p-2 rounded-full hover:bg-red-50"
+            >
+              <FaTrash />
+            </button>
+          )}
+        </div>
 
-  const handleSizeValueChange = (id, value) => {
-    const updatedItems = productItems.map(item => 
-      item.id === id ? {...item, sizeValue: value} : item
-    );
-    setProductItems(updatedItems);
-  };
+        {/* Category Selection */}
+        <div className="mb-6">
+          <h4 className="text-sm font-medium text-gray-700 mb-3">Select Jewelry Category</h4>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+            {Object.keys(sizeData).map(category => (
+              <button
+                key={category}
+                onClick={() => handleSizeSelection(item.id, category, '', '')}
+                className={`p-3 rounded-lg border-2 transition-all duration-200 flex items-center justify-center ${
+                  item.category === category
+                    ? 'border-[#05054D] bg-[#05054D] text-white shadow-md'
+                    : 'border-gray-300 hover:border-[#05054D] hover:bg-gray-50'
+                }`}
+              >
+                {category}
+              </button>
+            ))}
+          </div>
+        </div>
 
-  const getSizeDescription = (category, sizeType, sizeValue) => {
-    if (!category || !sizeType || !sizeValue) return '';
-    
-    const sizeItem = sizeData[category]?.values[sizeType]?.find(item => item.value === sizeValue);
-    return sizeItem ? sizeItem.description : '';
+        {/* Size Type Selection */}
+        {item.category && (
+          <div className="mb-6">
+            <h4 className="text-sm font-medium text-gray-700 mb-3">Select Size Type</h4>
+            <div className="flex flex-wrap gap-3">
+              {sizeData[item.category]?.types.map(type => (
+                <button
+                  key={type}
+                  onClick={() => handleSizeSelection(item.id, item.category, type, '')}
+                  className={`px-4 py-2 rounded-lg border-2 transition-all duration-200 ${
+                    item.sizeType === type
+                      ? 'border-[#1A6E1A] bg-[#1A6E1A] text-white shadow-md'
+                      : 'border-gray-300 hover:border-[#1A6E1A] hover:bg-gray-50'
+                  }`}
+                >
+                  {type}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Size Value Selection */}
+        {item.sizeType && (
+          <div className="mb-6">
+            <h4 className="text-sm font-medium text-gray-700 mb-3">Select {item.sizeType}</h4>
+            <div className="flex flex-wrap gap-3">
+              {sizeData[item.category]?.values[item.sizeType]?.map(size => (
+                <button
+                  key={size.value}
+                  onClick={() => handleSizeSelection(
+                    item.id, 
+                    item.category, 
+                    item.sizeType, 
+                    size.value
+                  )}
+                  className={`px-4 py-2 rounded-lg border-2 transition-all duration-200 ${
+                    item.sizeValue === size.value
+                      ? 'border-[#FFD700] bg-[#FFD700] text-[#05054D] shadow-md font-medium'
+                      : 'border-gray-300 hover:border-[#FFD700] hover:bg-[#FFF8E6]'
+                  }`}
+                >
+                  {size.value}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Selected Size Details */}
+        {item.description && (
+          <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <h4 className="text-sm font-medium text-gray-700 mb-1">Selected Size Details</h4>
+            <p className="text-gray-800">{item.description}</p>
+          </div>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -677,193 +763,175 @@ const ProductionTeam = () => {
                     </motion.div>
                   )}
 
-                  {/* Product Master Form */}
-                  {activeForm === 'product' && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="bg-white p-4 md:p-6 rounded-lg border border-gray-200"
-                    >
-                      <h2 className="text-lg md:text-xl font-semibold text-[#05054D] mb-4 md:mb-6">Product Master</h2>
-                      
-                      {/* Desktop: Single Row Table */}
-                      {!isMobile && (
-                        <div className="overflow-x-auto">
-                          <table className="w-full">
-                            <thead>
-                              <tr className="bg-[#323244] text-white">
-                                <th className="p-3 text-left min-w-[180px]">Product Category</th>
-                                <th className="p-3 text-left min-w-[120px]">Size Type</th>
-                                <th className="p-3 text-left min-w-[120px]">Size Value</th>
-                                <th className="p-3 text-left min-w-[200px]">Description</th>
-                                <th className="p-3 text-left min-w-[80px]">Action</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {productItems.map((item) => (
-                                <tr key={item.id} className="border-b border-gray-200 hover:bg-gray-50">
-                                  <td className="p-3">
-                                    <select
-                                      className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                      value={item.category}
-                                      onChange={(e) => handleCategoryChange(item.id, e.target.value)}
-                                    >
-                                      <option value="">Select Category</option>
-                                      {Object.keys(sizeData).map(category => (
-                                        <option key={category} value={category}>{category}</option>
-                                      ))}
-                                    </select>
-                                  </td>
-                                  <td className="p-3">
-                                    <select
-                                      className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                      value={item.sizeType}
-                                      onChange={(e) => handleSizeTypeChange(item.id, e.target.value)}
-                                      disabled={!item.category}
-                                    >
-                                      <option value="">Select Type</option>
-                                      {item.category && sizeData[item.category]?.types.map(type => (
-                                        <option key={type} value={type}>{type}</option>
-                                      ))}
-                                    </select>
-                                  </td>
-                                  <td className="p-3">
-                                    <select
-                                      className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                      value={item.sizeValue}
-                                      onChange={(e) => handleSizeValueChange(item.id, e.target.value)}
-                                      disabled={!item.sizeType}
-                                    >
-                                      <option value="">Select Value</option>
-                                      {item.sizeType && sizeData[item.category]?.values[item.sizeType]?.map(size => (
-                                        <option key={size.value} value={size.value}>{size.value}</option>
-                                      ))}
-                                    </select>
-                                  </td>
-                                  <td className="p-3">
-                                    <input
-                                      type="text"
-                                      className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                      value={getSizeDescription(item.category, item.sizeType, item.sizeValue)}
-                                      readOnly
-                                    />
-                                  </td>
-                                  <td className="p-3">
-                                    <button 
-                                      onClick={() => removeProductItem(item.id)}
-                                      className="p-2 text-red-500 hover:text-red-700 transition-colors"
-                                      disabled={productItems.length <= 1}
-                                    >
-                                      <FaTrash />
-                                    </button>
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      )}
+                 {/* Product Master Form */}
+{activeForm === 'product' && (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    className="bg-white p-4 md:p-6 rounded-lg border border-gray-200"
+  >
+    <h2 className="text-lg md:text-xl font-semibold text-[#05054D] mb-4 md:mb-6">Product Size Master</h2>
+    <p className="text-gray-600 mb-6">Configure sizes for different jewelry categories. Select a category to see available sizes.</p>
+    
+    {/* Product Size Cards */}
+    <div className="space-y-6">
+      {productItems.map(item => (
+        <div key={item.id} className="bg-white rounded-xl shadow-md p-6 border border-gray-200">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold text-gray-800">Product Size Configuration #{item.id}</h3>
+            {productItems.length > 1 && (
+              <button 
+                onClick={() => removeProductItem(item.id)}
+                className="text-red-500 hover:text-red-700 transition-colors p-2 rounded-full hover:bg-red-50"
+              >
+                <FaTrash />
+              </button>
+            )}
+          </div>
 
-                      {/* Mobile: Card Layout */}
-                      {isMobile && (
-                        <div className="space-y-4">
-                          {productItems.map((item) => (
-                            <div key={item.id} className="border border-gray-200 rounded-lg p-4 space-y-3 bg-white">
-                              <div className="flex justify-between items-center">
-                                <h3 className="font-medium text-[#05054D]">Item #{item.id}</h3>
-                                <button 
-                                  onClick={() => removeProductItem(item.id)}
-                                  className="p-1 text-red-500 hover:text-red-700 transition-colors"
-                                  disabled={productItems.length <= 1}
-                                >
-                                  <FaTrash />
-                                </button>
-                              </div>
-                              
-                              <div className="grid grid-cols-1 gap-3">
-                                <div>
-                                  <label className="block mb-1 text-sm font-medium text-gray-700">Product Category</label>
-                                  <select
-                                    className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    value={item.category}
-                                    onChange={(e) => handleCategoryChange(item.id, e.target.value)}
-                                  >
-                                    <option value="">Select Category</option>
-                                    {Object.keys(sizeData).map(category => (
-                                      <option key={category} value={category}>{category}</option>
-                                    ))}
-                                  </select>
-                                </div>
-                                <div>
-                                  <label className="block mb-1 text-sm font-medium text-gray-700">Size Type</label>
-                                  <select
-                                    className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    value={item.sizeType}
-                                    onChange={(e) => handleSizeTypeChange(item.id, e.target.value)}
-                                    disabled={!item.category}
-                                  >
-                                    <option value="">Select Type</option>
-                                    {item.category && sizeData[item.category]?.types.map(type => (
-                                      <option key={type} value={type}>{type}</option>
-                                    ))}
-                                  </select>
-                                </div>
-                                <div>
-                                  <label className="block mb-1 text-sm font-medium text-gray-700">Size Value</label>
-                                  <select
-                                    className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    value={item.sizeValue}
-                                    onChange={(e) => handleSizeValueChange(item.id, e.target.value)}
-                                    disabled={!item.sizeType}
-                                  >
-                                    <option value="">Select Value</option>
-                                    {item.sizeType && sizeData[item.category]?.values[item.sizeType]?.map(size => (
-                                      <option key={size.value} value={size.value}>{size.value}</option>
-                                    ))}
-                                  </select>
-                                </div>
-                                <div>
-                                  <label className="block mb-1 text-sm font-medium text-gray-700">Description</label>
-                                  <input
-                                    type="text"
-                                    className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    value={getSizeDescription(item.category, item.sizeType, item.sizeValue)}
-                                    readOnly
-                                  />
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* Add Item Button */}
-                      <div className="mt-6 flex justify-start">
-                        <button 
-                          onClick={addProductItem}
-                          className="flex items-center px-4 py-2 bg-[#05054D] text-[#FFF2A6] rounded-lg hover:bg-[#1A1A6E] transition-colors shadow-md"
-                        >
-                          <FaPlus className="mr-2" />
-                          Add New Product Size
-                        </button>
-                      </div>
-
-                      <div className="flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-4 pt-6">
-                        <button 
-                          type="button" 
-                          className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
-                        >
-                          Cancel
-                        </button>
-                        <button 
-                          type="submit" 
-                          className="px-6 py-2 bg-[#05054D] text-[#FFF2A6] rounded-lg hover:bg-[#1A1A6E] transition-colors shadow-md"
-                        >
-                          Save Product Sizes
-                        </button>
-                      </div>
-                    </motion.div>
+          {/* Category Selection with Default */}
+          <div className="mb-6">
+            <h4 className="text-sm font-medium text-gray-700 mb-3">1. Select Jewelry Category</h4>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+              {Object.keys(sizeData).map(category => (
+                <button
+                  key={category}
+                  onClick={() => handleSizeSelection(item.id, category, sizeData[category].types[0], '')}
+                  className={`p-3 rounded-lg border-2 transition-all duration-200 flex items-center justify-center ${
+                    item.category === category
+                      ? 'border-[#05054D] bg-[#05054D] text-white shadow-md'
+                      : 'border-gray-300 hover:border-[#05054D] hover:bg-gray-50'
+                  }`}
+                >
+                  {category.replace('LADIES ', '').replace('GENTS ', '')}
+                  {category.includes('LADIES') && (
+                    <span className="ml-1 text-xs">(Women)</span>
                   )}
+                  {category.includes('GENTS') && (
+                    <span className="ml-1 text-xs">(Men)</span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Size Type Selection (auto-selected default) */}
+          {item.category && (
+            <div className="mb-6">
+              <h4 className="text-sm font-medium text-gray-700 mb-3">2. Size Type (Auto-selected)</h4>
+              <div className="flex flex-wrap gap-3">
+                {sizeData[item.category]?.types.map(type => (
+                  <div
+                    key={type}
+                    className={`px-4 py-2 rounded-lg border-2 ${
+                      item.sizeType === type
+                        ? 'border-[#1A6E1A] bg-[#1A6E1A] text-white shadow-md'
+                        : 'border-gray-300 bg-gray-100 text-gray-500'
+                    }`}
+                  >
+                    {type}
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-gray-500 mt-2">
+                {sizeData[item.category]?.types.length > 1 
+                  ? "Change type by selecting a different category" 
+                  : "This category has only one size type"}
+              </p>
+            </div>
+          )}
+
+          {/* Size Value Selection */}
+          {item.sizeType && (
+            <div className="mb-6">
+              <h4 className="text-sm font-medium text-gray-700 mb-3">3. Select {item.sizeType}</h4>
+              <div className="flex flex-wrap gap-3">
+                {sizeData[item.category]?.values[item.sizeType]?.map(size => (
+                  <button
+                    key={size.value}
+                    onClick={() => handleSizeSelection(
+                      item.id, 
+                      item.category, 
+                      item.sizeType, 
+                      size.value
+                    )}
+                    className={`px-4 py-2 rounded-lg border-2 transition-all duration-200 ${
+                      item.sizeValue === size.value
+                        ? 'border-[#FFD700] bg-[#FFD700] text-[#05054D] shadow-md font-medium'
+                        : 'border-gray-300 hover:border-[#FFD700] hover:bg-[#FFF8E6]'
+                    }`}
+                  >
+                    {size.value}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Selected Size Details with Visual Guide */}
+          {item.description && (
+            <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+              <h4 className="text-sm font-medium text-gray-700 mb-2">Selected Size Details</h4>
+              <div className="flex items-start">
+                <div className="flex-1">
+                  <p className="text-gray-800 font-medium">{item.description}</p>
+                  {item.category.includes('RING') && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Inner diameter: {item.description.split('mm')[0]}mm
+                    </p>
+                  )}
+                  {item.category.includes('BANGLE') && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Fits wrist circumference: ~{item.sizeValue === '2.2' ? '6.5"' : 
+                      item.sizeValue === '2.4' ? '7"' : 
+                      item.sizeValue === '2.6' ? '7.5"' : 
+                      item.sizeValue === '2.8' ? '8"' : 
+                      item.sizeValue === '2.10' ? '8.5"' : '9"'}
+                    </p>
+                  )}
+                </div>
+                {item.category.includes('RING') && (
+                  <div className="ml-4 w-16 h-16 rounded-full border-2 border-[#FFD700] flex items-center justify-center">
+                    <span className="text-xs font-medium">
+                      {item.sizeValue}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+
+    {/* Add New Product Size Button */}
+    <div className="mt-6">
+      <button 
+        onClick={addProductItem}
+        className="flex items-center justify-center w-full md:w-auto px-6 py-3 bg-[#05054D] text-[#FFF2A6] rounded-lg hover:bg-[#1A1A6E] transition-colors shadow-md"
+      >
+        <FaPlus className="mr-2" />
+        Add Another Size Configuration
+      </button>
+    </div>
+
+    {/* Action Buttons */}
+    <div className="flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-4 pt-8">
+      <button 
+        type="button" 
+        className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+      >
+        Cancel
+      </button>
+      <button 
+        type="submit" 
+        className="px-6 py-2 bg-[#05054D] text-[#FFF2A6] rounded-lg hover:bg-[#1A1A6E] transition-colors shadow-md"
+      >
+        Save All Sizes
+      </button>
+    </div>
+  </motion.div>
+)}
                 </div>
               </div>
             </div>

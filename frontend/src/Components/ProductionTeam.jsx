@@ -40,7 +40,8 @@ const ProductionDashboard = () => {
     category: '',
     sizeType: '',
     sizeValue: '',
-    description: ''
+    description: '',
+    image: null
   });
   
   const [designForm, setDesignForm] = useState({
@@ -122,32 +123,36 @@ const ProductionDashboard = () => {
   };
 
   // Submit form for Product Master
-  const handleProductSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      setLoading(true);
-      
-      const formData = new FormData();
-      formData.append('category', productForm.category);
-      formData.append('sizeType', productForm.sizeType);
-      formData.append('sizeValue', productForm.sizeValue);
-      formData.append('description', productForm.description);
-      
-      if (fileInputRef.current.files[0]) {
-        formData.append('image', fileInputRef.current.files[0]);
-      }
+ const handleProductSubmit = async (e) => {
+  e.preventDefault();
+  try {
+    setLoading(true);
+    
+    const formData = new FormData();
+    formData.append('category', productForm.category);
+    formData.append('sizeType', productForm.sizeType);
+    formData.append('sizeValue', productForm.sizeValue);
+    formData.append('description', productForm.description);
+    
+    // Get the file from the file input
+    const file = fileInputRef.current.files[0];
+    if (file) {
+      formData.append('image', file);
+    }
 
-      const response = await axios.post(
-        `${API_BASE_URL}/api/pdmaster/createProductMaster`,
-        formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data'
-          }
+    const response = await axios.post(
+      `${API_BASE_URL}/api/pdmaster/createProductMaster`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data'
         }
-      );
+      }
+    );
 
+    if (response.data.success) {
       alert('Product Master created successfully!');
+      // Reset form
       setProductForm({
         category: '',
         sizeType: '',
@@ -159,14 +164,16 @@ const ProductionDashboard = () => {
         fileInputRef.current.value = '';
       }
       fetchAllProductMasters();
-    } catch (error) {
-      alert(`Failed to create product master: ${error.response?.data?.message || error.message}`);
-      console.error('Submission error:', error);
-    } finally {
-      setLoading(false);
+    } else {
+      throw new Error(response.data.message || 'Failed to create product');
     }
-  };
-
+  } catch (error) {
+    alert(`Error: ${error.response?.data?.message || error.message}`);
+    console.error('Submission error:', error);
+  } finally {
+    setLoading(false);
+  }
+};
   // Submit form for Design Master
   const handleDesignSubmit = async (e) => {
     e.preventDefault();

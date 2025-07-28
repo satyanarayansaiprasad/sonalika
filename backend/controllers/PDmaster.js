@@ -25,55 +25,76 @@ async function getNextStyleNumber() {
 // Create Product Master
 exports.createProductMaster = async (req, res) => {
   try {
-    const { category, sizeType, sizeValue, description } = req.body;
-    const imageFile = req.file;
-
-    if (!imageFile) {
-      return res.status(400).json({ message: "Image is required" });
+    // Validate required fields
+    const requiredFields = ['category', 'sizeType', 'sizeValue', 'description'];
+    const missingFields = requiredFields.filter(field => !req.body[field]);
+    
+    if (missingFields.length > 0) {
+      return res.status(400).json({ 
+        success: false,
+        message: `Missing required fields: ${missingFields.join(', ')}`
+      });
     }
 
-    const fileBuffer = fs.readFileSync(imageFile.path);
-    
-    // Upload to ImageKit
-    const uploadResponse = await imagekit.upload({
-      file: fileBuffer,
-      fileName: imageFile.originalname,
-      folder: "/products",
-    });
+    if (!req.file) {
+      return res.status(400).json({ 
+        success: false,
+        message: "Product image is required" 
+      });
+    }
 
-    const optimizedUrl = imagekit.url({
-      path: uploadResponse.filePath,
-      transformation: [
-        { quality: "auto" },
-        { format: "webp" },
-        { width: "1280" }
-      ]
-    });
+    // Process image upload
+    let imageUrl;
+    try {
+      const fileBuffer = fs.readFileSync(req.file.path);
+      const uploadResponse = await imagekit.upload({
+        file: fileBuffer,
+        fileName: req.file.originalname,
+        folder: "/products",
+      });
 
-    const image = optimizedUrl;
+      imageUrl = imagekit.url({
+        path: uploadResponse.filePath,
+        transformation: [{ quality: "auto" }, { format: "webp" }, { width: "1280" }]
+      });
+    } catch (uploadError) {
+      console.error('Image upload failed:', uploadError);
+      throw new Error('Failed to upload product image');
+    }
+
+    // Create product
     const serialNumber = await getNextProductSerialNumber();
-
-    const newProduct = new ProductMaster({
+    const newProduct = await ProductMaster.create({
       serialNumber,
-      category,
-      sizeType,
-      sizeValue,
-      description,
-      image
+      category: req.body.category,
+      sizeType: req.body.sizeType,
+      sizeValue: req.body.sizeValue,
+      description: req.body.description,
+      image: imageUrl
     });
 
-    await newProduct.save();
+    // Clean up
+    fs.unlinkSync(req.file.path);
     
-    // Delete the temporary file
-    fs.unlinkSync(imageFile.path);
-    
-    res.status(201).json({ success: true, data: newProduct });
+    return res.status(201).json({ 
+      success: true, 
+      data: newProduct 
+    });
+
   } catch (err) {
     console.error('Error creating Product Master:', err);
-    res.status(500).json({
+    
+    // Clean up temp file if exists
+    if (req.file?.path) {
+      fs.unlink(req.file.path, (unlinkErr) => {
+        if (unlinkErr) console.error('Error deleting temp file:', unlinkErr);
+      });
+    }
+    
+    return res.status(500).json({
       success: false,
-      message: 'Server Error',
-      error: err.message
+      message: err.message || 'Server Error',
+      error: process.env.NODE_ENV === 'development' ? err.stack : undefined
     });
   }
 };

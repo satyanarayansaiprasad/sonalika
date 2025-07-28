@@ -10,10 +10,7 @@ const productionmaster = new mongoose.Schema({
     sizeType: String,
     sizeValue: String,
     description: String,
-    image: {
-      url: String,
-      alt: String
-    }
+   
   },
   designMaster: {
     serialNumber: String, // Links to product
@@ -24,10 +21,7 @@ const productionmaster = new mongoose.Schema({
     diaPcs: Number,
     clarity: { type: String, default: 'vvs' },
     color: { type: String, default: 'e-f' },
-    image: {
-      url: String,
-      alt: String
-    }
+    
   }
 }, { timestamps: true });
 

@@ -214,38 +214,33 @@ const ProductionDashboard = () => {
 const onFinish = async (values) => {
   try {
     setLoading(true);
-    const formData = new FormData();
 
-    formData.append('category', values.category);
-    formData.append('sizeType', values.sizeType);
-    formData.append('sizeValue', values.sizeValue);
-    formData.append('description', values.description || '');
+    const payload = {
+      category: values.category,
+      sizeType: values.sizeType,
+      sizeValue: values.sizeValue,
+      description: values.description,
+    };
 
+    // If design master
     if (masterType === 'design') {
-      designItems.forEach((item) => {
-        formData.append(`grossWt`, item.grossWt || '');
-        formData.append(`netWt`, item.netWt || '');
-        formData.append(`diaWt`, item.diaWt || '');
-        formData.append(`diaPcs`, item.diaPcs || '');
-        formData.append(`clarity`, item.clarity || 'vvs');
-        formData.append(`color`, item.color || 'e-f');
-      });
+      payload.designItems = designItems;
     }
 
     const response = await axios.post(
       `${API_BASE_URL}/api/pdmaster/createPmaster`,
-      formData,
+      payload,
       {
         headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+          'Content-Type': 'application/json'
+        }
       }
     );
 
     message.success('Master created successfully!');
     form.resetFields();
+    setDesignItems([]);
     fetchAllMasters();
-    setDesignItems([]); // Reset design items if any
   } catch (error) {
     message.error(`Failed to create master: ${error.response?.data?.message || error.message}`);
     console.error('Submission error:', error);

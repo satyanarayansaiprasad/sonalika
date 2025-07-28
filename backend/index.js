@@ -6,8 +6,7 @@ const path = require('path');
 const connectDB = require('./config/db');
 const adminRoutes = require('./routes/adminRoutes');
 const teamRoutes = require('./routes/teamRoutes');
-const pdmaster = require('./routes/pdmaster');  
-
+const pteamRoutes = require('./routes/pteamRoutes');
 const multer = require('multer');
 const fs = require('fs');
 
@@ -15,7 +14,6 @@ const app = express();
 
 // Connect MongoDB
 connectDB();
-app.use(express.urlencoded({ extended: true }));
 
 // Increase payload size limit for file uploads
 app.use(express.json({ limit: '10mb' }));
@@ -37,7 +35,7 @@ app.use(cors({
 
 // Middleware
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-app.use(express.json());
+
 app.use(session({
   secret: process.env.SESSION_SECRET || 'yourSecretKey',
   resave: false,
@@ -52,7 +50,7 @@ app.use(session({
 // Routes
 app.use('/api/admin', adminRoutes);
 app.use('/api/team', teamRoutes);
-app.use('/api/pdmaster',pdmaster);
+app.use('/api/pteam', pteamRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

@@ -1,9 +1,14 @@
 const express = require('express');
 const router = express.Router();
-const { createPDmaster, getAllPDmasters } = require('../controllers/PDmaster');
+const upload = require('../middleware/multer'); // Import multer config
+const { createPDmaster, getAllPDmasters } = require('../controllers/pdmasterController');
 
-// Updated backend routes
-router.post('/createPmaster', createPDmaster);  // For creating new entries
-router.get('/getAllMasters', getAllPDmasters);  // For fetching all entries
+// Use multer middleware for file uploads
+router.post('/createPmaster', upload.fields([
+  { name: 'productImage', maxCount: 1 },
+  { name: 'designImage', maxCount: 1 }
+]), createPDmaster);
+
+router.get('/getAllMasters', getAllPDmasters);
 
 module.exports = router;

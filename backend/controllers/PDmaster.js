@@ -1,3 +1,4 @@
+const path = require('path');
 const PDmaster = require('../models/PDmaster');
 
 // Generate next Product Serial Number
@@ -28,14 +29,20 @@ exports.createPDmaster = async (req, res) => {
       sizeType,
       sizeValue,
       description,
-     
+      grossWt,
+      netWt,
+      diaWt,
+      diaPcs,
+      clarity,
+      color
     } = req.body;
 
     const serialNumber = await getNextProductSerialNumber();
     const styleNumber = await getNextStyleNumber();
 
-    const productImage = req.files.productImage?.[0];
-    const designImage = req.files.designImage?.[0];
+    // Get uploaded files from multer
+    const productImage = req.files?.productImage?.[0];
+    const designImage = req.files?.designImage?.[0];
 
     const newEntry = new PDmaster({
       productMaster: {
@@ -69,9 +76,14 @@ exports.createPDmaster = async (req, res) => {
     res.status(201).json({ success: true, data: newEntry });
   } catch (err) {
     console.error('Error creating PDmaster:', err);
-    res.status(500).json({ success: false, message: 'Server Error' });
+    res.status(500).json({ 
+      success: false, 
+      message: 'Server Error',
+      error: err.message 
+    });
   }
 };
+
 // Get all PDmasters
 exports.getAllPDmasters = async (req, res) => {
   try {

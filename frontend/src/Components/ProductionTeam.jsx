@@ -211,52 +211,53 @@ const ProductionDashboard = () => {
   };
 
   // Submit form
-  const onFinish = async (values) => {
-    try {
-      setLoading(true);
-      const formData = new FormData();
-      
-      // Append product data
-      formData.append('category', values.category);
-      formData.append('sizeType', values.sizeType);
-      formData.append('sizeValue', values.sizeValue);
-      formData.append('description', values.description);
-      
-      // Append design items
-      designItems.forEach((item, index) => {
-        formData.append(`designItems[${index}][grossWt]`, item.grossWt);
-        formData.append(`designItems[${index}][netWt]`, item.netWt);
-        formData.append(`designItems[${index}][diaWt]`, item.diaWt);
-        formData.append(`designItems[${index}][diaPcs]`, item.diaPcs);
-        formData.append(`designItems[${index}][clarity]`, item.clarity);
-        formData.append(`designItems[${index}][color]`, item.color);
-      });
+const onFinish = async (values) => {
+  try {
+    setLoading(true);
+    const formData = new FormData();
+    
+    // Append all product data
+    formData.append('category', values.category);
+    formData.append('sizeType', values.sizeType);
+    formData.append('sizeValue', values.sizeValue);
+    formData.append('description', values.description);
+    
+    // Append design data
+    formData.append('grossWt', values.grossWt || '');
+    formData.append('netWt', values.netWt || '');
+    formData.append('diaWt', values.diaWt || '');
+    formData.append('diaPcs', values.diaPcs || '');
+    formData.append('clarity', values.clarity || 'vvs');
+    formData.append('color', values.color || 'e-f');
 
-      // Append files if they exist
-      if (values.productImage) {
-        formData.append('productImage', values.productImage[0].originFileObj);
-      }
-      if (values.designImage) {
-        formData.append('designImage', values.designImage[0].originFileObj);
-      }
+    // Append files if they exist
+    if (values.productImage) {
+      formData.append('productImage', values.productImage[0].originFileObj);
+    }
+    if (values.designImage) {
+      formData.append('designImage', values.designImage[0].originFileObj);
+    }
 
-      const response = await axios.post(`${API_BASE_URL}/api/pdmaster/createPmaster`, formData, {
+    const response = await axios.post(
+      `${API_BASE_URL}/api/pdmaster/createPmaster`,
+      formData,
+      {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
-      });
+      }
+    );
 
-      message.success('Master created successfully!');
-      form.resetFields();
-      setDesignItems([]);
-      fetchAllMasters();
-    } catch (error) {
-      message.error('Failed to create master');
-      console.error('Submission error:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    message.success('Master created successfully!');
+    form.resetFields();
+    fetchAllMasters();
+  } catch (error) {
+    message.error(`Failed to create master: ${error.response?.data?.message || error.message}`);
+    console.error('Submission error:', error);
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <Layout style={{ minHeight: '100vh' }}>

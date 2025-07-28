@@ -29,12 +29,7 @@ exports.createPDmaster = async (req, res) => {
       sizeType,
       sizeValue,
       description,
-      grossWt,
-      netWt,
-      diaWt,
-      diaPcs,
-      clarity = 'vvs', // Default values
-      color = 'e-f'    // Default values
+          // Default values
     } = req.body;
 
     const serialNumber = await getNextProductSerialNumber();
@@ -47,10 +42,7 @@ exports.createPDmaster = async (req, res) => {
         sizeType,
         sizeValue,
         description,
-        image: {
-          url: '',
-          alt: `Product ${serialNumber}`
-        }
+       
       },
       designMaster: {
         serialNumber,
@@ -61,10 +53,7 @@ exports.createPDmaster = async (req, res) => {
         diaPcs: diaPcs || 0,
         clarity,
         color,
-        image: {
-          url: '',
-          alt: `Design ${styleNumber}`
-        }
+       
       }
     });
 

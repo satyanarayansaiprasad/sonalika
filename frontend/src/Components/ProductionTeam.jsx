@@ -215,27 +215,21 @@ const onFinish = async (values) => {
   try {
     setLoading(true);
     const formData = new FormData();
-    
-    // Append all product data
+
     formData.append('category', values.category);
     formData.append('sizeType', values.sizeType);
     formData.append('sizeValue', values.sizeValue);
-    formData.append('description', values.description);
-    
-    // Append design data
-    formData.append('grossWt', values.grossWt || '');
-    formData.append('netWt', values.netWt || '');
-    formData.append('diaWt', values.diaWt || '');
-    formData.append('diaPcs', values.diaPcs || '');
-    formData.append('clarity', values.clarity || 'vvs');
-    formData.append('color', values.color || 'e-f');
+    formData.append('description', values.description || '');
 
-    // Append files if they exist
-    if (values.productImage) {
-      formData.append('productImage', values.productImage[0].originFileObj);
-    }
-    if (values.designImage) {
-      formData.append('designImage', values.designImage[0].originFileObj);
+    if (masterType === 'design') {
+      designItems.forEach((item) => {
+        formData.append(`grossWt`, item.grossWt || '');
+        formData.append(`netWt`, item.netWt || '');
+        formData.append(`diaWt`, item.diaWt || '');
+        formData.append(`diaPcs`, item.diaPcs || '');
+        formData.append(`clarity`, item.clarity || 'vvs');
+        formData.append(`color`, item.color || 'e-f');
+      });
     }
 
     const response = await axios.post(
@@ -243,14 +237,15 @@ const onFinish = async (values) => {
       formData,
       {
         headers: {
-          'Content-Type': 'multipart/form-data'
-        }
+          'Content-Type': 'multipart/form-data',
+        },
       }
     );
 
     message.success('Master created successfully!');
     form.resetFields();
     fetchAllMasters();
+    setDesignItems([]); // Reset design items if any
   } catch (error) {
     message.error(`Failed to create master: ${error.response?.data?.message || error.message}`);
     console.error('Submission error:', error);
@@ -361,16 +356,7 @@ const onFinish = async (values) => {
                     <Input.TextArea rows={4} />
                   </Form.Item>
                   
-                  <Form.Item
-                    label="Product Image"
-                    name="productImage"
-                    valuePropName="fileList"
-                    getValueFromEvent={(e) => e.fileList}
-                  >
-                    <Upload name="productImage" listType="picture" beforeUpload={() => false}>
-                      <Button icon={<UploadOutlined />}>Upload Image</Button>
-                    </Upload>
-                  </Form.Item>
+                
                   
                   <Form.Item>
                     <Button type="primary" htmlType="submit" loading={loading}>

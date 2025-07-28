@@ -15,6 +15,7 @@ const app = express();
 
 // Connect MongoDB
 connectDB();
+app.use(express.urlencoded({ extended: true }));
 
 // Increase payload size limit for file uploads
 app.use(express.json({ limit: '10mb' }));
@@ -36,7 +37,7 @@ app.use(cors({
 
 // Middleware
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
+app.use(express.json());
 app.use(session({
   secret: process.env.SESSION_SECRET || 'yourSecretKey',
   resave: false,

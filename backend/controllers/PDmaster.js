@@ -21,7 +21,7 @@ async function getNextStyleNumber() {
   return `SJSTYLE${nextNumber}`;
 }
 
-// Create PDmaster (Product + Design)
+// Create PDmaster (Product + Design) without image handling
 exports.createPDmaster = async (req, res) => {
   try {
     const {
@@ -33,16 +33,12 @@ exports.createPDmaster = async (req, res) => {
       netWt,
       diaWt,
       diaPcs,
-      clarity,
-      color
+      clarity = 'vvs', // Default values
+      color = 'e-f'    // Default values
     } = req.body;
 
     const serialNumber = await getNextProductSerialNumber();
     const styleNumber = await getNextStyleNumber();
-
-    // Get uploaded files from multer
-    const productImage = req.files?.productImage?.[0];
-    const designImage = req.files?.designImage?.[0];
 
     const newEntry = new PDmaster({
       productMaster: {
@@ -52,21 +48,21 @@ exports.createPDmaster = async (req, res) => {
         sizeValue,
         description,
         image: {
-          url: productImage ? `/uploads/${productImage.filename}` : '',
+          url: '',
           alt: `Product ${serialNumber}`
         }
       },
       designMaster: {
         serialNumber,
         styleNumber,
-        grossWt,
-        netWt,
-        diaWt,
-        diaPcs,
+        grossWt: grossWt || 0,
+        netWt: netWt || 0,
+        diaWt: diaWt || 0,
+        diaPcs: diaPcs || 0,
         clarity,
         color,
         image: {
-          url: designImage ? `/uploads/${designImage.filename}` : '',
+          url: '',
           alt: `Design ${styleNumber}`
         }
       }

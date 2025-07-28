@@ -46,12 +46,13 @@ exports.createProductMaster = async (req, res) => {
     }
 
     // Upload to ImageKit
-    const fileBuffer = fs.readFileSync(imageFile.path);
-    const uploadResponse = await imagekit.upload({
-      file: fileBuffer,
-      fileName: imageFile.originalname,
-      folder: "/products",
-    });
+   
+  const uploadResponse = await imagekit.upload({
+  file: imageFile.buffer, // Buffer from memory
+  fileName: imageFile.originalname,
+  folder: "/products",
+});
+
 
     // Generate optimized URL
     const imageUrl = imagekit.url({

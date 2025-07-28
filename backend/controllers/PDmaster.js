@@ -29,7 +29,12 @@ exports.createPDmaster = async (req, res) => {
       sizeType,
       sizeValue,
       description,
-          // Default values
+      grossWt = 0,
+      netWt = 0,
+      diaWt = 0,
+      diaPcs = 0,
+      clarity = 'vvs',
+      color = 'e-f'
     } = req.body;
 
     const serialNumber = await getNextProductSerialNumber();
@@ -42,18 +47,16 @@ exports.createPDmaster = async (req, res) => {
         sizeType,
         sizeValue,
         description,
-       
       },
       designMaster: {
         serialNumber,
         styleNumber,
-        grossWt: grossWt || 0,
-        netWt: netWt || 0,
-        diaWt: diaWt || 0,
-        diaPcs: diaPcs || 0,
+        grossWt,
+        netWt,
+        diaWt,
+        diaPcs,
         clarity,
         color,
-       
       }
     });
 
@@ -61,13 +64,14 @@ exports.createPDmaster = async (req, res) => {
     res.status(201).json({ success: true, data: newEntry });
   } catch (err) {
     console.error('Error creating PDmaster:', err);
-    res.status(500).json({ 
-      success: false, 
+    res.status(500).json({
+      success: false,
       message: 'Server Error',
-      error: err.message 
+      error: err.message
     });
   }
 };
+
 
 // Get all PDmasters
 exports.getAllPDmasters = async (req, res) => {

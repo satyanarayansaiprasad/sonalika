@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Layout, Menu, Button, Table, Form, Input, Select, Upload, message } from 'antd';
-import { UploadOutlined, PlusOutlined, MinusOutlined } from '@ant-design/icons';
+import { Layout, Menu, Button, Table, Form, Input, Select } from 'antd';
+import { PlusOutlined, MinusOutlined } from '@ant-design/icons';
 import axios from 'axios';
 
 const { Header, Content, Sider } = Layout;
@@ -10,7 +10,6 @@ const { Option } = Select;
 const API_BASE_URL = import.meta.env.VITE_BASE_URL || 'http://localhost:3000';
 
 // Size data (as provided)
- // Size data based on the provided images
   const sizeData = {
     'NECKLACE': {
       types: ['Length'],
@@ -211,43 +210,43 @@ const ProductionDashboard = () => {
   };
 
   // Submit form
-const onFinish = async (values) => {
-  try {
-    setLoading(true);
+  const onFinish = async (values) => {
+    try {
+      setLoading(true);
 
-    const payload = {
-      category: values.category,
-      sizeType: values.sizeType,
-      sizeValue: values.sizeValue,
-      description: values.description,
-    };
+      const payload = {
+        category: values.category,
+        sizeType: values.sizeType,
+        sizeValue: values.sizeValue,
+        description: values.description,
+      };
 
-    // If design master
-    if (masterType === 'design') {
-      payload.designItems = designItems;
-    }
-
-    const response = await axios.post(
-      `${API_BASE_URL}/api/pdmaster/createPmaster`,
-      payload,
-      {
-        headers: {
-          'Content-Type': 'application/json'
-        }
+      // If design master
+      if (masterType === 'design') {
+        payload.designItems = designItems;
       }
-    );
 
-    message.success('Master created successfully!');
-    form.resetFields();
-    setDesignItems([]);
-    fetchAllMasters();
-  } catch (error) {
-    message.error(`Failed to create master: ${error.response?.data?.message || error.message}`);
-    console.error('Submission error:', error);
-  } finally {
-    setLoading(false);
-  }
-};
+      const response = await axios.post(
+        `${API_BASE_URL}/api/pdmaster/createPmaster`,
+        payload,
+        {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      message.success('Master created successfully!');
+      form.resetFields();
+      setDesignItems([]);
+      fetchAllMasters();
+    } catch (error) {
+      message.error(`Failed to create master: ${error.response?.data?.message || error.message}`);
+      console.error('Submission error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
@@ -351,8 +350,6 @@ const onFinish = async (values) => {
                     <Input.TextArea rows={4} />
                   </Form.Item>
                   
-                
-                  
                   <Form.Item>
                     <Button type="primary" htmlType="submit" loading={loading}>
                       Submit
@@ -438,17 +435,6 @@ const onFinish = async (values) => {
                       </Form.Item>
                     </div>
                   ))}
-                  
-                  <Form.Item
-                    label="Design Image"
-                    name="designImage"
-                    valuePropName="fileList"
-                    getValueFromEvent={(e) => e.fileList}
-                  >
-                    <Upload name="designImage" listType="picture" beforeUpload={() => false}>
-                      <Button icon={<UploadOutlined />}>Upload Image</Button>
-                    </Upload>
-                  </Form.Item>
                   
                   <Form.Item>
                     <Button 

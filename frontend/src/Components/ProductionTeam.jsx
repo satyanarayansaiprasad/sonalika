@@ -1,26 +1,138 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
 const API_BASE_URL = import.meta.env.VITE_BASE_URL || 'http://localhost:3000';
 
-// Size data
-const sizeData = {
-  'NECKLACE': {
-    types: ['Length'],
-    values: {
-      'Length': [
-        { value: '36cm', description: '14"' },
-        { value: '41cm', description: '16"' },
-        { value: '46cm', description: '18"' },
-        { value: '51cm', description: '20"' },
-        { value: '61cm', description: '24"' },
-        { value: '76cm', description: '30"' },
-        { value: '84cm', description: '33"' }
-      ]
+// Size data (as provided)
+  const sizeData = {
+    'NECKLACE': {
+      types: ['Length'],
+      values: {
+        'Length': [
+          { value: '36cm', description: '14"' },
+          { value: '41cm', description: '16"' },
+          { value: '46cm', description: '18"' },
+          { value: '51cm', description: '20"' },
+          { value: '61cm', description: '24"' },
+          { value: '76cm', description: '30"' },
+          { value: '84cm', description: '33"' }
+        ]
+      }
+    },
+    'LADIES BRACELET': {
+      types: ['Size'],
+      values: {
+        'Size': [
+          { value: 'S', description: '14.0-15.4 cm / 5.51-6.06 inch' },
+          { value: 'M', description: '15.5-17.4 cm / 6.07-6.85 inch' },
+          { value: 'L', description: '17.5-19.4 cm / 6.86-7.64 inch' },
+          { value: 'XL', description: '19.5-21.4 cm / 7.65-8.43 inch' },
+          { value: 'XXL', description: '21.5-23.4 cm / 8.44-9.21 inch' }
+        ]
+      }
+    },
+    'LADIES BANGLE': {
+      types: ['Diameter', 'Circumference'],
+      values: {
+        'Diameter': [
+          { value: '2.2', description: '2.125 inches / 5.4 cm' },
+          { value: '2.4', description: '2.25 inches / 5.7 cm' },
+          { value: '2.6', description: '2.375 inches / 6 cm' },
+          { value: '2.8', description: '2.5 inches / 6.5 cm' },
+          { value: '2.10', description: '2.625 inches / 6.7 cm' },
+          { value: '2.12', description: '2.75 inches / 7 cm' }
+        ],
+        'Circumference': [
+          { value: '6.67', description: '6.67 inches' },
+          { value: '7.06', description: '7.06 inches' },
+          { value: '7.46', description: '7.46 inches' },
+          { value: '7.85', description: '7.85 inches' },
+          { value: '8.24', description: '8.24 inches' },
+          { value: '8.64', description: '8.64 inches' }
+        ]
+      }
+    },
+    'LADIES RING': {
+      types: ['Size'],
+      values: {
+        'Size': [
+          { value: '1', description: '13mm' },
+          { value: '2', description: '13.3mm' },
+          { value: '3', description: '13.6mm' },
+          { value: '4', description: '14mm' },
+          { value: '5', description: '14.3mm' },
+          { value: '6', description: '14.6mm' },
+          { value: '7', description: '14.9mm' },
+          { value: '8', description: '15.3mm' },
+          { value: '9', description: '15.6mm' },
+          { value: '10', description: '16mm' },
+          { value: '11', description: '16.2mm' },
+          { value: '12', description: '16.5mm' },
+          { value: '13', description: '16.8mm' },
+          { value: '14', description: '17.2mm' },
+          { value: '15', description: '17.4mm' },
+          { value: '16', description: '17.8mm' },
+          { value: '17', description: '18.1mm' },
+          { value: '18', description: '18.5mm' },
+          { value: '19', description: '18.8mm' },
+          { value: '20', description: '19.2mm' },
+          { value: '21', description: '19.5mm' },
+          { value: '22', description: '19.8mm' },
+          { value: '23', description: '20mm' },
+          { value: '24', description: '20.4mm' }
+        ]
+      }
+    },
+    'GENTS RING': {
+      types: ['Size'],
+      values: {
+        'Size': [
+          { value: '10', description: '16mm' },
+          { value: '11', description: '16.2mm' },
+          { value: '12', description: '16.5mm' },
+          { value: '13', description: '16.8mm' },
+          { value: '14', description: '17.2mm' },
+          { value: '15', description: '17.4mm' },
+          { value: '16', description: '17.8mm' },
+          { value: '17', description: '18.1mm' },
+          { value: '18', description: '18.5mm' },
+          { value: '19', description: '18.8mm' },
+          { value: '20', description: '19.2mm' },
+          { value: '21', description: '19.5mm' },
+          { value: '22', description: '19.8mm' },
+          { value: '23', description: '20mm' },
+          { value: '24', description: '20.4mm' },
+          { value: '25', description: '20.8mm' },
+          { value: '26', description: '21.2mm' },
+          { value: '27', description: '21.6mm' },
+          { value: '28', description: '22mm' }
+        ]
+      }
+    },
+    'EARRING': {
+      types: ['Size'],
+      values: {
+        'Size': [
+          { value: 'Small', description: 'Up to 10mm' },
+          { value: 'Medium', description: '10-15mm' },
+          { value: 'Large', description: '15-20mm' },
+          { value: 'Extra Large', description: '20mm+' }
+        ]
+      }
+    },
+    'PENDANT': {
+      types: ['Size'],
+      values: {
+        'Size': [
+          { value: 'Small', description: 'Up to 15mm' },
+          { value: 'Medium', description: '15-25mm' },
+          { value: 'Large', description: '25-35mm' },
+          { value: 'Extra Large', description: '35mm+' }
+        ]
+      }
     }
-  },
-  // ... (keep all your existing size data)
-};
+  };
+
 
 const ProductionDashboard = () => {
   const [activeMenu, setActiveMenu] = useState('dashboard');
@@ -33,15 +145,14 @@ const ProductionDashboard = () => {
   const [loading, setLoading] = useState(false);
   const [productSerialNumbers, setProductSerialNumbers] = useState([]);
   const [previewImage, setPreviewImage] = useState(null);
-  const fileInputRef = useRef(null);
-  
+
   // Form state
   const [productForm, setProductForm] = useState({
     category: '',
     sizeType: '',
     sizeValue: '',
     description: '',
-    image: null
+    imageFile: null
   });
   
   const [designForm, setDesignForm] = useState({
@@ -122,58 +233,85 @@ const ProductionDashboard = () => {
     });
   };
 
-  // Submit form for Product Master
- const handleProductSubmit = async (e) => {
-  e.preventDefault();
-  try {
-    setLoading(true);
-    
-    const formData = new FormData();
-    formData.append('category', productForm.category);
-    formData.append('sizeType', productForm.sizeType);
-    formData.append('sizeValue', productForm.sizeValue);
-    formData.append('description', productForm.description);
-    
-    // Get the file from the file input
-    const file = fileInputRef.current.files[0];
+  // Handle image file selection
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
     if (file) {
-      formData.append('image', file);
-    }
-
-    const response = await axios.post(
-      `${API_BASE_URL}/api/pdmaster/createProductMaster`,
-      formData,
-      {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
+      // Validate file type
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+      if (!allowedTypes.includes(file.type)) {
+        alert('Please upload a JPEG, PNG, or WebP image');
+        return;
       }
-    );
 
-    if (response.data.success) {
-      alert('Product Master created successfully!');
-      // Reset form
+      // Validate file size (5MB max)
+      const maxSize = 5 * 1024 * 1024;
+      if (file.size > maxSize) {
+        alert('Image must be smaller than 5MB');
+        return;
+      }
+
       setProductForm({
-        category: '',
-        sizeType: '',
-        sizeValue: '',
-        description: ''
+        ...productForm,
+        imageFile: file
       });
-      setPreviewImage(null);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-      fetchAllProductMasters();
-    } else {
-      throw new Error(response.data.message || 'Failed to create product');
+      setPreviewImage(URL.createObjectURL(file));
     }
-  } catch (error) {
-    alert(`Error: ${error.response?.data?.message || error.message}`);
-    console.error('Submission error:', error);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
+
+  // Submit form for Product Master
+  const handleProductSubmit = async (e) => {
+    e.preventDefault();
+    
+    // Validate all fields
+    if (!productForm.category || !productForm.sizeType || !productForm.sizeValue || !productForm.description || !productForm.imageFile) {
+      alert('Please fill all fields and select an image');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      
+      const formData = new FormData();
+      formData.append('category', productForm.category);
+      formData.append('sizeType', productForm.sizeType);
+      formData.append('sizeValue', productForm.sizeValue);
+      formData.append('description', productForm.description);
+      formData.append('image', productForm.imageFile);
+
+      const response = await axios.post(
+        `${API_BASE_URL}/api/pdmaster/createProductMaster`,
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        }
+      );
+
+      if (response.data.success) {
+        alert('Product Master created successfully!');
+        // Reset form
+        setProductForm({
+          category: '',
+          sizeType: '',
+          sizeValue: '',
+          description: '',
+          imageFile: null
+        });
+        setPreviewImage(null);
+        fetchAllProductMasters();
+      } else {
+        throw new Error(response.data.message || 'Failed to create product');
+      }
+    } catch (error) {
+      alert(`Error: ${error.response?.data?.message || error.message}`);
+      console.error('Submission error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Submit form for Design Master
   const handleDesignSubmit = async (e) => {
     e.preventDefault();
@@ -209,17 +347,6 @@ const ProductionDashboard = () => {
       console.error('Submission error:', error);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPreviewImage(reader.result);
-      };
-      reader.readAsDataURL(file);
     }
   };
 
@@ -323,7 +450,6 @@ const ProductionDashboard = () => {
             <div className="relative">
               <input
                 type="file"
-                ref={fileInputRef}
                 onChange={handleImageChange}
                 accept="image/*"
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"

@@ -6,7 +6,7 @@ const ProductMasterSchema = new mongoose.Schema({
   sizeType: { type: String },
   sizeValue: { type: String },
   description: { type: String },
-  image: { type: String, required: true },
+  imageFile: { type: String, required: true },
   createdAt: { type: Date, default: Date.now }
 });
 

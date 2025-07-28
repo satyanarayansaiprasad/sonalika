@@ -50,7 +50,7 @@ app.use(session({
 // Routes
 app.use('/api/admin', adminRoutes);
 app.use('/api/team', teamRoutes);
-app.use('/api/pteam', pteamRoutes);
+app.use('/api/pdmaster', pteamRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

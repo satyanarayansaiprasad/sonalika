@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Layout, Menu, Button, Table, Form, Input, Select } from 'antd';
+import { Layout, Menu, Button, Table, Form, Input, Select, message } from 'antd';
 import { PlusOutlined, MinusOutlined } from '@ant-design/icons';
 import axios from 'axios';
-import { message } from 'antd';
+
 const { Header, Content, Sider } = Layout;
 const { Option } = Select;
 
@@ -139,6 +139,7 @@ const API_BASE_URL = import.meta.env.VITE_BASE_URL || 'http://localhost:3000';
     }
   };
 
+
 const ProductionDashboard = () => {
   const [collapsed, setCollapsed] = useState(false);
   const [activeMenu, setActiveMenu] = useState('dashboard');
@@ -148,21 +149,49 @@ const ProductionDashboard = () => {
   const [categories] = useState(Object.keys(sizeData));
   const [sizeTypes, setSizeTypes] = useState([]);
   const [sizeValues, setSizeValues] = useState([]);
-  const [allMasters, setAllMasters] = useState([]);
+  const [productMasters, setProductMasters] = useState([]);
+  const [designMasters, setDesignMasters] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [productSerialNumbers, setProductSerialNumbers] = useState([]);
 
-  // Fetch all masters on component mount
+  // Fetch all data on component mount
   useEffect(() => {
-    fetchAllMasters();
+    fetchAllProductMasters();
+    fetchAllDesignMasters();
   }, []);
 
-  const fetchAllMasters = async () => {
+  // Fetch product serial numbers when product masters load
+  useEffect(() => {
+    if (productMasters.length > 0) {
+      setProductSerialNumbers(
+        productMasters.map(pm => ({
+          value: pm.serialNumber,
+          label: pm.serialNumber
+        }))
+      );
+    }
+  }, [productMasters]);
+
+  const fetchAllProductMasters = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_BASE_URL}/api/pteam/getAllMasters`);
-      setAllMasters(response.data.data);
+      const response = await axios.get(`${API_BASE_URL}/api/pdmaster/getAllProductMasters`);
+      setProductMasters(response.data.data);
     } catch (error) {
-      message.error('Failed to fetch masters');
+      message.error('Failed to fetch product masters');
+      console.error('Fetch error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchAllDesignMasters = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get(`${API_BASE_URL}/api/pdmaster/getAllDesignMasters`);
+      setDesignMasters(response.data.data);
+    } catch (error) {
+      message.error('Failed to fetch design masters');
       console.error('Fetch error:', error);
     } finally {
       setLoading(false);
@@ -209,26 +238,19 @@ const ProductionDashboard = () => {
     ));
   };
 
-  // Submit form
-  const onFinish = async (values) => {
+  // Submit form for Product Master
+  const onFinishProductMaster = async (values) => {
     try {
       setLoading(true);
-
-      const payload = {
-        category: values.category,
-        sizeType: values.sizeType,
-        sizeValue: values.sizeValue,
-        description: values.description,
-      };
-
-      // If design master
-      if (masterType === 'design') {
-        payload.designItems = designItems;
-      }
-
+      
       const response = await axios.post(
-        `${API_BASE_URL}/api/pteam/createPmaster`,
-        payload,
+        `${API_BASE_URL}/api/pdmaster/createProductMaster`,
+        {
+          category: values.category,
+          sizeType: values.sizeType,
+          sizeValue: values.sizeValue,
+          description: values.description
+        },
         {
           headers: {
             'Content-Type': 'application/json'
@@ -236,12 +258,53 @@ const ProductionDashboard = () => {
         }
       );
 
-      message.success('Master created successfully!');
+      message.success('Product Master created successfully!');
+      form.resetFields();
+      fetchAllProductMasters();
+    } catch (error) {
+      message.error(`Failed to create product master: ${error.response?.data?.message || error.message}`);
+      console.error('Submission error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Submit form for Design Master
+  const onFinishDesignMaster = async (values) => {
+    try {
+      setLoading(true);
+
+      if (designItems.length === 0) {
+        throw new Error('Please add at least one design item');
+      }
+
+      // For simplicity, taking the first design item
+      const designItem = designItems[0];
+      
+      const response = await axios.post(
+        `${API_BASE_URL}/api/pdmaster/createDesignMaster`,
+        {
+          serialNumber: values.serialNumber,
+          grossWt: designItem.grossWt,
+          netWt: designItem.netWt,
+          diaWt: designItem.diaWt,
+          diaPcs: designItem.diaPcs,
+          clarity: designItem.clarity,
+          color: designItem.color
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      message.success('Design Master created successfully!');
       form.resetFields();
       setDesignItems([]);
-      fetchAllMasters();
+      fetchAllDesignMasters();
     } catch (error) {
-      message.error(`Failed to create master: ${error.response?.data?.message || error.message}`);
+      message.error(`Failed to create design master: ${error.response?.data?.message || error.message}`);
       console.error('Submission error:', error);
     } finally {
       setLoading(false);
@@ -294,7 +357,7 @@ const ProductionDashboard = () => {
                 <Form
                   form={form}
                   layout="vertical"
-                  onFinish={onFinish}
+                  onFinish={onFinishProductMaster}
                   autoComplete="off"
                 >
                   <Form.Item
@@ -362,9 +425,22 @@ const ProductionDashboard = () => {
                 <Form
                   form={form}
                   layout="vertical"
-                  onFinish={onFinish}
+                  onFinish={onFinishDesignMaster}
                   autoComplete="off"
                 >
+                  <Form.Item
+                    label="Product Serial Number"
+                    name="serialNumber"
+                    rules={[{ required: true, message: 'Please select product serial number' }]}
+                  >
+                    <Select 
+                      placeholder="Select product serial number"
+                      options={productSerialNumbers}
+                      showSearch
+                      optionFilterProp="label"
+                    />
+                  </Form.Item>
+
                   <div style={{ marginBottom: 16 }}>
                     <Button type="primary" icon={<PlusOutlined />} onClick={addDesignItem}>
                       Add Design Item
@@ -450,16 +526,32 @@ const ProductionDashboard = () => {
               )}
               
               <div style={{ marginTop: 24 }}>
-                <h3>All Masters</h3>
+                <h3>Product Masters</h3>
                 <Table 
-                  dataSource={allMasters}
+                  dataSource={productMasters}
                   columns={[
-                    { title: 'Serial Number', dataIndex: ['productMaster', 'serialNumber'], key: 'serialNumber' },
-                    { title: 'Category', dataIndex: ['productMaster', 'category'], key: 'category' },
-                    { title: 'Style Number', dataIndex: ['designMaster', 'styleNumber'], key: 'styleNumber' },
-                    { title: 'Description', dataIndex: ['productMaster', 'description'], key: 'description' },
+                    { title: 'Serial Number', dataIndex: 'serialNumber', key: 'serialNumber' },
+                    { title: 'Category', dataIndex: 'category', key: 'category' },
+                    { title: 'Size Type', dataIndex: 'sizeType', key: 'sizeType' },
+                    { title: 'Size Value', dataIndex: 'sizeValue', key: 'sizeValue' },
+                    { title: 'Description', dataIndex: 'description', key: 'description' },
                   ]}
-                  rowKey={record => record._id}
+                  rowKey="_id"
+                  loading={loading}
+                />
+
+                <h3 style={{ marginTop: 24 }}>Design Masters</h3>
+                <Table 
+                  dataSource={designMasters}
+                  columns={[
+                    { title: 'Product Serial', dataIndex: 'serialNumber', key: 'serialNumber' },
+                    { title: 'Style Number', dataIndex: 'styleNumber', key: 'styleNumber' },
+                    { title: 'Gross Weight', dataIndex: 'grossWt', key: 'grossWt' },
+                    { title: 'Net Weight', dataIndex: 'netWt', key: 'netWt' },
+                    { title: 'Diamond Weight', dataIndex: 'diaWt', key: 'diaWt' },
+                    { title: 'Diamond Pieces', dataIndex: 'diaPcs', key: 'diaPcs' },
+                  ]}
+                  rowKey="_id"
                   loading={loading}
                 />
               </div>

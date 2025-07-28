@@ -10,6 +10,7 @@ const productionmaster = new mongoose.Schema({
     sizeType: String,
     sizeValue: String,
     description: String,
+      image: String,
    
   },
   designMaster: {

@@ -1,4 +1,6 @@
 const express = require('express');
+const multer = require('multer');
+const router = express.Router();
 const {
   createProductMaster,
   createDesignMaster,
@@ -6,9 +8,9 @@ const {
   getAllDesignMasters
 } = require('../controllers/PDmaster');
 
-const router = express.Router();
+const upload = require('../middleware/multer');
 
-router.post('/createProductMaster', createProductMaster);
+router.post('/createProductMaster',upload.single('image'), createProductMaster);
 router.post('/createDesignMaster', createDesignMaster);
 router.get('/getAllProductMasters', getAllProductMasters);
 router.get('/getAllDesignMasters', getAllDesignMasters);

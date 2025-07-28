@@ -1,6 +1,8 @@
 const path = require('path');
+const fs = require('fs');
 const ProductMaster = require('../models/ProductMaster');
 const DesignMaster = require('../models/DesignMaster');
+const imagekit = require('../config/imagekit');
 
 // Generate next Product Serial Number
 async function getNextProductSerialNumber() {
@@ -24,7 +26,31 @@ async function getNextStyleNumber() {
 exports.createProductMaster = async (req, res) => {
   try {
     const { category, sizeType, sizeValue, description } = req.body;
+    const imageFile = req.file;
 
+    if (!imageFile) {
+      return res.status(400).json({ message: "Image is required" });
+    }
+
+    const fileBuffer = fs.readFileSync(imageFile.path);
+    
+    // Upload to ImageKit
+    const uploadResponse = await imagekit.upload({
+      file: fileBuffer,
+      fileName: imageFile.originalname,
+      folder: "/products",
+    });
+
+    const optimizedUrl = imagekit.url({
+      path: uploadResponse.filePath,
+      transformation: [
+        { quality: "auto" },
+        { format: "webp" },
+        { width: "1280" }
+      ]
+    });
+
+    const image = optimizedUrl;
     const serialNumber = await getNextProductSerialNumber();
 
     const newProduct = new ProductMaster({
@@ -32,10 +58,15 @@ exports.createProductMaster = async (req, res) => {
       category,
       sizeType,
       sizeValue,
-      description
+      description,
+      image
     });
 
     await newProduct.save();
+    
+    // Delete the temporary file
+    fs.unlinkSync(imageFile.path);
+    
     res.status(201).json({ success: true, data: newProduct });
   } catch (err) {
     console.error('Error creating Product Master:', err);
@@ -46,6 +77,8 @@ exports.createProductMaster = async (req, res) => {
     });
   }
 };
+
+// Other controller methods remain the same...
 
 // Create Design Master
 exports.createDesignMaster = async (req, res) => {

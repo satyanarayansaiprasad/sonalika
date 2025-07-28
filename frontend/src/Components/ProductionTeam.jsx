@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Layout, Menu, Button, Table, Form, Input, Select } from 'antd';
 import { PlusOutlined, MinusOutlined } from '@ant-design/icons';
 import axios from 'axios';
-
+import { message } from 'antd';
 const { Header, Content, Sider } = Layout;
 const { Option } = Select;
 

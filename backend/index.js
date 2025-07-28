@@ -6,6 +6,8 @@ const path = require('path');
 const connectDB = require('./config/db');
 const adminRoutes = require('./routes/adminRoutes');
 const teamRoutes = require('./routes/teamRoutes');
+const pdmaster = require('./routes/pdmaster');  
+
 const multer = require('multer');
 const fs = require('fs');
 
@@ -49,6 +51,7 @@ app.use(session({
 // Routes
 app.use('/api/admin', adminRoutes);
 app.use('/api/team', teamRoutes);
+app.use('/api/pdmaster',pdmaster);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

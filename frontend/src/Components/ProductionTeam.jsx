@@ -1,75 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { FaGem, FaBoxOpen, FaChartLine, FaCog, FaPlus, FaTrash, FaBars, FaTimes } from 'react-icons/fa';
+import { Layout, Menu, Button, Table, Form, Input, Select, Upload, message } from 'antd';
+import { UploadOutlined, PlusOutlined, MinusOutlined } from '@ant-design/icons';
+import axios from 'axios';
 
-const ProductionTeam = () => {
-  const [activeSection, setActiveSection] = useState('dashboard');
-  const [activeForm, setActiveForm] = useState(null);
-  const [designItems, setDesignItems] = useState([{ 
-    id: 1, 
-    styleNumber: '', 
-    grossWt: '', 
-    netWt: '', 
-    diaWt: '', 
-    diaPcs: '', 
-    clarity: 'vvs', 
-    color: 'e-f' 
-  }]);
-  const [productItems, setProductItems] = useState([{
-    id: 1,
-    category: '',
-    sizeType: '',
-    sizeValue: '',
-    description: ''
-  }]);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
+const { Header, Content, Sider } = Layout;
+const { Option } = Select;
 
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+// Get base URL from environment variable
+const API_BASE_URL = import.meta.env.VITE_BASE_URL || 'http://localhost:3000';
 
-  const addDesignItem = () => {
-    setDesignItems([...designItems, { 
-      id: designItems.length + 1, 
-      styleNumber: '', 
-      grossWt: '', 
-      netWt: '', 
-      diaWt: '', 
-      diaPcs: '', 
-      clarity: 'vvs', 
-      color: 'e-f' 
-    }]);
-  };
-
-  const removeDesignItem = (id) => {
-    if (designItems.length > 1) {
-      setDesignItems(designItems.filter(item => item.id !== id));
-    }
-  };
-
-  const addProductItem = () => {
-    setProductItems([...productItems, {
-      id: productItems.length + 1,
-      category: '',
-      sizeType: '',
-      sizeValue: '',
-      description: ''
-    }]);
-  };
-
-  const removeProductItem = (id) => {
-    if (productItems.length > 1) {
-      setProductItems(productItems.filter(item => item.id !== id));
-    }
-  };
-
-  // Size data based on the provided images
+// Size data (as provided)
+ // Size data based on the provided images
   const sizeData = {
     'NECKLACE': {
       types: ['Length'],
@@ -199,761 +140,367 @@ const ProductionTeam = () => {
     }
   };
 
-  const handleSizeSelection = (itemId, category, sizeType, sizeValue) => {
-    const updatedItems = productItems.map(item => {
-      if (item.id === itemId) {
-        const description = sizeData[category]?.values[sizeType]?.find(
-          size => size.value === sizeValue
-        )?.description || '';
-        
-        return {
-          ...item,
-          category,
-          sizeType,
-          sizeValue,
-          description
-        };
-      }
-      return item;
-    });
-    setProductItems(updatedItems);
+const ProductionDashboard = () => {
+  const [collapsed, setCollapsed] = useState(false);
+  const [activeMenu, setActiveMenu] = useState('dashboard');
+  const [masterType, setMasterType] = useState(null);
+  const [designItems, setDesignItems] = useState([]);
+  const [form] = Form.useForm();
+  const [categories] = useState(Object.keys(sizeData));
+  const [sizeTypes, setSizeTypes] = useState([]);
+  const [sizeValues, setSizeValues] = useState([]);
+  const [allMasters, setAllMasters] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  // Fetch all masters on component mount
+  useEffect(() => {
+    fetchAllMasters();
+  }, []);
+
+  const fetchAllMasters = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get(`${API_BASE_URL}/api/pdmaster/getAllMasters`);
+      setAllMasters(response.data.data);
+    } catch (error) {
+      message.error('Failed to fetch masters');
+      console.error('Fetch error:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const ProductSizeCard = ({ item }) => {
-    return (
-      <div className="bg-white rounded-xl shadow-md p-6 mb-6 border border-gray-200">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold text-gray-800">Product Size #{item.id}</h3>
-          {productItems.length > 1 && (
-            <button 
-              onClick={() => removeProductItem(item.id)}
-              className="text-red-500 hover:text-red-700 transition-colors p-2 rounded-full hover:bg-red-50"
-            >
-              <FaTrash />
-            </button>
-          )}
-        </div>
+  // Handle category change to update size types
+  const handleCategoryChange = (value) => {
+    const types = sizeData[value]?.types || [];
+    setSizeTypes(types);
+    form.setFieldsValue({ sizeType: undefined, sizeValue: undefined });
+    setSizeValues([]);
+  };
 
-        {/* Category Selection */}
-        <div className="mb-6">
-          <h4 className="text-sm font-medium text-gray-700 mb-3">Select Jewelry Category</h4>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-            {Object.keys(sizeData).map(category => (
-              <button
-                key={category}
-                onClick={() => handleSizeSelection(item.id, category, '', '')}
-                className={`p-3 rounded-lg border-2 transition-all duration-200 flex items-center justify-center ${
-                  item.category === category
-                    ? 'border-[#05054D] bg-[#05054D] text-white shadow-md'
-                    : 'border-gray-300 hover:border-[#05054D] hover:bg-gray-50'
-                }`}
-              >
-                {category}
-              </button>
-            ))}
-          </div>
-        </div>
+  // Handle size type change to update size values
+  const handleSizeTypeChange = (value, category) => {
+    const values = sizeData[category]?.values[value] || [];
+    setSizeValues(values);
+    form.setFieldsValue({ sizeValue: undefined });
+  };
 
-        {/* Size Type Selection */}
-        {item.category && (
-          <div className="mb-6">
-            <h4 className="text-sm font-medium text-gray-700 mb-3">Select Size Type</h4>
-            <div className="flex flex-wrap gap-3">
-              {sizeData[item.category]?.types.map(type => (
-                <button
-                  key={type}
-                  onClick={() => handleSizeSelection(item.id, item.category, type, '')}
-                  className={`px-4 py-2 rounded-lg border-2 transition-all duration-200 ${
-                    item.sizeType === type
-                      ? 'border-[#1A6E1A] bg-[#1A6E1A] text-white shadow-md'
-                      : 'border-gray-300 hover:border-[#1A6E1A] hover:bg-gray-50'
-                  }`}
-                >
-                  {type}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
+  // Add new design item
+  const addDesignItem = () => {
+    setDesignItems([...designItems, { 
+      id: Date.now(), // Using timestamp for unique ID
+      grossWt: '', 
+      netWt: '', 
+      diaWt: '', 
+      diaPcs: '', 
+      clarity: 'vvs', 
+      color: 'e-f' 
+    }]);
+  };
 
-        {/* Size Value Selection */}
-        {item.sizeType && (
-          <div className="mb-6">
-            <h4 className="text-sm font-medium text-gray-700 mb-3">Select {item.sizeType}</h4>
-            <div className="flex flex-wrap gap-3">
-              {sizeData[item.category]?.values[item.sizeType]?.map(size => (
-                <button
-                  key={size.value}
-                  onClick={() => handleSizeSelection(
-                    item.id, 
-                    item.category, 
-                    item.sizeType, 
-                    size.value
-                  )}
-                  className={`px-4 py-2 rounded-lg border-2 transition-all duration-200 ${
-                    item.sizeValue === size.value
-                      ? 'border-[#FFD700] bg-[#FFD700] text-[#05054D] shadow-md font-medium'
-                      : 'border-gray-300 hover:border-[#FFD700] hover:bg-[#FFF8E6]'
-                  }`}
-                >
-                  {size.value}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
+  // Remove design item
+  const removeDesignItem = (id) => {
+    setDesignItems(designItems.filter(item => item.id !== id));
+  };
 
-        {/* Selected Size Details */}
-        {item.description && (
-          <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-            <h4 className="text-sm font-medium text-gray-700 mb-1">Selected Size Details</h4>
-            <p className="text-gray-800">{item.description}</p>
-          </div>
-        )}
-      </div>
-    );
+  // Handle design item change
+  const handleDesignItemChange = (id, field, value) => {
+    setDesignItems(designItems.map(item => 
+      item.id === id ? { ...item, [field]: value } : item
+    ));
+  };
+
+  // Submit form
+  const onFinish = async (values) => {
+    try {
+      setLoading(true);
+      const formData = new FormData();
+      
+      // Append product data
+      formData.append('category', values.category);
+      formData.append('sizeType', values.sizeType);
+      formData.append('sizeValue', values.sizeValue);
+      formData.append('description', values.description);
+      
+      // Append design items
+      designItems.forEach((item, index) => {
+        formData.append(`designItems[${index}][grossWt]`, item.grossWt);
+        formData.append(`designItems[${index}][netWt]`, item.netWt);
+        formData.append(`designItems[${index}][diaWt]`, item.diaWt);
+        formData.append(`designItems[${index}][diaPcs]`, item.diaPcs);
+        formData.append(`designItems[${index}][clarity]`, item.clarity);
+        formData.append(`designItems[${index}][color]`, item.color);
+      });
+
+      // Append files if they exist
+      if (values.productImage) {
+        formData.append('productImage', values.productImage[0].originFileObj);
+      }
+      if (values.designImage) {
+        formData.append('designImage', values.designImage[0].originFileObj);
+      }
+
+      const response = await axios.post(`${API_BASE_URL}/api/pdmaster/createPmaster`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
+      message.success('Master created successfully!');
+      form.resetFields();
+      setDesignItems([]);
+      fetchAllMasters();
+    } catch (error) {
+      message.error('Failed to create master');
+      console.error('Submission error:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      {/* Mobile Header */}
-      {isMobile && (
-        <header className="md:hidden fixed top-0 left-0 right-0 bg-[#05054D] text-[#FFF2A6] p-4 shadow-md z-50 flex justify-between items-center">
-          <h1 className="text-lg font-semibold">
-            {activeSection === 'dashboard' ? 'Dashboard' : 'Production Master'}
-          </h1>
-          <button 
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="text-2xl focus:outline-none"
-          >
-            {isMobileMenuOpen ? <FaTimes /> : <FaBars />}
-          </button>
-        </header>
-      )}
-
-      {/* Left Sidebar */}
-      <div className={`${isMobile ? 
-        (isMobileMenuOpen ? 'fixed inset-0 z-40 w-64' : 'hidden') 
-        : 'w-64'} bg-[#05054D] text-[#FFF2A6] shadow-xl`}>
-        <div className="p-6 border-b border-[#1A1A6E]">
-          <h2 className="text-xl font-bold text-center text-[#FFD700] flex ">
-          
-            SONALIKA JEWELLERS
-          </h2>
-        </div>
-        
-        <nav className="p-4 space-y-2">
-          <button
-            onClick={() => {
-              setActiveSection('dashboard');
-              setActiveForm(null);
-              setIsMobileMenuOpen(false);
-            }}
-            className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-              activeSection === 'dashboard' 
-                ? 'bg-[#1A1A6E] text-white shadow-md'
-                : 'text-[#FFF2A6] hover:bg-[#1A1A6E] hover:text-white'
-            }`}
-          >
-            <FaChartLine className="text-lg" />
-            <span className="font-medium">Dashboard</span>
-          </button>
-          
-          <button
-            onClick={() => {
-              setActiveSection('master');
-              setActiveForm(null);
-              setIsMobileMenuOpen(false);
-            }}
-            className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-              activeSection === 'master' 
-                ? 'bg-[#1A1A6E] text-white shadow-md'
-                : 'text-[#FFF2A6] hover:bg-[#1A1A6E] hover:text-white'
-            }`}
-          >
-            <FaCog className="text-lg" />
-            <span className="font-medium">Master</span>
-          </button>
-        </nav>
-      </div>
-
-      {/* Main Content Area */}
-      <div className={`flex-1 flex flex-col overflow-hidden ${isMobile ? 'mt-16' : ''}`}>
-        {/* Desktop Top Header */}
-        {!isMobile && (
-          <header className="bg-[#05054D] text-[#FFF2A6] p-4 shadow-md">
-            <div className="flex justify-between items-center">
-              <h1 className="text-xl font-semibold">
-                {activeSection === 'dashboard' ? 'Production Dashboard' : 'Production Master'}
-              </h1>
-              <div className="flex items-center space-x-4">
-                <div className="bg-[#1A1A6E] rounded-full w-8 h-8 flex items-center justify-center text-[#FFF2A6]">
-                  <span className="font-medium">SK</span>
-                </div>
-              </div>
+    <Layout style={{ minHeight: '100vh' }}>
+      <Sider collapsible collapsed={collapsed} onCollapse={setCollapsed}>
+        <div className="logo" style={{ height: '32px', margin: '16px', background: 'rgba(255, 255, 255, 0.2)' }} />
+        <Menu theme="dark" mode="inline" defaultSelectedKeys={['dashboard']}>
+          <Menu.Item key="dashboard" onClick={() => setActiveMenu('dashboard')}>
+            Dashboard
+          </Menu.Item>
+          <Menu.Item key="master" onClick={() => setActiveMenu('master')}>
+            Master
+          </Menu.Item>
+        </Menu>
+      </Sider>
+      
+      <Layout className="site-layout">
+        <Header style={{ padding: 0, background: '#fff' }} />
+        <Content style={{ margin: '16px' }}>
+          {activeMenu === 'dashboard' && (
+            <div style={{ padding: 24, minHeight: 360, background: '#fff' }}>
+              <h2>Production Dashboard</h2>
+              {/* Dashboard content goes here */}
             </div>
-          </header>
-        )}
-
-        {/* Main Content */}
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gradient-to-br from-[#F8F9FA] to-[#E9ECEF]">
-          {activeSection === 'dashboard' && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="max-w-6xl mx-auto"
-            >
-              <div className="bg-white rounded-xl shadow-lg p-4 md:p-6 border border-[#E0E0E0]">
-                <h2 className="text-xl md:text-2xl font-bold text-[#05054D] mb-2">Welcome to Sonalika Jewellers</h2>
-                <p className="text-[#555555] mb-4 md:mb-6">Production Team Dashboard Overview</p>
-                
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-                  <div className="bg-[#F0F4FF] border border-[#D6E0FF] rounded-lg p-3 md:p-4">
-                    <h3 className="text-[#05054D] font-medium">Total Designs</h3>
-                    <p className="text-2xl md:text-3xl font-bold text-[#1A1A6E]">1,248</p>
-                  </div>
-                  <div className="bg-[#F0FFF4] border border-[#D6FFE0] rounded-lg p-3 md:p-4">
-                    <h3 className="text-[#006400] font-medium">Active Products</h3>
-                    <p className="text-2xl md:text-3xl font-bold text-[#008000]">892</p>
-                  </div>
-                  <div className="bg-[#FFF8E6] border border-[#FFEBB2] rounded-lg p-3 md:p-4">
-                    <h3 className="text-[#8A6D00] font-medium">In Production</h3>
-                    <p className="text-2xl md:text-3xl font-bold text-[#FFD700]">156</p>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
           )}
-
-          {activeSection === 'master' && (
-            <div className="max-w-6xl mx-auto">
-              <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-[#E0E0E0]">
-                {/* Master Header */}
-                {/* <div className="bg-[#05054D] px-4 md:px-6 py-3 md:py-4">
-                  <h1 className="text-lg md:text-xl font-semibold text-[#FFF2A6]">Production Team Master</h1>
-                </div>
-                 */}
-                <div className="p-4 md:p-6">
-                  {/* Centered Buttons */}
-                  <div className="flex flex-col sm:flex-row justify-center gap-4 md:gap-6 mb-6 md:mb-8">
-                    <button
-                      onClick={() => setActiveForm('design')}
-                      className={`px-4 py-2 md:px-8 md:py-3 rounded-lg transition-all duration-200 flex items-center justify-center ${
-                        activeForm === 'design'
-                          ? 'bg-[#FFD700] text-[#05054D] shadow-md font-semibold'
-                          : 'bg-white border-2 border-[#FFD700] text-[#05054D] hover:bg-[#FFF8E6]'
-                      }`}
-                    >
-                      <FaBoxOpen className="mr-2" />
-                      Design Master
-                    </button>
-
-                    <button
-                      onClick={() => setActiveForm('product')}
-                      className={`px-4 py-2 md:px-8 md:py-3 rounded-lg transition-all duration-200 flex items-center justify-center ${
-                        activeForm === 'product'
-                          ? 'bg-[#1A6E1A] text-white shadow-md font-semibold'
-                          : 'bg-white border-2 border-[#1A6E1A] text-[#1A6E1A] hover:bg-[#F0FFF4]'
-                      }`}
-                    >
-                      <FaGem className="mr-2" />
-                      Product Master
-                    </button>
-                  </div>
-
-                  {/* Design Master Form */}
-                  {activeForm === 'design' && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="bg-[#FAFAFA] p-4 md:p-6 rounded-lg border-2 border-[#EEEEEE]"
-                    >
-                      <h2 className="text-lg md:text-xl font-semibold text-[#05054D] mb-4 md:mb-6">Design Master Form</h2>
-                      
-                      {/* Desktop: Single Row Table */}
-                      {!isMobile && (
-                        <div className="overflow-x-auto">
-                          <table className="w-full">
-                            <thead>
-                              <tr className="bg-[#323244] text-white">
-                                <th className="p-3 text-left min-w-[120px]">Style No.</th>
-                                <th className="p-3 text-left min-w-[100px]">Gross WT</th>
-                                <th className="p-3 text-left min-w-[100px]">Net WT</th>
-                                <th className="p-3 text-left min-w-[100px]">Dia WT</th>
-                                <th className="p-3 text-left min-w-[100px]">Dia PCS</th>
-                                <th className="p-3 text-left min-w-[120px]">Clarity</th>
-                                <th className="p-3 text-left min-w-[120px]">Color</th>
-                                <th className="p-3 text-left min-w-[80px]">Action</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {designItems.map((item) => (
-                                <tr key={item.id} className="border-b border-gray-200 hover:bg-gray-50">
-                                  <td className="p-3">
-                                    <input 
-                                      type="text" 
-                                      className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                      value={item.styleNumber}
-                                      onChange={(e) => {
-                                        const updatedItems = designItems.map(i => 
-                                          i.id === item.id ? {...i, styleNumber: e.target.value} : i
-                                        );
-                                        setDesignItems(updatedItems);
-                                      }}
-                                    />
-                                  </td>
-                                  <td className="p-3">
-                                    <input 
-                                      type="number" 
-                                      className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                      value={item.grossWt}
-                                      step="0.01"
-                                      onChange={(e) => {
-                                        const updatedItems = designItems.map(i => 
-                                          i.id === item.id ? {...i, grossWt: e.target.value} : i
-                                        );
-                                        setDesignItems(updatedItems);
-                                      }}
-                                    />
-                                  </td>
-                                  <td className="p-3">
-                                    <input 
-                                      type="number" 
-                                      className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                      value={item.netWt}
-                                      step="0.01"
-                                      onChange={(e) => {
-                                        const updatedItems = designItems.map(i => 
-                                          i.id === item.id ? {...i, netWt: e.target.value} : i
-                                        );
-                                        setDesignItems(updatedItems);
-                                      }}
-                                    />
-                                  </td>
-                                  <td className="p-3">
-                                    <input 
-                                      type="number" 
-                                      className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                      value={item.diaWt}
-                                      step="0.01"
-                                      onChange={(e) => {
-                                        const updatedItems = designItems.map(i => 
-                                          i.id === item.id ? {...i, diaWt: e.target.value} : i
-                                        );
-                                        setDesignItems(updatedItems);
-                                      }}
-                                    />
-                                  </td>
-                                  <td className="p-3">
-                                    <input 
-                                      type="number" 
-                                      className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                      value={item.diaPcs}
-                                      onChange={(e) => {
-                                        const updatedItems = designItems.map(i => 
-                                          i.id === item.id ? {...i, diaPcs: e.target.value} : i
-                                        );
-                                        setDesignItems(updatedItems);
-                                      }}
-                                    />
-                                  </td>
-                                  <td className="p-3">
-                                    <select 
-                                      className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                      value={item.clarity}
-                                      onChange={(e) => {
-                                        const updatedItems = designItems.map(i => 
-                                          i.id === item.id ? {...i, clarity: e.target.value} : i
-                                        );
-                                        setDesignItems(updatedItems);
-                                      }}
-                                    >
-                                      {['vvs', 'vvs-vs', 'vs', 'vs-si', 'si'].map(option => (
-                                        <option key={option} value={option}>{option.toUpperCase()}</option>
-                                      ))}
-                                    </select>
-                                  </td>
-                                  <td className="p-3">
-                                    <select 
-                                      className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                      value={item.color}
-                                      onChange={(e) => {
-                                        const updatedItems = designItems.map(i => 
-                                          i.id === item.id ? {...i, color: e.target.value} : i
-                                        );
-                                        setDesignItems(updatedItems);
-                                      }}
-                                    >
-                                      {['e-f', 'f-g', 'g-h', 'h-i', 'i-j', 'I'].map(color => (
-                                        <option key={color} value={color}>{color.toUpperCase()}</option>
-                                      ))}
-                                    </select>
-                                  </td>
-                                  <td className="p-3">
-                                    <button 
-                                      onClick={() => removeDesignItem(item.id)}
-                                      className="p-2 text-red-500 hover:text-red-700 transition-colors"
-                                      disabled={designItems.length <= 1}
-                                    >
-                                      <FaTrash />
-                                    </button>
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      )}
-
-                      {/* Mobile: Card Layout */}
-                      {isMobile && (
-                        <div className="space-y-4">
-                          {designItems.map((item) => (
-                            <div key={item.id} className="border border-gray-200 rounded-lg p-4 space-y-3 bg-white">
-                              <div className="flex justify-between items-center">
-                                <h3 className="font-medium text-[#05054D]">Item #{item.id}</h3>
-                                <button 
-                                  onClick={() => removeDesignItem(item.id)}
-                                  className="p-1 text-red-500 hover:text-red-700 transition-colors"
-                                  disabled={designItems.length <= 1}
-                                >
-                                  <FaTrash />
-                                </button>
-                              </div>
-                              
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <div>
-                                  <label className="block mb-1 text-sm font-medium text-gray-700">Style Number</label>
-                                  <input 
-                                    type="text" 
-                                    className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    value={item.styleNumber}
-                                    onChange={(e) => {
-                                      const updatedItems = designItems.map(i => 
-                                        i.id === item.id ? {...i, styleNumber: e.target.value} : i
-                                      );
-                                      setDesignItems(updatedItems);
-                                    }}
-                                  />
-                                </div>
-                                <div>
-                                  <label className="block mb-1 text-sm font-medium text-gray-700">Gross WT (g)</label>
-                                  <input 
-                                    type="number" 
-                                    className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    value={item.grossWt}
-                                    step="0.01"
-                                    onChange={(e) => {
-                                      const updatedItems = designItems.map(i => 
-                                        i.id === item.id ? {...i, grossWt: e.target.value} : i
-                                      );
-                                      setDesignItems(updatedItems);
-                                    }}
-                                  />
-                                </div>
-                                <div>
-                                  <label className="block mb-1 text-sm font-medium text-gray-700">Net WT (g)</label>
-                                  <input 
-                                    type="number" 
-                                    className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    value={item.netWt}
-                                    step="0.01"
-                                    onChange={(e) => {
-                                      const updatedItems = designItems.map(i => 
-                                        i.id === item.id ? {...i, netWt: e.target.value} : i
-                                      );
-                                      setDesignItems(updatedItems);
-                                    }}
-                                  />
-                                </div>
-                                <div>
-                                  <label className="block mb-1 text-sm font-medium text-gray-700">Dia WT (ct)</label>
-                                  <input 
-                                    type="number" 
-                                    className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    value={item.diaWt}
-                                    step="0.01"
-                                    onChange={(e) => {
-                                      const updatedItems = designItems.map(i => 
-                                        i.id === item.id ? {...i, diaWt: e.target.value} : i
-                                      );
-                                      setDesignItems(updatedItems);
-                                    }}
-                                  />
-                                </div>
-                                <div>
-                                  <label className="block mb-1 text-sm font-medium text-gray-700">Dia PCS</label>
-                                  <input 
-                                    type="number" 
-                                    className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    value={item.diaPcs}
-                                    onChange={(e) => {
-                                      const updatedItems = designItems.map(i => 
-                                        i.id === item.id ? {...i, diaPcs: e.target.value} : i
-                                      );
-                                      setDesignItems(updatedItems);
-                                    }}
-                                  />
-                                </div>
-                                <div>
-                                  <label className="block mb-1 text-sm font-medium text-gray-700">Diamond Clarity</label>
-                                  <select 
-                                    className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    value={item.clarity}
-                                    onChange={(e) => {
-                                      const updatedItems = designItems.map(i => 
-                                        i.id === item.id ? {...i, clarity: e.target.value} : i
-                                      );
-                                      setDesignItems(updatedItems);
-                                    }}
-                                  >
-                                    {['vvs', 'vvs-vs', 'vs', 'vs-si', 'si'].map(option => (
-                                      <option key={option} value={option}>{option.toUpperCase()}</option>
-                                    ))}
-                                  </select>
-                                </div>
-                                <div>
-                                  <label className="block mb-1 text-sm font-medium text-gray-700">Diamond Color</label>
-                                  <select 
-                                    className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    value={item.color}
-                                    onChange={(e) => {
-                                      const updatedItems = designItems.map(i => 
-                                        i.id === item.id ? {...i, color: e.target.value} : i
-                                      );
-                                      setDesignItems(updatedItems);
-                                    }}
-                                  >
-                                    {['e-f', 'f-g', 'g-h', 'h-i', 'i-j', 'I'].map(color => (
-                                      <option key={color} value={color}>{color.toUpperCase()}</option>
-                                    ))}
-                                  </select>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* Add Item Button */}
-                      <div className="mt-6 flex justify-start">
-                        <button 
-                          onClick={addDesignItem}
-                          className="flex items-center px-4 py-2 bg-[#05054D] text-[#FFF2A6] rounded-lg hover:bg-[#1A1A6E] transition-colors shadow-md"
-                        >
-                          <FaPlus className="mr-2" />
-                          Add New Item
-                        </button>
-                      </div>
-
-                      <div className="flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-4 pt-6">
-                        <button 
-                          type="button" 
-                          className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
-                        >
-                          Cancel
-                        </button>
-                        <button 
-                          type="submit" 
-                          className="px-6 py-2 bg-[#05054D] text-[#FFF2A6] rounded-lg hover:bg-[#1A1A6E] transition-colors shadow-md"
-                        >
-                          Save Design
-                        </button>
-                      </div>
-                    </motion.div>
-                  )}
-
-                 {/* Product Master Form */}
-{activeForm === 'product' && (
-  <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    className="bg-white p-4 md:p-6 rounded-lg border border-gray-200"
-  >
-    <h2 className="text-lg md:text-xl font-semibold text-[#05054D] mb-4 md:mb-6">Product Size Master</h2>
-    <p className="text-gray-600 mb-6">Configure sizes for different jewelry categories. Select a category to see available sizes.</p>
-    
-    {/* Product Size Cards */}
-    <div className="space-y-6">
-      {productItems.map(item => (
-        <div key={item.id} className="bg-white rounded-xl shadow-md p-6 border border-gray-200">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold text-gray-800">Product Size Configuration #{item.id}</h3>
-            {productItems.length > 1 && (
-              <button 
-                onClick={() => removeProductItem(item.id)}
-                className="text-red-500 hover:text-red-700 transition-colors p-2 rounded-full hover:bg-red-50"
-              >
-                <FaTrash />
-              </button>
-            )}
-          </div>
-
-          {/* Category Selection with Default */}
-          <div className="mb-6">
-            <h4 className="text-sm font-medium text-gray-700 mb-3">1. Select Jewelry Category</h4>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-              {Object.keys(sizeData).map(category => (
-                <button
-                  key={category}
-                  onClick={() => {
-                    // Auto-select first size type but allow changing
-                    handleSizeSelection(
-                      item.id, 
-                      category, 
-                      sizeData[category].types[0], 
-                      ''
-                    );
-                  }}
-                  className={`p-3 rounded-lg border-2 transition-all duration-200 flex items-center justify-center ${
-                    item.category === category
-                      ? 'border-[#05054D] bg-[#05054D] text-white shadow-md'
-                      : 'border-gray-300 hover:border-[#05054D] hover:bg-gray-50'
-                  }`}
+          
+          {activeMenu === 'master' && (
+            <div style={{ padding: 24, minHeight: 360, background: '#fff' }}>
+              <div style={{ marginBottom: 16 }}>
+                <Button 
+                  type={masterType === 'product' ? 'primary' : 'default'} 
+                  onClick={() => setMasterType('product')}
+                  style={{ marginRight: 8 }}
                 >
-                  {category.replace('LADIES ', '').replace('GENTS ', '')}
-                  {category.includes('LADIES') && (
-                    <span className="ml-1 text-xs">(Women)</span>
-                  )}
-                  {category.includes('GENTS') && (
-                    <span className="ml-1 text-xs">(Men)</span>
-                  )}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Size Type Selection (clickable) */}
-          {item.category && (
-            <div className="mb-6">
-              <h4 className="text-sm font-medium text-gray-700 mb-3">2. Select Size Type</h4>
-              <div className="flex flex-wrap gap-3">
-                {sizeData[item.category]?.types.map(type => (
-                  <button
-                    key={type}
-                    onClick={() => handleSizeSelection(
-                      item.id, 
-                      item.category, 
-                      type, 
-                      ''
-                    )}
-                    className={`px-4 py-2 rounded-lg border-2 transition-all duration-200 ${
-                      item.sizeType === type
-                        ? 'border-[#1A6E1A] bg-[#1A6E1A] text-white shadow-md'
-                        : 'border-gray-300 hover:border-[#1A6E1A] hover:bg-gray-50'
-                    }`}
-                  >
-                    {type}
-                  </button>
-                ))}
+                  Product Master
+                </Button>
+                <Button 
+                  type={masterType === 'design' ? 'primary' : 'default'} 
+                  onClick={() => setMasterType('design')}
+                >
+                  Design Master
+                </Button>
               </div>
-              <p className="text-xs text-gray-500 mt-2">
-                {sizeData[item.category]?.types.length > 1 
-                  ? "Click to change size type" 
-                  : "This category has only one size type"}
-              </p>
-            </div>
-          )}
-
-          {/* Size Value Selection */}
-          {item.sizeType && (
-            <div className="mb-6">
-              <h4 className="text-sm font-medium text-gray-700 mb-3">3. Select {item.sizeType}</h4>
-              <div className="flex flex-wrap gap-3">
-                {sizeData[item.category]?.values[item.sizeType]?.map(size => (
-                  <button
-                    key={size.value}
-                    onClick={() => handleSizeSelection(
-                      item.id, 
-                      item.category, 
-                      item.sizeType, 
-                      size.value
-                    )}
-                    className={`px-4 py-2 rounded-lg border-2 transition-all duration-200 ${
-                      item.sizeValue === size.value
-                        ? 'border-[#FFD700] bg-[#FFD700] text-[#05054D] shadow-md font-medium'
-                        : 'border-gray-300 hover:border-[#FFD700] hover:bg-[#FFF8E6]'
-                    }`}
+              
+              {masterType === 'product' && (
+                <Form
+                  form={form}
+                  layout="vertical"
+                  onFinish={onFinish}
+                  autoComplete="off"
+                >
+                  <Form.Item
+                    label="Category"
+                    name="category"
+                    rules={[{ required: true, message: 'Please select category' }]}
                   >
-                    {size.value}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Selected Size Details */}
-          {item.description && (
-            <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-              <h4 className="text-sm font-medium text-gray-700 mb-2">Selected Size Details</h4>
-              <div className="flex items-start">
-                <div className="flex-1">
-                  <p className="text-gray-800 font-medium">{item.description}</p>
-                  {item.category.includes('RING') && (
-                    <p className="text-xs text-gray-500 mt-1">
-                      Inner diameter: {item.description.split('mm')[0]}mm
-                    </p>
-                  )}
-                  {item.category.includes('BANGLE') && (
-                    <p className="text-xs text-gray-500 mt-1">
-                      Fits wrist circumference: ~{item.sizeValue === '2.2' ? '6.5"' : 
-                      item.sizeValue === '2.4' ? '7"' : 
-                      item.sizeValue === '2.6' ? '7.5"' : 
-                      item.sizeValue === '2.8' ? '8"' : 
-                      item.sizeValue === '2.10' ? '8.5"' : '9"'}
-                    </p>
-                  )}
-                </div>
-                {item.category.includes('RING') && (
-                  <div className="ml-4 w-16 h-16 rounded-full border-2 border-[#FFD700] flex items-center justify-center">
-                    <span className="text-xs font-medium">
-                      {item.sizeValue}
-                    </span>
+                    <Select placeholder="Select category" onChange={handleCategoryChange}>
+                      {categories.map(category => (
+                        <Option key={category} value={category}>{category}</Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                  
+                  <Form.Item
+                    label="Size Type"
+                    name="sizeType"
+                    rules={[{ required: true, message: 'Please select size type' }]}
+                  >
+                    <Select 
+                      placeholder="Select size type" 
+                      onChange={(value) => handleSizeTypeChange(value, form.getFieldValue('category'))}
+                      disabled={!form.getFieldValue('category')}
+                    >
+                      {sizeTypes.map(type => (
+                        <Option key={type} value={type}>{type}</Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                  
+                  <Form.Item
+                    label="Size Value"
+                    name="sizeValue"
+                    rules={[{ required: true, message: 'Please select size value' }]}
+                  >
+                    <Select 
+                      placeholder="Select size value" 
+                      disabled={!form.getFieldValue('sizeType')}
+                    >
+                      {sizeValues.map((item, index) => (
+                        <Option key={index} value={item.value}>
+                          {item.value} - {item.description}
+                        </Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                  
+                  <Form.Item
+                    label="Description"
+                    name="description"
+                    rules={[{ required: true, message: 'Please enter description' }]}
+                  >
+                    <Input.TextArea rows={4} />
+                  </Form.Item>
+                  
+                  <Form.Item
+                    label="Product Image"
+                    name="productImage"
+                    valuePropName="fileList"
+                    getValueFromEvent={(e) => e.fileList}
+                  >
+                    <Upload name="productImage" listType="picture" beforeUpload={() => false}>
+                      <Button icon={<UploadOutlined />}>Upload Image</Button>
+                    </Upload>
+                  </Form.Item>
+                  
+                  <Form.Item>
+                    <Button type="primary" htmlType="submit" loading={loading}>
+                      Submit
+                    </Button>
+                  </Form.Item>
+                </Form>
+              )}
+              
+              {masterType === 'design' && (
+                <Form
+                  form={form}
+                  layout="vertical"
+                  onFinish={onFinish}
+                  autoComplete="off"
+                >
+                  <div style={{ marginBottom: 16 }}>
+                    <Button type="primary" icon={<PlusOutlined />} onClick={addDesignItem}>
+                      Add Design Item
+                    </Button>
                   </div>
-                )}
+                  
+                  {designItems.map(item => (
+                    <div key={item.id} style={{ border: '1px solid #d9d9d9', padding: 16, marginBottom: 16 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+                        <h4>Design Item #{designItems.indexOf(item) + 1}</h4>
+                        <Button 
+                          danger 
+                          icon={<MinusOutlined />} 
+                          onClick={() => removeDesignItem(item.id)}
+                        />
+                      </div>
+                      
+                      <Form.Item label="Gross Weight">
+                        <Input 
+                          value={item.grossWt}
+                          onChange={(e) => handleDesignItemChange(item.id, 'grossWt', e.target.value)}
+                        />
+                      </Form.Item>
+                      
+                      <Form.Item label="Net Weight">
+                        <Input 
+                          value={item.netWt}
+                          onChange={(e) => handleDesignItemChange(item.id, 'netWt', e.target.value)}
+                        />
+                      </Form.Item>
+                      
+                      <Form.Item label="Diamond Weight">
+                        <Input 
+                          value={item.diaWt}
+                          onChange={(e) => handleDesignItemChange(item.id, 'diaWt', e.target.value)}
+                        />
+                      </Form.Item>
+                      
+                      <Form.Item label="Diamond Pieces">
+                        <Input 
+                          value={item.diaPcs}
+                          onChange={(e) => handleDesignItemChange(item.id, 'diaPcs', e.target.value)}
+                        />
+                      </Form.Item>
+                      
+                      <Form.Item label="Clarity">
+                        <Select
+                          value={item.clarity}
+                          onChange={(value) => handleDesignItemChange(item.id, 'clarity', value)}
+                        >
+                          <Option value="vvs">VVS</Option>
+                          <Option value="vs">VS</Option>
+                          <Option value="si">SI</Option>
+                          <Option value="i">I</Option>
+                        </Select>
+                      </Form.Item>
+                      
+                      <Form.Item label="Color">
+                        <Select
+                          value={item.color}
+                          onChange={(value) => handleDesignItemChange(item.id, 'color', value)}
+                        >
+                          <Option value="d-f">D-F</Option>
+                          <Option value="g-h">G-H</Option>
+                          <Option value="i-j">I-J</Option>
+                          <Option value="k-l">K-L</Option>
+                        </Select>
+                      </Form.Item>
+                    </div>
+                  ))}
+                  
+                  <Form.Item
+                    label="Design Image"
+                    name="designImage"
+                    valuePropName="fileList"
+                    getValueFromEvent={(e) => e.fileList}
+                  >
+                    <Upload name="designImage" listType="picture" beforeUpload={() => false}>
+                      <Button icon={<UploadOutlined />}>Upload Image</Button>
+                    </Upload>
+                  </Form.Item>
+                  
+                  <Form.Item>
+                    <Button 
+                      type="primary" 
+                      htmlType="submit" 
+                      disabled={designItems.length === 0}
+                      loading={loading}
+                    >
+                      Submit
+                    </Button>
+                  </Form.Item>
+                </Form>
+              )}
+              
+              <div style={{ marginTop: 24 }}>
+                <h3>All Masters</h3>
+                <Table 
+                  dataSource={allMasters}
+                  columns={[
+                    { title: 'Serial Number', dataIndex: ['productMaster', 'serialNumber'], key: 'serialNumber' },
+                    { title: 'Category', dataIndex: ['productMaster', 'category'], key: 'category' },
+                    { title: 'Style Number', dataIndex: ['designMaster', 'styleNumber'], key: 'styleNumber' },
+                    { title: 'Description', dataIndex: ['productMaster', 'description'], key: 'description' },
+                  ]}
+                  rowKey={record => record._id}
+                  loading={loading}
+                />
               </div>
             </div>
           )}
-        </div>
-      ))}
-    </div>
-
-    {/* Add New Product Size Button */}
-    <div className="mt-6">
-      <button 
-        onClick={addProductItem}
-        className="flex items-center justify-center w-full md:w-auto px-6 py-3 bg-[#05054D] text-[#FFF2A6] rounded-lg hover:bg-[#1A1A6E] transition-colors shadow-md"
-      >
-        <FaPlus className="mr-2" />
-        Add Another Size Configuration
-      </button>
-    </div>
-
-    {/* Action Buttons */}
-    <div className="flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-4 pt-8">
-      <button 
-        type="button" 
-        className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
-      >
-        Cancel
-      </button>
-      <button 
-        type="submit" 
-        className="px-6 py-2 bg-[#05054D] text-[#FFF2A6] rounded-lg hover:bg-[#1A1A6E] transition-colors shadow-md"
-      >
-        Save All Sizes
-      </button>
-    </div>
-  </motion.div>
-)}
-                </div>
-              </div>
-            </div>
-          )}
-        </main>
-      </div>
-    </div>
+        </Content>
+      </Layout>
+    </Layout>
   );
 };
 
-export default ProductionTeam;
+export default ProductionDashboard;

@@ -159,7 +159,7 @@ const ProductionDashboard = () => {
   const fetchAllMasters = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_BASE_URL}/api/pdmaster/getAllMasters`);
+      const response = await axios.get(`${API_BASE_URL}/api/pteam/getAllMasters`);
       setAllMasters(response.data.data);
     } catch (error) {
       message.error('Failed to fetch masters');
@@ -227,7 +227,7 @@ const ProductionDashboard = () => {
       }
 
       const response = await axios.post(
-        `${API_BASE_URL}/api/pdmaster/createPmaster`,
+        `${API_BASE_URL}/api/pteam/createPmaster`,
         payload,
         {
           headers: {

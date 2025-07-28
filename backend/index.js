@@ -17,8 +17,7 @@ connectDB();
 app.use(express.json());
 // Increase payload size limit for file uploads
 app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ limit: '10mb', extended: true }));
-
+app.use(express.urlencoded({ extended: true }));
 // CORS Configuration
 
 
@@ -34,7 +33,7 @@ app.use(cors({
 }));
 
 // Middleware
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.use(session({
   secret: process.env.SESSION_SECRET || 'yourSecretKey',

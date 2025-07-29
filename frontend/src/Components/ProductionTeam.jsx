@@ -1,8 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { FiMenu, FiX, FiHome, FiDatabase, FiShoppingBag, FiPlus, FiAward, FiUpload, FiTrash2, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
-import { Carousel } from 'react-responsive-carousel';
-import 'react-responsive-carousel/lib/styles/carousel.min.css';
+import { FiMenu, FiX, FiHome, FiDatabase, FiShoppingBag, FiPlus, FiAward } from 'react-icons/fi';
 
 const API_BASE_URL = import.meta.env.VITE_BASE_URL || 'http://localhost:3000';
 
@@ -353,212 +351,236 @@ const ProductionDashboard = () => {
     }
   };
 
-  const Card = ({ children, className = '' }) => (
-    <div className={`bg-white rounded-xl shadow-md overflow-hidden ${className}`}>
-      {children}
-    </div>
-  );
-
-  const SectionHeader = ({ title, count, className = '' }) => (
-    <div className={`flex justify-between items-center mb-4 ${className}`}>
-      <h2 className="text-xl font-semibold text-gray-800">{title}</h2>
-      {count !== undefined && <span className="text-sm text-gray-500">{count} records</span>}
-    </div>
-  );
-
-  const PrimaryButton = ({ children, onClick, type = 'button', disabled = false, className = '' }) => (
-    <button
-      type={type}
-      onClick={onClick}
-      disabled={disabled}
-      className={`bg-[#00072D] text-white px-6 py-2 rounded-lg hover:bg-[#00114D] focus:outline-none focus:ring-2 focus:ring-[#00072D] focus:ring-offset-2 transition flex items-center justify-center ${className}`}
-    >
-      {children}
-    </button>
-  );
-
-  const SecondaryButton = ({ children, onClick, type = 'button', disabled = false, className = '' }) => (
-    <button
-      type={type}
-      onClick={onClick}
-      disabled={disabled}
-      className={`border border-[#00072D] text-[#00072D] px-6 py-2 rounded-lg hover:bg-[#00072D] hover:text-white focus:outline-none focus:ring-2 focus:ring-[#00072D] focus:ring-offset-2 transition ${className}`}
-    >
-      {children}
-    </button>
-  );
-
-  const InputField = ({ label, type = 'text', value, onChange, placeholder, required = false, className = '', ...props }) => (
-    <div className={`mb-4 ${className}`}>
-      {label && <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>}
-      <input
-        type={type}
-        className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00072D] focus:border-[#00072D] transition text-gray-700`}
-        value={value}
-        onChange={onChange}
-        placeholder={placeholder}
-        required={required}
-        {...props}
-      />
-    </div>
-  );
-
-  const SelectField = ({ label, value, onChange, options, placeholder, required = false, disabled = false, className = '' }) => (
-    <div className={`mb-4 ${className}`}>
-      {label && <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>}
-      <select
-        className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00072D] focus:border-[#00072D] transition ${disabled ? 'bg-gray-100' : ''}`}
-        value={value}
-        onChange={onChange}
-        required={required}
-        disabled={disabled}
-      >
-        <option value="">{placeholder || 'Select an option'}</option>
-        {options.map((opt) => (
-          typeof opt === 'object' ? (
-            <option key={opt.value} value={opt.value}>{opt.label || opt.value}</option>
-          ) : (
-            <option key={opt} value={opt}>{opt}</option>
-          )
-        ))}
-      </select>
-    </div>
-  );
-
-  const TextAreaField = ({ label, value, onChange, placeholder, required = false, rows = 3, className = '' }) => (
-    <div className={`mb-4 ${className}`}>
-      {label && <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>}
-      <textarea
-        className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00072D] focus:border-[#00072D] transition`}
-        value={value}
-        onChange={onChange}
-        placeholder={placeholder}
-        required={required}
-        rows={rows}
-      />
-    </div>
-  );
-
-  const ProductMasterCard = ({ product }) => (
-    <div className="bg-gradient-to-br from-[#00072D] to-[#00114D] text-white p-6 rounded-xl shadow-lg h-full flex flex-col">
-      <div className="flex items-center mb-4">
-        {product.imageFile ? (
-          <img 
-            src={product.imageFile} 
-            alt="Product" 
-            className="h-16 w-16 object-cover rounded-lg mr-4"
-            onError={(e) => {
-              e.target.onerror = null;
-              e.target.src = 'https://via.placeholder.com/64?text=No+Image';
-            }}
-          />
-        ) : (
-          <div className="h-16 w-16 bg-gray-200 rounded-lg flex items-center justify-center text-xs text-gray-500 mr-4">
-            No Image
+  const renderDashboard = () => (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold text-gray-800">Production Dashboard</h1>
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-gradient-to-r from-[#00072D] to-blue-[#00072D] rounded-xl shadow-lg p-6 text-white transform hover:scale-105 transition duration-300">
+          <div className="flex items-center">
+            <div className="p-3 rounded-full bg-white bg-opacity-20 mr-4">
+              <FiShoppingBag className="text-xl" />
+            </div>
+            <div>
+              <h3 className="text-sm font-medium opacity-80">Product Masters</h3>
+              <p className="text-2xl font-bold">{productMasters.length}</p>
+            </div>
           </div>
-        )}
-        <div>
-          <h3 className="font-medium">{product.serialNumber}</h3>
-          <p className="text-sm text-white/80">{product.category}</p>
+        </div>
+        
+        <div className="bg-gradient-to-r from-[#00072D] to-[#00072D] rounded-xl shadow-lg p-6 text-white transform hover:scale-105 transition duration-300">
+          <div className="flex items-center">
+            <div className="p-3 rounded-full bg-white bg-opacity-20 mr-4">
+              <FiAward className="text-xl" />
+            </div>
+            <div>
+              <h3 className="text-sm font-medium opacity-80">Design Masters</h3>
+              <p className="text-2xl font-bold">{designMasters.length}</p>
+            </div>
+          </div>
         </div>
       </div>
-      <div className="mb-2">
-        <p className="text-sm font-medium">Size:</p>
-        <p className="text-sm text-white/80">{product.sizeType}: {product.sizeValue}</p>
-      </div>
-      <div className="flex-1">
-        <p className="text-sm font-medium">Description:</p>
-        <p className="text-sm text-white/80 line-clamp-3">{product.description}</p>
-      </div>
-    </div>
-  );
 
-  const DesignMasterCard = ({ design }) => (
-    <div className="bg-gradient-to-br from-[#00072D] to-[#00114D] text-white p-6 rounded-xl shadow-lg h-full flex flex-col">
-      <div className="mb-4">
-        <h3 className="font-medium">{design.serialNumber}</h3>
-        <p className="text-sm text-white/80">Style: {design.styleNumber}</p>
-      </div>
-      <div className="grid grid-cols-2 gap-4 mb-4">
-        <div>
-          <p className="text-sm font-medium">Gross Wt</p>
-          <p className="text-sm text-white/80">{design.grossWt}g</p>
-        </div>
-        <div>
-          <p className="text-sm font-medium">Net Wt</p>
-          <p className="text-sm text-white/80">{design.netWt}g</p>
-        </div>
-        <div>
-          <p className="text-sm font-medium">Diamond Wt</p>
-          <p className="text-sm text-white/80">{design.diaWt}ct</p>
-        </div>
-        <div>
-          <p className="text-sm font-medium">Diamond Pcs</p>
-          <p className="text-sm text-white/80">{design.diaPcs}</p>
-        </div>
-      </div>
-      <div className="mt-auto">
-        <p className="text-sm font-medium">Details:</p>
-        <p className="text-sm text-white/80">Clarity: {design.clarity}, Color: {design.color}</p>
-      </div>
-    </div>
-  );
-
-  const renderProductMasterRecords = () => {
-    if (productMasters.length === 0) {
-      return <p className="text-gray-500 text-center py-4">No product masters found</p>;
-    }
-
-    return (
-      <>
-        <div className="md:hidden">
-          <Carousel
-            showArrows={true}
-            showStatus={false}
-            showThumbs={false}
-            infiniteLoop={true}
-            centerMode={true}
-            centerSlidePercentage={85}
-            renderArrowPrev={(onClickHandler, hasPrev, label) => (
-              <button
-                type="button"
-                onClick={onClickHandler}
-                title={label}
-                className="absolute left-2 top-1/2 z-10 -translate-y-1/2 bg-white/80 p-2 rounded-full shadow-md hover:bg-white"
-              >
-                <FiChevronLeft className="text-[#00072D]" />
-              </button>
-            )}
-            renderArrowNext={(onClickHandler, hasNext, label) => (
-              <button
-                type="button"
-                onClick={onClickHandler}
-                title={label}
-                className="absolute right-2 top-1/2 z-10 -translate-y-1/2 bg-white/80 p-2 rounded-full shadow-md hover:bg-white"
-              >
-                <FiChevronRight className="text-[#00072D]" />
-              </button>
-            )}
-          >
-            {productMasters.map((product) => (
-              <div key={product._id} className="px-2 py-4 h-full">
-                <ProductMasterCard product={product} />
+      <div className="bg-white rounded-xl shadow-lg p-6">
+        <h2 className="text-xl font-semibold mb-4 text-gray-800">Recent Activity</h2>
+        <div className="space-y-4">
+          {productMasters.slice(0, 3).map((product, index) => (
+            <div key={index} className="flex items-center p-3 hover:bg-gray-50 rounded-lg transition">
+              <div className="bg-blue-100 p-2 rounded-lg mr-4">
+                <FiShoppingBag className="text-blue-600" />
               </div>
-            ))}
-          </Carousel>
+              <div>
+                <p className="font-medium text-gray-800">New Product Added</p>
+                <p className="text-sm text-gray-500">{product.category} - {product.serialNumber}</p>
+              </div>
+              <div className="ml-auto text-sm text-gray-400">
+                Just now
+              </div>
+            </div>
+          ))}
+          {designMasters.slice(0, 3).map((design, index) => (
+            <div key={index} className="flex items-center p-3 hover:bg-gray-50 rounded-lg transition">
+              <div className="bg-purple-100 p-2 rounded-lg mr-4">
+                <FiAward className="text-purple-600" />
+              </div>
+              <div>
+                <p className="font-medium text-gray-800">New Design Added</p>
+                <p className="text-sm text-gray-500">{design.serialNumber} - {design.styleNumber}</p>
+              </div>
+              <div className="ml-auto text-sm text-gray-400">
+                Just now
+              </div>
+            </div>
+          ))}
         </div>
+      </div>
+    </div>
+  );
 
-        <div className="hidden md:block overflow-x-auto">
+  const renderProductMasterForm = () => (
+    <div className="bg-white rounded-xl shadow-lg p-6">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-xl font-semibold text-gray-800">Create Product Master</h2>
+        <button 
+          onClick={() => {
+            setMasterType(null);
+            setActiveMenu('master');
+          }}
+          className="text-gray-500 hover:text-gray-700"
+        >
+          <FiX className="text-xl" />
+        </button>
+      </div>
+      
+      <form onSubmit={handleProductSubmit} className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+            <select
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+              value={productForm.category}
+              onChange={(e) => handleCategoryChange(e.target.value)}
+              required
+            >
+              <option value="">Select category</option>
+              {categories.map(category => (
+                <option key={category} value={category}>{category}</option>
+              ))}
+            </select>
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Size Type</label>
+            <select
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+              value={productForm.sizeType}
+              onChange={(e) => handleSizeTypeChange(e.target.value, productForm.category)}
+              disabled={!productForm.category}
+              required
+            >
+              <option value="">Select size type</option>
+              {sizeTypes.map(type => (
+                <option key={type} value={type}>{type}</option>
+              ))}
+            </select>
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Size Value</label>
+            <select
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+              value={productForm.sizeValue}
+              onChange={(e) => setProductForm({...productForm, sizeValue: e.target.value})}
+              disabled={!productForm.sizeType}
+              required
+            >
+              <option value="">Select size value</option>
+              {sizeValues.map((item, index) => (
+                <option key={index} value={item.value}>
+                  {item.value} - {item.description}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+        
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Product Image</label>
+          <div className="flex items-center space-x-4">
+            <div className="relative">
+              <input
+                type="file"
+                onChange={handleImageChange}
+                accept="image/*"
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                id="image-upload"
+                required
+              />
+              <label
+                htmlFor="image-upload"
+                className="inline-flex items-center px-4 py-3 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer transition"
+              >
+                <FiPlus className="mr-2" />
+                Choose Image
+              </label>
+            </div>
+            {previewImage && (
+              <div className="relative group">
+                <img 
+                  src={previewImage} 
+                  alt="Preview" 
+                  className="h-16 w-16 object-cover rounded-lg"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPreviewImage(null);
+                    setProductForm({...productForm, imageFile: null});
+                  }}
+                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition"
+                >
+                  <FiX className="text-xs" />
+                </button>
+              </div>
+            )}
+          </div>
+          <p className="mt-1 text-xs text-gray-500">
+            Upload a high-quality image (JPEG, PNG, WebP) under 5MB
+          </p>
+        </div>
+        
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+          <textarea
+            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+            rows={4}
+            value={productForm.description}
+            onChange={(e) => setProductForm({...productForm, description: e.target.value})}
+            placeholder="Enter product description..."
+            required
+          />
+        </div>
+        
+        <div className="flex justify-end">
+          <button 
+            type="submit" 
+            className="bg-[#00072D] text-white px-6 py-3 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition flex items-center"
+            disabled={loading}
+          >
+            {loading ? (
+              <>
+                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Processing...
+              </>
+            ) : (
+              'Create Product Master'
+            )}
+          </button>
+        </div>
+      </form>
+
+      <div className="mt-12">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold text-gray-800">Product Master Records</h2>
+          <span className="text-sm text-gray-500">{productMasters.length} records</span>
+        </div>
+        
+        <div className="overflow-x-auto">
           <div className="inline-block min-w-full align-middle">
             <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 rounded-lg">
               <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-[#00072D]">
+                <thead className="bg-gray-50">
                   <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Serial</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Category</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Size</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Image</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Description</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Serial</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Size</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Image</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -594,66 +616,205 @@ const ProductionDashboard = () => {
             </div>
           </div>
         </div>
-      </>
-    );
-  };
+      </div>
+    </div>
+  );
 
-  const renderDesignMasterRecords = () => {
-    if (designMasters.length === 0) {
-      return <p className="text-gray-500 text-center py-4">No design masters found</p>;
-    }
-
-    return (
-      <>
-        <div className="md:hidden">
-          <Carousel
-            showArrows={true}
-            showStatus={false}
-            showThumbs={false}
-            infiniteLoop={true}
-            centerMode={true}
-            centerSlidePercentage={85}
-            renderArrowPrev={(onClickHandler, hasPrev, label) => (
-              <button
-                type="button"
-                onClick={onClickHandler}
-                title={label}
-                className="absolute left-2 top-1/2 z-10 -translate-y-1/2 bg-white/80 p-2 rounded-full shadow-md hover:bg-white"
-              >
-                <FiChevronLeft className="text-[#00072D]" />
-              </button>
-            )}
-            renderArrowNext={(onClickHandler, hasNext, label) => (
-              <button
-                type="button"
-                onClick={onClickHandler}
-                title={label}
-                className="absolute right-2 top-1/2 z-10 -translate-y-1/2 bg-white/80 p-2 rounded-full shadow-md hover:bg-white"
-              >
-                <FiChevronRight className="text-[#00072D]" />
-              </button>
-            )}
-          >
-            {designMasters.map((design) => (
-              <div key={design._id} className="px-2 py-4 h-full">
-                <DesignMasterCard design={design} />
+  const renderDesignMasterForm = () => (
+    <div className="bg-white rounded-xl shadow-lg p-6">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-xl font-semibold text-gray-800">Create Design Master</h2>
+        <button 
+          onClick={() => {
+            setMasterType(null);
+            setActiveMenu('master');
+          }}
+          className="text-gray-500 hover:text-gray-700"
+        >
+          <FiX className="text-xl" />
+        </button>
+      </div>
+      
+      <form onSubmit={handleDesignSubmit} className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Product Serial Number</label>
+            <select
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+              value={designForm.serialNumber}
+              onChange={(e) => setDesignForm({...designForm, serialNumber: e.target.value})}
+              required
+            >
+              <option value="">Select product serial number</option>
+              {productMasters.map((product) => (
+                <option key={product.serialNumber} value={product.serialNumber}>
+                  {product.serialNumber} - {product.category}
+                </option>
+              ))}
+            </select>
+            
+            {/* Show the selected product's image */}
+            {designForm.serialNumber && (
+              <div className="mt-3 flex items-center space-x-2">
+                <span className="text-sm text-gray-600">Product:</span>
+                {productMasters.find(p => p.serialNumber === designForm.serialNumber)?.imageFile ? (
+                  <img 
+                    src={productMasters.find(p => p.serialNumber === designForm.serialNumber).imageFile} 
+                    alt="Product" 
+                    className="h-8 w-8 object-cover rounded-lg"
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = 'https://via.placeholder.com/32?text=No+Image';
+                    }}
+                  />
+                ) : (
+                  <div className="h-8 w-8 bg-gray-200 rounded-lg flex items-center justify-center text-xs text-gray-500">
+                    No Image
+                  </div>
+                )}
+                <span className="text-sm font-medium">
+                  {productMasters.find(p => p.serialNumber === designForm.serialNumber)?.category}
+                </span>
               </div>
-            ))}
-          </Carousel>
+            )}
+          </div>
         </div>
 
-        <div className="hidden md:block overflow-x-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Gross Weight</label>
+            <div className="relative rounded-md shadow-sm">
+              <input
+                type="text"
+                className="block w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition"
+                value={designForm.grossWt}
+                onChange={(e) => setDesignForm({...designForm, grossWt: e.target.value})}
+                placeholder="0.00"
+                required
+              />
+              <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                <span className="text-gray-500 sm:text-sm">g</span>
+              </div>
+            </div>
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Net Weight</label>
+            <div className="relative rounded-md shadow-sm">
+              <input
+                type="text"
+                className="block w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition"
+                value={designForm.netWt}
+                onChange={(e) => setDesignForm({...designForm, netWt: e.target.value})}
+                placeholder="0.00"
+                required
+              />
+              <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                <span className="text-gray-500 sm:text-sm">g</span>
+              </div>
+            </div>
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Diamond Weight</label>
+            <div className="relative rounded-md shadow-sm">
+              <input
+                type="text"
+                className="block w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition"
+                value={designForm.diaWt}
+                onChange={(e) => setDesignForm({...designForm, diaWt: e.target.value})}
+                placeholder="0.00"
+                required
+              />
+              <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                <span className="text-gray-500 sm:text-sm">ct</span>
+              </div>
+            </div>
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Diamond Pieces</label>
+            <input
+              type="text"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition"
+              value={designForm.diaPcs}
+              onChange={(e) => setDesignForm({...designForm, diaPcs: e.target.value})}
+              required
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Clarity</label>
+            <select
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition"
+              value={designForm.clarity}
+              onChange={(e) => setDesignForm({...designForm, clarity: e.target.value})}
+              required
+            >
+              <option value="">Select clarity</option>
+              <option value="vvs">VVS</option>
+              <option value="vs">VS</option>
+              <option value="si">SI</option>
+              <option value="i">I</option>
+            </select>
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Color</label>
+            <select
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition"
+              value={designForm.color}
+              onChange={(e) => setDesignForm({...designForm, color: e.target.value})}
+              required
+            >
+              <option value="">Select color</option>
+              <option value="d-f">D-F</option>
+              <option value="g-h">G-H</option>
+              <option value="i-j">I-J</option>
+              <option value="k-l">K-L</option>
+            </select>
+          </div>
+        </div>
+        
+        <div className="flex justify-end">
+          <button 
+            type="submit" 
+            className="bg-[#00072D] text-white px-6 py-3 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition flex items-center"
+            disabled={loading}
+          >
+            {loading ? (
+              <>
+                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Processing...
+              </>
+            ) : (
+              'Create Design Master'
+            )}
+          </button>
+        </div>
+      </form>
+
+      <div className="mt-12">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold text-gray-800">Design Master Records</h2>
+          <span className="text-sm text-gray-500">{designMasters.length} records</span>
+        </div>
+        
+        <div className="overflow-x-auto">
           <div className="inline-block min-w-full align-middle">
             <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 rounded-lg">
               <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-[#00072D]">
+                <thead className="bg-gray-50">
                   <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Product Serial</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Style Number</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Gross Wt (g)</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Net Wt (g)</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Diamond Wt (ct)</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Diamond Pcs</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product Serial</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Style Number</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Gross Wt (g)</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Net Wt (g)</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Diamond Wt (ct)</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Diamond Pcs</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -672,465 +833,6 @@ const ProductionDashboard = () => {
             </div>
           </div>
         </div>
-      </>
-    );
-  };
-
-  const renderDashboard = () => (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-800">Production Dashboard</h1>
-        <div className="text-sm text-gray-500">
-          {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-        </div>
-      </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
-          <div className="p-6">
-            <div className="flex items-center">
-              <div className="p-3 rounded-full bg-blue-100 text-blue-600 mr-4">
-                <FiShoppingBag className="text-xl" />
-              </div>
-              <div>
-                <h3 className="text-sm font-medium text-gray-500">Product Masters</h3>
-                <p className="text-2xl font-bold text-[#00072D]">{productMasters.length}</p>
-              </div>
-            </div>
-            <div className="mt-4 h-2 w-full bg-gray-200 rounded-full overflow-hidden">
-              <div 
-                className="h-full rounded-full" 
-                style={{ 
-                  width: `${Math.min(100, productMasters.length)}%`, 
-                  backgroundColor: '#00072D'
-                }}
-              ></div>
-            </div>
-          </div>
-        </Card>
-        
-        <Card>
-          <div className="p-6">
-            <div className="flex items-center">
-              <div className="p-3 rounded-full bg-purple-100 text-purple-600 mr-4">
-                <FiAward className="text-xl" />
-              </div>
-              <div>
-                <h3 className="text-sm font-medium text-gray-500">Design Masters</h3>
-                <p className="text-2xl font-bold text-[#00072D]">{designMasters.length}</p>
-              </div>
-            </div>
-            <div className="mt-4 h-2 w-full bg-gray-200 rounded-full overflow-hidden">
-              <div 
-                className="h-full rounded-full" 
-                style={{ 
-                  width: `${Math.min(100, designMasters.length)}%`, 
-                  backgroundColor: '#00072D'
-                }}
-              ></div>
-            </div>
-          </div>
-        </Card>
-      </div>
-
-      <div className="md:hidden">
-        <SectionHeader title="Recent Activity" />
-        <Carousel
-          showArrows={true}
-          showStatus={false}
-          showThumbs={false}
-          infiniteLoop={true}
-          centerMode={true}
-          centerSlidePercentage={85}
-          renderArrowPrev={(onClickHandler, hasPrev, label) => (
-            <button
-              type="button"
-              onClick={onClickHandler}
-              title={label}
-              className="absolute left-2 top-1/2 z-10 -translate-y-1/2 bg-white/80 p-2 rounded-full shadow-md hover:bg-white"
-            >
-              <FiChevronLeft className="text-[#00072D]" />
-            </button>
-          )}
-          renderArrowNext={(onClickHandler, hasNext, label) => (
-            <button
-              type="button"
-              onClick={onClickHandler}
-              title={label}
-              className="absolute right-2 top-1/2 z-10 -translate-y-1/2 bg-white/80 p-2 rounded-full shadow-md hover:bg-white"
-            >
-              <FiChevronRight className="text-[#00072D]" />
-            </button>
-          )}
-        >
-          {[...productMasters.slice(0, 3), ...designMasters.slice(0, 3)]
-            .sort(() => 0.5 - Math.random())
-            .slice(0, 5)
-            .map((item, index) => (
-              <div key={index} className="px-2 py-4 h-full">
-                <div className="bg-gradient-to-br from-[#00072D] to-[#00114D] text-white p-6 rounded-xl shadow-lg h-full flex flex-col justify-between">
-                  <div>
-                    <div className="flex items-center mb-4">
-                      <div className={`p-2 rounded-lg mr-3 ${item.serialNumber ? 'bg-blue-100 text-blue-600' : 'bg-purple-100 text-purple-600'}`}>
-                        {item.serialNumber ? <FiShoppingBag /> : <FiAward />}
-                      </div>
-                      <h3 className="font-medium text-white">
-                        {item.serialNumber ? 'New Product Added' : 'New Design Added'}
-                      </h3>
-                    </div>
-                    <p className="text-sm text-white/80 mb-2">
-                      {item.serialNumber ? 
-                        `${item.category} - ${item.serialNumber}` : 
-                        `${item.serialNumber} - ${item.styleNumber}`
-                      }
-                    </p>
-                  </div>
-                  <div className="text-xs text-white/60">
-                    {Math.floor(Math.random() * 60)} minutes ago
-                  </div>
-                </div>
-              </div>
-            ))}
-        </Carousel>
-      </div>
-
-      <div className="hidden md:block">
-        <Card>
-          <div className="p-6">
-            <SectionHeader title="Recent Activity" />
-            <div className="space-y-4">
-              {[...productMasters.slice(0, 3), ...designMasters.slice(0, 3)]
-                .sort(() => 0.5 - Math.random())
-                .slice(0, 5)
-                .map((item, index) => (
-                  <div key={index} className="flex items-center p-3 hover:bg-gray-50 rounded-lg transition">
-                    <div className={`p-2 rounded-lg mr-4 ${item.serialNumber ? 'bg-blue-100 text-blue-600' : 'bg-purple-100 text-purple-600'}`}>
-                      {item.serialNumber ? <FiShoppingBag /> : <FiAward />}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-gray-800 truncate">
-                        {item.serialNumber ? 'New Product Added' : 'New Design Added'}
-                      </p>
-                      <p className="text-sm text-gray-500 truncate">
-                        {item.serialNumber ? `${item.category} - ${item.serialNumber}` : `${item.serialNumber} - ${item.styleNumber}`}
-                      </p>
-                    </div>
-                    <div className="ml-4 text-sm text-gray-400 whitespace-nowrap">
-                      {Math.floor(Math.random() * 60)} minutes ago
-                    </div>
-                  </div>
-                ))}
-            </div>
-          </div>
-        </Card>
-      </div>
-    </div>
-  );
-
-  const renderProductMasterForm = () => (
-    <div className="space-y-6">
-      <Card>
-        <div className="p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-semibold text-gray-800">Create Product Master</h2>
-            <button 
-              onClick={() => {
-                setMasterType(null);
-                setActiveMenu('master');
-              }}
-              className="text-gray-500 hover:text-gray-700 p-1 rounded-full hover:bg-gray-100"
-            >
-              <FiX className="text-xl" />
-            </button>
-          </div>
-          
-          <form onSubmit={handleProductSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <SelectField
-                label="Category"
-                value={productForm.category}
-                onChange={(e) => handleCategoryChange(e.target.value)}
-                options={categories}
-                placeholder="Select category"
-                required
-              />
-              
-              <SelectField
-                label="Size Type"
-                value={productForm.sizeType}
-                onChange={(e) => handleSizeTypeChange(e.target.value, productForm.category)}
-                options={sizeTypes}
-                placeholder="Select size type"
-                disabled={!productForm.category}
-                required
-              />
-              
-              <SelectField
-                label="Size Value"
-                value={productForm.sizeValue}
-                onChange={(e) => setProductForm({...productForm, sizeValue: e.target.value})}
-                options={sizeValues.map(item => ({
-                  value: item.value,
-                  label: `${item.value} - ${item.description}`
-                }))}
-                placeholder="Select size value"
-                disabled={!productForm.sizeType}
-                required
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Product Image</label>
-              <div className="flex items-start space-x-4">
-                <label
-                  htmlFor="image-upload"
-                  className="flex flex-col items-center justify-center w-32 h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-[#00072D] transition"
-                >
-                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                    <FiUpload className="mb-3 text-gray-400" />
-                    <p className="mb-2 text-sm text-gray-500 text-center">
-                      <span className="font-semibold">Click to upload</span>
-                    </p>
-                    <p className="text-xs text-gray-500 text-center">
-                      JPEG, PNG, WEBP <br /> (Max 5MB)
-                    </p>
-                  </div>
-                  <input
-                    id="image-upload"
-                    type="file"
-                    onChange={handleImageChange}
-                    accept="image/*"
-                    className="hidden"
-                    required
-                  />
-                </label>
-                
-                {previewImage && (
-                  <div className="relative group">
-                    <img 
-                      src={previewImage} 
-                      alt="Preview" 
-                      className="h-32 w-32 object-contain rounded-lg border border-gray-200"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setPreviewImage(null);
-                        setProductForm({...productForm, imageFile: null});
-                      }}
-                      className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1 transform translate-x-1/2 -translate-y-1/2 shadow-md hover:bg-red-600 transition"
-                    >
-                      <FiTrash2 className="text-xs" />
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-            
-            <TextAreaField
-              label="Description"
-              value={productForm.description}
-              onChange={(e) => setProductForm({...productForm, description: e.target.value})}
-              placeholder="Enter product description..."
-              required
-              rows={4}
-            />
-            
-            <div className="flex justify-end space-x-3">
-              <SecondaryButton
-                onClick={() => {
-                  setProductForm({
-                    category: '',
-                    sizeType: '',
-                    sizeValue: '',
-                    description: '',
-                    imageFile: null
-                  });
-                  setPreviewImage(null);
-                }}
-              >
-                Reset
-              </SecondaryButton>
-              <PrimaryButton type="submit" disabled={loading}>
-                {loading ? (
-                  <>
-                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Processing...
-                  </>
-                ) : (
-                  'Create Product Master'
-                )}
-              </PrimaryButton>
-            </div>
-          </form>
-        </div>
-      </Card>
-
-      <div>
-        <SectionHeader title="Product Master Records" count={productMasters.length} />
-        {renderProductMasterRecords()}
-      </div>
-    </div>
-  );
-
-  const renderDesignMasterForm = () => (
-    <div className="space-y-6">
-      <Card>
-        <div className="p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-semibold text-gray-800">Create Design Master</h2>
-            <button 
-              onClick={() => {
-                setMasterType(null);
-                setActiveMenu('master');
-              }}
-              className="text-gray-500 hover:text-gray-700 p-1 rounded-full hover:bg-gray-100"
-            >
-              <FiX className="text-xl" />
-            </button>
-          </div>
-          
-          <form onSubmit={handleDesignSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <SelectField
-                label="Product Serial Number"
-                value={designForm.serialNumber}
-                onChange={(e) => setDesignForm({...designForm, serialNumber: e.target.value})}
-                options={productMasters.map(product => ({
-                  value: product.serialNumber,
-                  label: `${product.serialNumber} - ${product.category}`
-                }))}
-                placeholder="Select product"
-                required
-              />
-              
-              {designForm.serialNumber && (
-                <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                  {productMasters.find(p => p.serialNumber === designForm.serialNumber)?.imageFile ? (
-                    <img 
-                      src={productMasters.find(p => p.serialNumber === designForm.serialNumber).imageFile} 
-                      alt="Product" 
-                      className="h-12 w-12 object-cover rounded-lg"
-                      onError={(e) => {
-                        e.target.onerror = null;
-                        e.target.src = 'https://via.placeholder.com/48?text=No+Image';
-                      }}
-                    />
-                  ) : (
-                    <div className="h-12 w-12 bg-gray-200 rounded-lg flex items-center justify-center text-xs text-gray-500">
-                      No Image
-                    </div>
-                  )}
-                  <div>
-                    <p className="text-sm font-medium text-gray-800">
-                      {productMasters.find(p => p.serialNumber === designForm.serialNumber)?.category}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {productMasters.find(p => p.serialNumber === designForm.serialNumber)?.description?.substring(0, 50)}...
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <InputField
-                label="Gross Weight (g)"
-                type="number"
-                value={designForm.grossWt}
-                onChange={(e) => setDesignForm({...designForm, grossWt: e.target.value})}
-                placeholder="0.00"
-                required
-                step="0.01"
-              />
-              
-              <InputField
-                label="Net Weight (g)"
-                type="number"
-                value={designForm.netWt}
-                onChange={(e) => setDesignForm({...designForm, netWt: e.target.value})}
-                placeholder="0.00"
-                required
-                step="0.01"
-              />
-              
-              <InputField
-                label="Diamond Weight (ct)"
-                type="number"
-                value={designForm.diaWt}
-                onChange={(e) => setDesignForm({...designForm, diaWt: e.target.value})}
-                placeholder="0.00"
-                required
-                step="0.01"
-              />
-              
-              <InputField
-                label="Diamond Pieces"
-                type="number"
-                value={designForm.diaPcs}
-                onChange={(e) => setDesignForm({...designForm, diaPcs: e.target.value})}
-                required
-              />
-              
-              <SelectField
-                label="Clarity"
-                value={designForm.clarity}
-                onChange={(e) => setDesignForm({...designForm, clarity: e.target.value})}
-                options={['vvs', 'vs', 'si', 'i']}
-                placeholder="Select clarity"
-                required
-              />
-              
-              <SelectField
-                label="Color"
-                value={designForm.color}
-                onChange={(e) => setDesignForm({...designForm, color: e.target.value})}
-                options={['d-f', 'g-h', 'i-j', 'k-l']}
-                placeholder="Select color"
-                required
-              />
-            </div>
-            
-            <div className="flex justify-end space-x-3">
-              <SecondaryButton
-                onClick={() => {
-                  setDesignForm({
-                    serialNumber: '',
-                    grossWt: '',
-                    netWt: '',
-                    diaWt: '',
-                    diaPcs: '',
-                    clarity: '',
-                    color: ''
-                  });
-                }}
-              >
-                Reset
-              </SecondaryButton>
-              <PrimaryButton type="submit" disabled={loading}>
-                {loading ? (
-                  <>
-                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Processing...
-                  </>
-                ) : (
-                  'Create Design Master'
-                )}
-              </PrimaryButton>
-            </div>
-          </form>
-        </div>
-      </Card>
-
-      <div>
-        <SectionHeader title="Design Master Records" count={designMasters.length} />
-        {renderDesignMasterRecords()}
       </div>
     </div>
   );
@@ -1140,65 +842,40 @@ const ProductionDashboard = () => {
       <h1 className="text-2xl font-bold text-gray-800">Master Data Management</h1>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
-          <div 
-            className="p-6 cursor-pointer hover:shadow-lg transition h-full flex flex-col"
-            onClick={() => setMasterType('product')}
-          >
-            <div className="flex items-center mb-4">
-              <div className="p-3 rounded-lg bg-blue-100 text-blue-600 mr-4">
-                <FiShoppingBag className="text-xl" />
-              </div>
-              <div>
-                <h3 className="text-lg font-medium">Product Master</h3>
-                <p className="text-sm text-gray-500">{productMasters.length} records</p>
-              </div>
+        <div 
+          className="bg-white rounded-xl shadow-lg p-6 cursor-pointer hover:shadow-xl transition"
+          onClick={() => setMasterType('product')}
+        >
+          <div className="flex items-center">
+            <div className="p-3 rounded-lg bg-blue-100 text-blue-600 mr-4">
+              <FiShoppingBag className="text-xl" />
             </div>
-            <div className="flex-1">
-              <p className="text-sm text-gray-600 mb-4">
-                Create and manage product specifications including categories, sizes, and images.
-              </p>
-            </div>
-            <div className="mt-auto">
-              <PrimaryButton className="w-full">
-                <FiPlus className="mr-2" /> Add Product
-              </PrimaryButton>
+            <div>
+              <h3 className="text-lg font-medium">Product Master</h3>
+              <p className="text-sm text-gray-500">{productMasters.length} records</p>
             </div>
           </div>
-        </Card>
-        
-        <Card>
-          <div 
-            className="p-6 cursor-pointer hover:shadow-lg transition h-full flex flex-col"
-            onClick={() => setMasterType('design')}
-          >
-            <div className="flex items-center mb-4">
-              <div className="p-3 rounded-lg bg-purple-100 text-purple-600 mr-4">
-                <FiAward className="text-xl" />
-              </div>
-              <div>
-                <h3 className="text-lg font-medium">Design Master</h3>
-                <p className="text-sm text-gray-500">{designMasters.length} records</p>
-              </div>
+        </div>
+        <div 
+          className="bg-white rounded-xl shadow-lg p-6 cursor-pointer hover:shadow-xl transition"
+          onClick={() => setMasterType('design')}
+        >
+          <div className="flex items-center">
+            <div className="p-3 rounded-lg bg-purple-100 text-purple-600 mr-4">
+              <FiAward className="text-xl" />
             </div>
-            <div className="flex-1">
-              <p className="text-sm text-gray-600 mb-4">
-                Define design specifications including weights, diamond details, and materials.
-              </p>
-            </div>
-            <div className="mt-auto">
-              <PrimaryButton className="w-full">
-                <FiPlus className="mr-2" /> Add Design
-              </PrimaryButton>
+            <div>
+              <h3 className="text-lg font-medium">Design Master</h3>
+              <p className="text-sm text-gray-500">{designMasters.length} records</p>
             </div>
           </div>
-        </Card>
+        </div>
       </div>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-gray-50">
       {/* Mobile header */}
       <div className="md:hidden bg-[#00072D] text-white p-4 flex justify-between items-center sticky top-0 z-10 shadow-md">
         <button 
@@ -1211,65 +888,71 @@ const ProductionDashboard = () => {
         <div className="w-8"></div>
       </div>
 
-      {/* Sidebar - Fixed */}
-      <div 
-        className={`fixed inset-y-0 left-0 transform ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 z-20 w-64 bg-[#00072D] text-white transition duration-200 ease-in-out md:transition-none flex flex-col`}
-      >
-        <div className="p-4 border-b border-white/10">
-          <div className="flex items-center justify-center mb-2">
-            <img 
-              src="https://via.placeholder.com/40x40?text=SJ" 
-              alt="Sonalika Jewellers" 
-              className="h-10 w-10 rounded-full"
-            />
-          </div>
-          <h1 className="text-xl font-bold text-center">Sonalika Jewellers</h1>
-        </div>
-        <nav className="mt-6 flex-1">
-          <div 
-            className={`flex items-center px-6 py-3 cursor-pointer transition ${activeMenu === 'dashboard' ? 'bg-white/10' : 'hover:bg-white/5'}`}
-            onClick={() => {
-              setActiveMenu('dashboard');
-              setMobileMenuOpen(false);
-              setMasterType(null);
-            }}
-          >
-            <FiHome className="mr-3" />
-            <span>Dashboard</span>
-          </div>
-          <div 
-            className={`flex items-center px-6 py-3 cursor-pointer transition ${activeMenu === 'master' ? 'bg-white/10' : 'hover:bg-white/5'}`}
-            onClick={() => {
-              setActiveMenu('master');
-              setMobileMenuOpen(false);
-              setMasterType(null);
-            }}
-          >
-            <FiDatabase className="mr-3" />
-            <span>Master Data</span>
-          </div>
-        </nav>
-      </div>
-
-      {/* Overlay for mobile menu */}
-      {mobileMenuOpen && (
+      <div className="flex min-h-screen">
+        {/* Sidebar */}
         <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-10 md:hidden"
-          onClick={() => setMobileMenuOpen(false)}
-        ></div>
-      )}
+          className={`fixed inset-y-0 left-0 transform ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 z-20 w-64 bg-[#00072D] text-white transition duration-200 ease-in-out md:transition-none flex flex-col`}
+          style={{ height: '100vh' }}
+        >
+          <div className="p-4 border-b border-white/10">
+            <div className="flex items-center justify-center mb-2">
+              <img 
+                src="https://via.placeholder.com/40x40?text=SJ" 
+                alt="Sonalika Jewellers" 
+                className="h-10 w-10 rounded-full"
+              />
+            </div>
+            <h1 className="text-xl font-bold text-center">Sonalika Jewellers</h1>
+          </div>
+          <nav className="mt-6 flex-1">
+            <div 
+              className={`flex items-center px-6 py-3 cursor-pointer transition ${activeMenu === 'dashboard' ? 'bg-white/10' : 'hover:bg-white/5'}`}
+              onClick={() => {
+                setActiveMenu('dashboard');
+                setMobileMenuOpen(false);
+                setMasterType(null);
+              }}
+            >
+              <FiHome className="mr-3" />
+              <span>Dashboard</span>
+            </div>
+            <div 
+              className={`flex items-center px-6 py-3 cursor-pointer transition ${activeMenu === 'master' ? 'bg-white/10' : 'hover:bg-white/5'}`}
+              onClick={() => {
+                setActiveMenu('master');
+                setMobileMenuOpen(false);
+                setMasterType(null);
+              }}
+            >
+              <FiDatabase className="mr-3" />
+              <span>Master Data</span>
+            </div>
+          </nav>
+          <div className="p-4 text-sm text-white/60 border-t border-white/10 hidden md:block">
+            v1.0.0
+          </div>
+        </div>
 
-      {/* Main Content - Scrollable with hidden scrollbar */}
-      <div className="flex-1 overflow-auto p-4 md:p-6 scrollbar-hide">
-        {activeMenu === 'dashboard' && renderDashboard()}
-
-        {activeMenu === 'master' && (
-          <>
-            {!masterType && renderMasterDataMenu()}
-            {masterType === 'product' && renderProductMasterForm()}
-            {masterType === 'design' && renderDesignMasterForm()}
-          </>
+        {/* Overlay for mobile menu */}
+        {mobileMenuOpen && (
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-50 z-10 md:hidden"
+            onClick={() => setMobileMenuOpen(false)}
+          ></div>
         )}
+
+        {/* Main Content */}
+        <div className="flex-1 overflow-auto p-4 md:p-6">
+          {activeMenu === 'dashboard' && renderDashboard()}
+
+          {activeMenu === 'master' && (
+            <>
+              {!masterType && renderMasterDataMenu()}
+              {masterType === 'product' && renderProductMasterForm()}
+              {masterType === 'design' && renderDesignMasterForm()}
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

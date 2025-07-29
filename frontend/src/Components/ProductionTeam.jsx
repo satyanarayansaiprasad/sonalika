@@ -875,7 +875,7 @@ const ProductionDashboard = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="flex flex-col h-screen bg-gray-50">
       {/* Mobile header */}
       <div className="md:hidden bg-[#00072D] text-white p-4 flex justify-between items-center sticky top-0 z-10 shadow-md">
         <button 
@@ -888,8 +888,8 @@ const ProductionDashboard = () => {
         <div className="w-8"></div>
       </div>
 
-      <div className="flex min-h-screen">
-        {/* Sidebar */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Sidebar - Fixed and not scrolling */}
         <div 
           className={`fixed inset-y-0 left-0 transform ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 z-20 w-64 bg-[#00072D] text-white transition duration-200 ease-in-out md:transition-none flex flex-col`}
           style={{ height: '100vh' }}
@@ -904,7 +904,7 @@ const ProductionDashboard = () => {
             </div>
             <h1 className="text-xl font-bold text-center">Sonalika Jewellers</h1>
           </div>
-          <nav className="mt-6 flex-1">
+          <nav className="mt-6 flex-1 overflow-y-auto">
             <div 
               className={`flex items-center px-6 py-3 cursor-pointer transition ${activeMenu === 'dashboard' ? 'bg-white/10' : 'hover:bg-white/5'}`}
               onClick={() => {
@@ -929,7 +929,7 @@ const ProductionDashboard = () => {
             </div>
           </nav>
           <div className="p-4 text-sm text-white/60 border-t border-white/10 hidden md:block">
-            v1.0.0
+           PageTraffics
           </div>
         </div>
 
@@ -941,7 +941,7 @@ const ProductionDashboard = () => {
           ></div>
         )}
 
-        {/* Main Content */}
+        {/* Main Content - Scrollable */}
         <div className="flex-1 overflow-auto p-4 md:p-6">
           {activeMenu === 'dashboard' && renderDashboard()}
 

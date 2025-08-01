@@ -25,55 +25,29 @@ async function getNextStyleNumber() {
 // Create Product Master
 exports.createProductMaster = async (req, res) => {
   try {
-      console.log('Request body:', req.body); // Add this for debugging
-    console.log('Request file:', req.file); // Add this for debugging
-    const { category, sizeType, sizeValue, description } = req.body;
-    const imageFile = req.file;
+    console.log('Request body:', req.body);
+
+    const { category, sizeType, sizeValue } = req.body;
 
     // Validate required fields
-    if (!category || !sizeType || !sizeValue || !description) {
+    if (!category || !sizeType || !sizeValue) {
       return res.status(400).json({ 
         success: false,
         message: "All fields are required" 
       });
     }
 
-    if (!imageFile) {
-      return res.status(400).json({ 
-        success: false,
-        message: "Image is required" 
-      });
-    }
-
-    // Upload to ImageKit
-   
-  const uploadResponse = await imagekit.upload({
-  file: imageFile.buffer, // Buffer from memory
-  fileName: imageFile.originalname,
-  folder: "/products",
-});
-
-
-    // Generate optimized URL
-    const imageUrl = imagekit.url({
-      path: uploadResponse.filePath,
-      transformation: [{ quality: "auto" }, { format: "webp" }, { width: "1280" }]
-    });
+    // Generate Serial Number
+    const serialNumber = await getNextProductSerialNumber();
 
     // Create new product
-    const serialNumber = await getNextProductSerialNumber();
     const newProduct = await ProductMaster.create({
       serialNumber,
       category,
       sizeType,
-      sizeValue,
-      description,
-      imageFile: imageUrl
+      sizeValue
     });
 
-    // Clean up temporary file
-    fs.unlinkSync(imageFile.path);
-    
     res.status(201).json({ 
       success: true, 
       data: newProduct 
@@ -81,12 +55,6 @@ exports.createProductMaster = async (req, res) => {
 
   } catch (err) {
     console.error('Error creating Product Master:', err);
-    
-    // Clean up temp file if error occurred
-    if (req.file) {
-      fs.unlinkSync(req.file.path).catch(console.error);
-    }
-    
     res.status(500).json({
       success: false,
       message: 'Server Error',
@@ -95,20 +63,44 @@ exports.createProductMaster = async (req, res) => {
   }
 };
 
+
 // Other controller methods remain the same...
 
 // Create Design Master
 exports.createDesignMaster = async (req, res) => {
   try {
-    const { 
+    console.log('Request body:', req.body);
+    console.log('Request file:', req.file);
+
+    const {
       serialNumber,
-      grossWt, 
-      netWt, 
-      diaWt, 
-      diaPcs, 
-      clarity, 
-      color 
+      grossWt,
+      netWt,
+      diaWt,
+      diaPcs,
+      clarity,
+      color
     } = req.body;
+
+    const imageFile = req.file;
+
+    let imageUrl = null;
+    if (imageFile) {
+      const uploadResponse = await imagekit.upload({
+        file: imageFile.buffer,
+        fileName: imageFile.originalname,
+        folder: "/designs",
+      });
+
+      imageUrl = imagekit.url({
+        path: uploadResponse.filePath,
+        transformation: [
+          { quality: "auto" },
+          { format: "webp" },
+          { width: "1280" }
+        ]
+      });
+    }
 
     const styleNumber = await getNextStyleNumber();
 
@@ -120,11 +112,13 @@ exports.createDesignMaster = async (req, res) => {
       diaWt,
       diaPcs,
       clarity,
-      color
+      color,
+      imageFile: imageUrl
     });
 
     await newDesign.save();
     res.status(201).json({ success: true, data: newDesign });
+
   } catch (err) {
     console.error('Error creating Design Master:', err);
     res.status(500).json({
@@ -134,6 +128,7 @@ exports.createDesignMaster = async (req, res) => {
     });
   }
 };
+
 
 // Get all Product Masters
 exports.getAllProductMasters = async (req, res) => {

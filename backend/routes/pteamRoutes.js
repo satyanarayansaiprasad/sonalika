@@ -10,8 +10,8 @@ const {
 
 const upload = require('../middleware/multer');
 
-router.post('/createProductMaster',upload.single('image'), createProductMaster);
-router.post('/createDesignMaster', createDesignMaster);
+router.post('/createProductMaster', createProductMaster);
+router.post('/createDesignMaster',upload.single('image'), createDesignMaster);
 router.get('/getAllProductMasters', getAllProductMasters);
 router.get('/getAllDesignMasters', getAllDesignMasters);
 

@@ -415,7 +415,7 @@ const ProductionDashboard = () => {
   );
 
   const renderProductMasterForm = () => (
-    <div className="bg-white rounded-xl shadow-lg p-6">
+    <div className="bg-white h-full rounded-xl shadow-lg p-6">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-semibold text-gray-800">Create Product Master</h2>
         <button 
@@ -502,7 +502,7 @@ const ProductionDashboard = () => {
         </div>
       </form>
 
-      <div className="mt-12">
+      {/* <div className="mt-12">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold text-gray-800">Product Master Records</h2>
           <span className="text-sm text-gray-500">{productMasters.length} records</span>
@@ -534,7 +534,7 @@ const ProductionDashboard = () => {
             </div>
           </div>
         </div>
-      </div>
+      </div> */}
     </div>
   );
 
@@ -559,21 +559,21 @@ const ProductionDashboard = () => {
             <label className="block text-sm font-medium text-gray-700 mb-1">Product Serial Number</label>
             <select
               className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-              value={designForm.serialNumber}
-              onChange={(e) => setDesignForm({...designForm, serialNumber: e.target.value})}
+              value={designForm.category}
+              onChange={(e) => setDesignForm({...designForm, category: e.target.value})}
               required
             >
               <option value="">Select product serial number</option>
               {productMasters.map((product) => (
-                <option key={product.serialNumber} value={product.serialNumber}>
-                  {product.serialNumber} - {product.category}
+                <option key={product.category} value={product.category}>
+                  {product.category} 
                 </option>
               ))}
             </select>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Gross Weight</label>
             <div className="relative rounded-md shadow-sm">

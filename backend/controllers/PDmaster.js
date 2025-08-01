@@ -15,13 +15,13 @@ const SizeDataMaster = require('../models/SizeDataMaster');
 // }
 
 // Generate next Style Number
-async function getNextStyleNumber() {
-  const last = await DesignMaster.findOne().sort({ styleNumber: -1 });
-  if (!last) return 'SJSTYLE0001';
-  const lastNumber = parseInt(last.styleNumber.replace('SJSTYLE', ''));
-  const nextNumber = (lastNumber + 1).toString().padStart(4, '0');
-  return `SJSTYLE${nextNumber}`;
-}
+// async function getNextStyleNumber() {
+//   const last = await DesignMaster.findOne().sort({ styleNumber: -1 });
+//   if (!last) return 'SJSTYLE0001';
+//   const lastNumber = parseInt(last.styleNumber.replace('SJSTYLE', ''));
+//   const nextNumber = (lastNumber + 1).toString().padStart(4, '0');
+//   return `SJSTYLE${nextNumber}`;
+// }
 
 // Create Product Master
 exports.createProductMaster = async (req, res) => {
@@ -103,7 +103,7 @@ exports.createDesignMaster = async (req, res) => {
       });
     }
 
-    const styleNumber = await getNextStyleNumber();
+    // const styleNumber = await getNextStyleNumber();
 
     const newDesign = new DesignMaster({
       serialNumber,

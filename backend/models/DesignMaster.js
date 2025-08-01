@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const DesignMasterSchema = new mongoose.Schema({
-  serialNumber: { type: String, required: true },
+  // serialNumber: { type: String, required: true },
   styleNumber: { type: String, required: true, unique: true },
   grossWt: { type: Number, default: 0 },
   netWt: { type: Number, default: 0 },

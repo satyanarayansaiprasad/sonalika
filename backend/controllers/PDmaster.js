@@ -233,13 +233,36 @@ exports.createOrUpdateSizeDataMaster = async (req, res) => {
 //get
 exports.getAllSizeData = async (req, res) => {
   try {
-    const allData = await SizeDataMaster.find().sort({ category: 1 }); // sorted by category name
-    res.status(200).json({ data: allData });
+    const allData = await SizeDataMaster.find().sort({ category: 1 });
+
+    // Filter only valid entries (having at least one type and non-empty values)
+    const formattedData = allData
+      .filter(doc => doc.category && doc.types && doc.types.length > 0)
+      .map(doc => {
+        // Prepare clean value mapping
+        const values = {};
+        doc.types.forEach(type => {
+          const valArray = (doc.values && doc.values[type]) || [];
+          if (valArray.length > 0) {
+            values[type] = valArray;
+          }
+        });
+
+        return {
+          category: doc.category.toUpperCase(),
+          types: doc.types,
+          values: values,
+        };
+      })
+      .filter(item => Object.keys(item.values).length > 0); // remove empty ones
+
+    res.status(200).json({ data: formattedData });
   } catch (err) {
     console.error('Error in getAllSizeData:', err);
     res.status(500).json({ error: 'Internal Server Error', details: err.message });
   }
 };
+
 
 
 

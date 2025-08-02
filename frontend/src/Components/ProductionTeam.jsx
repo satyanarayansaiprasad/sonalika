@@ -263,72 +263,85 @@ const ProductionDashboard = () => {
     }
   };
 
-  const handleProductSubmit = async (e) => {
-    e.preventDefault();
+ const handleProductSubmit = async (e) => {
+  e.preventDefault();
+  
+  if (!productForm.category || !productForm.sizeType || !productForm.sizeValue) {
+    alert('Please fill all required fields');
+    return;
+  }
+
+  try {
+    setLoading(true);
     
-    if (!productForm.category || !productForm.sizeType || !productForm.sizeValue) {
-      alert('Please fill all fields');
-      return;
+    const response = await axios.post(
+      `${API_BASE_URL}/api/pdmaster/createProductMaster`,
+      {
+        category: productForm.category,
+        sizeType: productForm.sizeType,
+        sizeValue: productForm.sizeValue
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    if (response.data && response.data.success) {
+      alert('Product Master created successfully!');
+      setProductForm({
+        category: '',
+        sizeType: '',
+        sizeValue: ''
+      });
+      fetchAllProductMasters();
+    } else {
+      throw new Error(response.data?.message || 'Failed to create product');
+    }
+  } catch (error) {
+    console.error('Product submission error:', error);
+    alert(`Error: ${error.response?.data?.message || error.message || 'Failed to create product'}`);
+  } finally {
+    setLoading(false);
+  }
+};
+
+const handleDesignSubmit = async (e) => {
+  e.preventDefault();
+  
+  if (!designForm.serialNumber || !designForm.grossWt || !designForm.netWt) {
+    alert('Please fill all required fields');
+    return;
+  }
+
+  try {
+    setLoading(true);
+    
+    const formData = new FormData();
+    formData.append('serialNumber', designForm.serialNumber);
+    formData.append('grossWt', designForm.grossWt);
+    formData.append('netWt', designForm.netWt);
+    formData.append('diaWt', designForm.diaWt);
+    formData.append('diaPcs', designForm.diaPcs);
+    formData.append('clarity', designForm.clarity);
+    formData.append('color', designForm.color);
+    
+    if (designForm.imageFile) {
+      formData.append('image', designForm.imageFile);
     }
 
-    try {
-      setLoading(true);
-      
-      const response = await axios.post(
-        `${API_BASE_URL}/api/pdmaster/createProductMaster`,
-        {
-          category: productForm.category,
-          sizeType: productForm.sizeType,
-          sizeValue: productForm.sizeValue
+    const response = await axios.post(
+      `${API_BASE_URL}/api/pdmaster/createDesignMaster`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data'
         }
-      );
-
-      if (response.data.success) {
-        alert('Product Master created successfully!');
-        setProductForm({
-          category: '',
-          sizeType: '',
-          sizeValue: ''
-        });
-        fetchAllProductMasters();
-      } else {
-        throw new Error(response.data.message || 'Failed to create product');
       }
-    } catch (error) {
-      alert(`Error: ${error.response?.data?.message || error.message}`);
-      console.error('Submission error:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    );
 
-  const handleDesignSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      setLoading(true);
-      
-      const formData = new FormData();
-      formData.append('serialNumber', designForm.serialNumber);
-      formData.append('grossWt', designForm.grossWt);
-      formData.append('netWt', designForm.netWt);
-      formData.append('diaWt', designForm.diaWt);
-      formData.append('diaPcs', designForm.diaPcs);
-      formData.append('clarity', designForm.clarity);
-      formData.append('color', designForm.color);
-      if (designForm.imageFile) {
-        formData.append('image', designForm.imageFile);
-      }
-
-      const response = await axios.post(
-        `${API_BASE_URL}/api/pdmaster/createDesignMaster`,
-        formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data'
-          }
-        }
-      );
-
+    if (response.data && response.data.success) {
       alert('Design Master created successfully!');
       setDesignForm({
         serialNumber: '',
@@ -342,14 +355,16 @@ const ProductionDashboard = () => {
       });
       setPreviewImage(null);
       fetchAllDesignMasters();
-    } catch (error) {
-      alert(`Failed to create design master: ${error.response?.data?.message || error.message}`);
-      console.error('Submission error:', error);
-    } finally {
-      setLoading(false);
+    } else {
+      throw new Error(response.data?.message || 'Failed to create design');
     }
-  };
-
+  } catch (error) {
+    console.error('Design submission error:', error);
+    alert(`Error: ${error.response?.data?.message || error.message || 'Failed to create design'}`);
+  } finally {
+    setLoading(false);
+  }
+};
   const renderDashboard = () => (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -621,7 +636,7 @@ const ProductionDashboard = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Gross Weight</label>
             <div className="relative rounded-md shadow-sm">

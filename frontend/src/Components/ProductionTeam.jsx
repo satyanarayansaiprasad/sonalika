@@ -263,7 +263,7 @@ const ProductionDashboard = () => {
     }
   };
 
- const handleProductSubmit = async (e) => {
+const handleProductSubmit = async (e) => {
   e.preventDefault();
   
   if (!productForm.category || !productForm.sizeType || !productForm.sizeValue) {
@@ -277,9 +277,9 @@ const ProductionDashboard = () => {
     const response = await axios.post(
       `${API_BASE_URL}/api/pdmaster/createProductMaster`,
       {
-        category: productForm.category,
-        sizeType: productForm.sizeType,
-        sizeValue: productForm.sizeValue
+        category: productForm.category.trim(), // Ensure category is trimmed
+        sizeType: productForm.sizeType.trim(),
+        sizeValue: productForm.sizeValue.toString().trim()
       },
       {
         headers: {

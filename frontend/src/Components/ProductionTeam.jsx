@@ -40,8 +40,8 @@ const ProductionDashboard = () => {
 
   const [productForm, setProductForm] = useState({
     category: '',
-    sizeType: '',
-    sizeValue: ''
+    types: '',
+    values: ''
   });
   
   const [designForm, setDesignForm] = useState({
@@ -143,8 +143,8 @@ const ProductionDashboard = () => {
     setProductForm(prev => ({
       ...prev,
       category: selectedCategory,
-      sizeType: '',
-      sizeValue: ''
+      types: '',
+      values: ''
     }));
 
     // Update size types based on selected category
@@ -159,8 +159,8 @@ const ProductionDashboard = () => {
   const handleSizeTypeChange = (selectedSizeType) => {
     setProductForm(prev => ({
       ...prev,
-      sizeType: selectedSizeType,
-      sizeValue: ''
+      types: selectedSizeType,
+      values: ''
     }));
   };
 
@@ -192,7 +192,7 @@ const ProductionDashboard = () => {
 
   const handleAddSizeValue = () => {
     if (tempSizeValue && tempSizeDescription) {
-      const currentType = productForm.sizeType;
+      const currentType = productForm.types;
       if (currentType) {
         const updatedValues = {
           ...categoryForm.values,
@@ -260,7 +260,7 @@ const ProductionDashboard = () => {
   const handleProductSubmit = async (e) => {
     e.preventDefault();
     
-    if (!productForm.category || !productForm.sizeType || !productForm.sizeValue) {
+    if (!productForm.category || !productForm.types || !productForm.values) {
       alert('Please fill all required fields');
       return;
     }
@@ -272,8 +272,8 @@ const ProductionDashboard = () => {
         `${API_BASE_URL}/api/pdmaster/createProductMaster`,
         {
           category: productForm.category,
-          sizeType: productForm.sizeType,
-          sizeValue: productForm.sizeValue
+          types: productForm.types,
+          values: productForm.values
         }
       );
 
@@ -281,8 +281,8 @@ const ProductionDashboard = () => {
         showSuccess('Product Master successfully created!');
         setProductForm({
           category: '',
-          sizeType: '',
-          sizeValue: ''
+          types: '',
+          values: ''
         });
         fetchAllProductMasters();
       } else {
@@ -379,8 +379,8 @@ const ProductionDashboard = () => {
 
   // Get size values for the selected category and size type
   const getSizeValueOptions = () => {
-    if (!productForm.category || !productForm.sizeType) return [];
-    return sizeValues[productForm.category]?.values[productForm.sizeType] || [];
+    if (!productForm.category || !productForm.types) return [];
+    return sizeValues[productForm.category]?.values[productForm.types] || [];
   };
 
   // Render methods
@@ -525,7 +525,7 @@ const ProductionDashboard = () => {
               <label className="block text-sm font-medium text-gray-700 mb-1">Select Size Type to Add Values</label>
               <select
                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                value={productForm.sizeType}
+                value={productForm.types}
                 onChange={(e) => handleSizeTypeChange(e.target.value)}
                 required
               >
@@ -536,10 +536,10 @@ const ProductionDashboard = () => {
               </select>
             </div>
 
-            {productForm.sizeType && (
+            {productForm.types && (
               <>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Add Size Values for {productForm.sizeType}</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Add Size Values for {productForm.types}</label>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                     <input
                       type="text"
@@ -565,11 +565,11 @@ const ProductionDashboard = () => {
                   </div>
                 </div>
 
-                {categoryForm.values[productForm.sizeType]?.length > 0 && (
+                {categoryForm.values[productForm.types]?.length > 0 && (
                   <div className="border border-gray-200 rounded-lg p-4">
-                    <h3 className="text-sm font-medium text-gray-700 mb-3">Current Values for {productForm.sizeType}</h3>
+                    <h3 className="text-sm font-medium text-gray-700 mb-3">Current Values for {productForm.types}</h3>
                     <div className="space-y-3">
-                      {categoryForm.values[productForm.sizeType].map((item, index) => (
+                      {categoryForm.values[productForm.types].map((item, index) => (
                         <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
                           <div>
                             <span className="font-medium">{item.value}</span>
@@ -577,7 +577,7 @@ const ProductionDashboard = () => {
                           </div>
                           <button
                             type="button"
-                            onClick={() => handleRemoveSizeValue(productForm.sizeType, index)}
+                            onClick={() => handleRemoveSizeValue(productForm.types, index)}
                             className="text-red-500 hover:text-red-700 p-1"
                           >
                             <FiTrash2 />
@@ -663,7 +663,7 @@ const ProductionDashboard = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Size Type</label>
                 <select
                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                  value={productForm.sizeType}
+                  value={productForm.types}
                   onChange={(e) => handleSizeTypeChange(e.target.value)}
                   disabled={!productForm.category || sizeTypes.length === 0}
                   required
@@ -682,13 +682,13 @@ const ProductionDashboard = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Size Value</label>
                 <select
                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                  value={productForm.sizeValue}
-                  onChange={(e) => setProductForm({...productForm, sizeValue: e.target.value})}
-                  disabled={!productForm.sizeType || getSizeValueOptions().length === 0}
+                  value={productForm.values}
+                  onChange={(e) => setProductForm({...productForm, values: e.target.value})}
+                  disabled={!productForm.types || getSizeValueOptions().length === 0}
                   required
                 >
                   <option value="">
-                    {!productForm.sizeType 
+                    {!productForm.types 
                       ? 'Select size type first' 
                       : getSizeValueOptions().length === 0
                         ? 'No size values available' 
@@ -701,7 +701,7 @@ const ProductionDashboard = () => {
                     </option>
                   ))}
                 </select>
-                {productForm.sizeType && getSizeValueOptions().length === 0 && (
+                {productForm.types && getSizeValueOptions().length === 0 && (
                   <p className="mt-1 text-xs text-red-500">No size values defined for this size type</p>
                 )}
               </div>

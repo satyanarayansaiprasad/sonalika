@@ -17,7 +17,7 @@ const ProductionDashboard = () => {
   
   const [categories, setCategories] = useState([]);
   const [sizeTypes, setSizeTypes] = useState([]);
-  const [sizeValues, setSizeValues] = useState([]);
+  const [sizeValues, setSizeValues] = useState({});
   const [productMasters, setProductMasters] = useState([]);
   const [designMasters, setDesignMasters] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -68,9 +68,27 @@ const ProductionDashboard = () => {
     try {
       setLoading(true);
       const response = await axios.get(`${API_BASE_URL}/api/pdmaster/getAllSizeData`);
-      setCategories(response.data.data.map(item => item.category));
+      
+      if (response.data && response.data.data) {
+        // Extract categories
+        const categoriesList = response.data.data.map(item => item.category);
+        setCategories(categoriesList);
+        
+        // Create a mapping of category to its types and values
+        const sizeDataMap = {};
+        response.data.data.forEach(item => {
+          sizeDataMap[item.category] = {
+            types: item.types || [],
+            values: item.values || {}
+          };
+        });
+        
+        setSizeValues(sizeDataMap);
+        console.log('Size data loaded:', sizeDataMap);
+      }
     } catch (error) {
       console.error('Error fetching size data:', error);
+      alert('Failed to load categories: ' + error.message);
     } finally {
       setLoading(false);
     }
@@ -102,34 +120,44 @@ const ProductionDashboard = () => {
     }
   };
 
-  const handleCategoryChange = async (value) => {
-    try {
-      setLoading(true);
-      const response = await axios.get(`${API_BASE_URL}/api/pdmaster/getByCategory?category=${value}`);
-      const categoryData = response.data.data;
-      
-      if (categoryData) {
-        setSizeTypes(categoryData.types || []);
-        setSizeValues(categoryData.values || {});
-      }
-      
+  const handleCategoryChange = (selectedCategory) => {
+    if (!selectedCategory) {
+      setSizeTypes([]);
       setProductForm({
         ...productForm,
-        category: value,
+        category: '',
         sizeType: '',
         sizeValue: ''
       });
-    } catch (error) {
-      console.error('Error fetching category data:', error);
-    } finally {
-      setLoading(false);
+      return;
+    }
+
+    const categoryData = sizeValues[selectedCategory];
+    if (categoryData) {
+      setSizeTypes(categoryData.types || []);
+      
+      setProductForm({
+        ...productForm,
+        category: selectedCategory,
+        sizeType: '',
+        sizeValue: ''
+      });
     }
   };
 
-  const handleSizeTypeChange = (value) => {
+  const handleSizeTypeChange = (selectedType) => {
+    if (!selectedType) {
+      setProductForm({
+        ...productForm,
+        sizeType: '',
+        sizeValue: ''
+      });
+      return;
+    }
+
     setProductForm({
       ...productForm,
-      sizeType: value,
+      sizeType: selectedType,
       sizeValue: ''
     });
   };
@@ -635,7 +663,7 @@ const ProductionDashboard = () => {
                   required
                 >
                   <option value="">Select size value</option>
-                  {sizeValues[productForm.sizeType]?.map((item, index) => (
+                  {productForm.sizeType && sizeValues[productForm.category]?.values[productForm.sizeType]?.map((item, index) => (
                     <option key={index} value={item.value}>
                       {item.value} - {item.description}
                     </option>

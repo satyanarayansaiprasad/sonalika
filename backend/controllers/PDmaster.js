@@ -47,10 +47,10 @@ exports.createProductMaster = async (req, res) => {
   try {
     console.log('Request body:', req.body);
 
-    const { category, sizeType, sizeValue } = req.body;
+    const { category, types, values } = req.body;
 
     // Validate required fields
-    if (!category || !sizeType || !sizeValue) {
+    if (!category || !types || !values) {
       return res.status(400).json({ 
         success: false,
         message: "All fields are required" 
@@ -64,9 +64,8 @@ exports.createProductMaster = async (req, res) => {
     const newProduct = await ProductMaster.create({
       serialNumber,
       category,
-      sizeType,
-      sizeValue
-    });
+      types,
+values    });
 
     res.status(201).json({ 
       success: true, 

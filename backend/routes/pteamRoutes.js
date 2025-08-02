@@ -6,10 +6,9 @@ const {
   createDesignMaster,
   getAllProductMasters,
   getAllDesignMasters,
-  createOrUpdateSizeData,
+  createOrUpdateSizeDataMaster,
   getAllSizeData,
-  getSizeDataByCategory,
-  updateSizeData    
+    
   } = require('../controllers/PDmaster');
 
 const upload = require('../middleware/multer');
@@ -20,9 +19,10 @@ router.get('/getAllProductMasters', getAllProductMasters);
 router.get('/getAllDesignMasters', getAllDesignMasters);
 
 
-router.post('/size-data', createOrUpdateSizeData); // create or upsert
-router.get('/size-data', getAllSizeData); // get all
-router.get('/size-data/:category',getSizeDataByCategory); // get one
-router.put('/size-data/:category', updateSizeData); // update existing
+router.post('/createSizeDataMaster', createOrUpdateSizeDataMaster);
+
+router.get('/getAllSizeData', getAllSizeData); // get all
+// router.get('/size-data/:category',getSizeDataByCategory); // get one
+// router.put('/size-data/:category', updateSizeData); // update existing
 
 module.exports = router;

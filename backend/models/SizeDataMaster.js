@@ -12,7 +12,7 @@ const SizeDataMasterSchema = new mongoose.Schema({
   types: [{ type: String, required: true }],
   values: {
     type: Map,
-    of: [ValueItemSchema], // Each key maps to an array of { value, description }
+    of: [ValueItemSchema], // key: sizeType, value: array of {value, description}
     required: true
   },
   createdAt: { type: Date, default: Date.now }

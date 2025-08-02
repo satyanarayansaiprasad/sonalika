@@ -16,6 +16,7 @@ const ProductionDashboard = () => {
     return saved || null;
   });
   
+  const [sizeData, setSizeData] = useState([]);
   const [categories, setCategories] = useState([]);
   const [sizeTypes, setSizeTypes] = useState([]);
   const [sizeValues, setSizeValues] = useState({});
@@ -79,22 +80,17 @@ const ProductionDashboard = () => {
     try {
       setLoading(true);
       const response = await axios.get(`${API_BASE_URL}/api/pdmaster/getAllSizeData`);
-      console.log('Size data response:', response.data);
       
       if (response.data && response.data.data) {
-        const formattedData = response.data.data.map(item => ({
-          category: item.category,
-          types: item.types,
-          values: item.values
-        }));
+        setSizeData(response.data.data);
         
         // Extract unique categories
-        const uniqueCategories = [...new Set(formattedData.map(item => item.category))];
+        const uniqueCategories = [...new Set(response.data.data.map(item => item.category))];
         setCategories(uniqueCategories);
         
-        // Store all size data for reference
+        // Create a mapping of category to its size types and values
         const sizeDataMap = {};
-        formattedData.forEach(item => {
+        response.data.data.forEach(item => {
           if (item.category) {
             sizeDataMap[item.category] = {
               types: item.types || [],
@@ -138,22 +134,29 @@ const ProductionDashboard = () => {
     }
   };
 
-  // Category change handler - Fixed version
-  const handleCategoryChange = (value) => {
-    console.log('Selected category:', value);
-    console.log('Size values:', sizeValues);
+  // Category change handler - Updated version
+  const handleCategoryChange = (selectedCategory) => {
+    // Find the selected category data from sizeData
+    const categoryData = sizeData.find(item => item.category === selectedCategory);
     
-    if (value && sizeValues[value]) {
-      const types = sizeValues[value].types || [];
-      console.log('Types for category:', types);
-      setSizeTypes(types);
+    if (categoryData) {
+      setSizeTypes(categoryData.types || []);
+      
+      // Update the size values mapping for the selected category
+      setSizeValues(prev => ({
+        ...prev,
+        [selectedCategory]: {
+          types: categoryData.types || [],
+          values: categoryData.values || {}
+        }
+      }));
     } else {
       setSizeTypes([]);
     }
     
     setProductForm(prev => ({
       ...prev,
-      category: value,
+      category: selectedCategory,
       sizeType: '',
       sizeValue: ''
     }));
@@ -650,8 +653,10 @@ const ProductionDashboard = () => {
                   required
                 >
                   <option value="">Select category</option>
-                  {categories.map((category, index) => (
-                    <option key={index} value={category}>{category}</option>
+                  {sizeData.map((item, index) => (
+                    <option key={index} value={item.category}>
+                      {item.category}
+                    </option>
                   ))}
                 </select>
               </div>

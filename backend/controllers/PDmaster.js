@@ -165,8 +165,10 @@ exports.createOrUpdateSizeDataMaster = async (req, res) => {
   try {
     const { category, types, values } = req.body;
 
-    if (!category || !Array.isArray(types) || typeof values !== 'object') {
-      return res.status(400).json({ error: 'Invalid input format' });
+    // Convert object to Map if needed
+    let valuesToStore = values;
+    if (values && !(values instanceof Map)) {
+      valuesToStore = new Map(Object.entries(values));
     }
 
     const formattedCategory = category.trim().toUpperCase();
@@ -174,28 +176,35 @@ exports.createOrUpdateSizeDataMaster = async (req, res) => {
     const existing = await SizeDataMaster.findOne({ category: formattedCategory });
 
     if (existing) {
-      // If exists, update
       existing.types = types;
-      existing.values = values;
+      existing.values = valuesToStore;
       await existing.save();
-      return res.status(200).json({ message: 'Size data updated', data: existing });
+      return res.status(200).json({ 
+        message: 'Size data updated', 
+        data: existing 
+      });
     }
 
-    // Else create new
     const newSizeData = new SizeDataMaster({
       category: formattedCategory,
       types,
-      values
+      values: valuesToStore
     });
 
     await newSizeData.save();
-    res.status(201).json({ message: 'Size data created', data: newSizeData });
+    res.status(201).json({ 
+      message: 'Size data created', 
+      data: newSizeData 
+    });
+
   } catch (err) {
-    console.error('Error in createOrUpdateSizeDataMaster:', err);
-    res.status(500).json({ error: 'Internal Server Error', details: err.message });
+    console.error('Error:', err);
+    res.status(500).json({ 
+      error: 'Server error', 
+      details: err.message 
+    });
   }
 };
-
 
 
 //get

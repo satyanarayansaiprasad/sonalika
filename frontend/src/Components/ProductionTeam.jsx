@@ -21,9 +21,9 @@ const ProductionDashboard = () => {
   const [productMasters, setProductMasters] = useState([]);
   const [designMasters, setDesignMasters] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [productSerialNumbers, setProductSerialNumbers] = useState([]);
   const [previewImage, setPreviewImage] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showCategoryForm, setShowCategoryForm] = useState(false);
 
   // Form states
   const [categoryForm, setCategoryForm] = useState({
@@ -63,17 +63,6 @@ const ProductionDashboard = () => {
     fetchAllProductMasters();
     fetchAllDesignMasters();
   }, []);
-
-  useEffect(() => {
-    if (productMasters.length > 0) {
-      setProductSerialNumbers(
-        productMasters.map(pm => ({
-          value: pm.serialNumber,
-          label: pm.serialNumber
-        }))
-      );
-    }
-  }, [productMasters]);
 
   const fetchAllSizeData = async () => {
     try {
@@ -230,6 +219,7 @@ const ProductionDashboard = () => {
         values: {}
       });
       fetchAllSizeData();
+      setShowCategoryForm(false);
     } catch (error) {
       alert(`Error: ${error.response?.data?.message || error.message}`);
       console.error('Submission error:', error);
@@ -417,10 +407,7 @@ const ProductionDashboard = () => {
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-semibold text-gray-800">Create/Update Category</h2>
         <button 
-          onClick={() => {
-            setMasterType(null);
-            setActiveMenu('master');
-          }}
+          onClick={() => setShowCategoryForm(false)}
           className="text-gray-500 hover:text-gray-700"
         >
           <FiX className="text-xl" />
@@ -579,92 +566,106 @@ const ProductionDashboard = () => {
   );
 
   const renderProductMasterForm = () => (
-    <div className="bg-white rounded-xl shadow-lg p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-semibold text-gray-800">Create Product Master</h2>
-        <button 
-          onClick={() => {
-            setMasterType(null);
-            setActiveMenu('master');
-          }}
-          className="text-gray-500 hover:text-gray-700"
-        >
-          <FiX className="text-xl" />
-        </button>
-      </div>
-      
-      <form onSubmit={handleProductSubmit} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-            <select
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-              value={productForm.category}
-              onChange={(e) => handleCategoryChange(e.target.value)}
-              required
-            >
-              <option value="">Select category</option>
-              {categories.map(category => (
-                <option key={category} value={category}>{category}</option>
-              ))}
-            </select>
+    <div className="space-y-6">
+      {showCategoryForm ? (
+        renderCategoryForm()
+      ) : (
+        <div className="bg-white rounded-xl shadow-lg p-6">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-semibold text-gray-800">Create Product Master</h2>
+            <div className="flex space-x-2">
+              <button 
+                onClick={() => setShowCategoryForm(true)}
+                className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition"
+              >
+                Create Category
+              </button>
+              <button 
+                onClick={() => {
+                  setMasterType(null);
+                  setActiveMenu('master');
+                }}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <FiX className="text-xl" />
+              </button>
+            </div>
           </div>
           
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Size Type</label>
-            <select
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-              value={productForm.sizeType}
-              onChange={(e) => handleSizeTypeChange(e.target.value)}
-              disabled={!productForm.category}
-              required
-            >
-              <option value="">Select size type</option>
-              {sizeTypes.map(type => (
-                <option key={type} value={type}>{type}</option>
-              ))}
-            </select>
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Size Value</label>
-            <select
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-              value={productForm.sizeValue}
-              onChange={(e) => setProductForm({...productForm, sizeValue: e.target.value})}
-              disabled={!productForm.sizeType}
-              required
-            >
-              <option value="">Select size value</option>
-              {sizeValues[productForm.sizeType]?.map((item, index) => (
-                <option key={index} value={item.value}>
-                  {item.value} - {item.description}
-                </option>
-              ))}
-            </select>
-          </div>
+          <form onSubmit={handleProductSubmit} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                <select
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                  value={productForm.category}
+                  onChange={(e) => handleCategoryChange(e.target.value)}
+                  required
+                >
+                  <option value="">Select category</option>
+                  {categories.map(category => (
+                    <option key={category} value={category}>{category}</option>
+                  ))}
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Size Type</label>
+                <select
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                  value={productForm.sizeType}
+                  onChange={(e) => handleSizeTypeChange(e.target.value)}
+                  disabled={!productForm.category}
+                  required
+                >
+                  <option value="">Select size type</option>
+                  {sizeTypes.map(type => (
+                    <option key={type} value={type}>{type}</option>
+                  ))}
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Size Value</label>
+                <select
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                  value={productForm.sizeValue}
+                  onChange={(e) => setProductForm({...productForm, sizeValue: e.target.value})}
+                  disabled={!productForm.sizeType}
+                  required
+                >
+                  <option value="">Select size value</option>
+                  {sizeValues[productForm.sizeType]?.map((item, index) => (
+                    <option key={index} value={item.value}>
+                      {item.value} - {item.description}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            
+            <div className="flex justify-end">
+              <button 
+                type="submit" 
+                className="bg-[#00072D] text-white px-6 py-3 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition flex items-center"
+                disabled={loading}
+              >
+                {loading ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Processing...
+                  </>
+                ) : (
+                  'Create Product Master'
+                )}
+              </button>
+            </div>
+          </form>
         </div>
-        
-        <div className="flex justify-end">
-          <button 
-            type="submit" 
-            className="bg-[#00072D] text-white px-6 py-3 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition flex items-center"
-            disabled={loading}
-          >
-            {loading ? (
-              <>
-                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Processing...
-              </>
-            ) : (
-              'Create Product Master'
-            )}
-          </button>
-        </div>
-      </form>
+      )}
     </div>
   );
 
@@ -924,20 +925,7 @@ const ProductionDashboard = () => {
       <h1 className="text-2xl font-bold text-gray-800">Master Data Management</h1>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div 
-          className="bg-white rounded-xl shadow-lg p-6 cursor-pointer hover:shadow-xl transition"
-          onClick={() => setMasterType('category')}
-        >
-          <div className="flex items-center">
-            <div className="p-3 rounded-lg bg-green-100 text-green-600 mr-4">
-              <FiPlus className="text-xl" />
-            </div>
-            <div>
-              <h3 className="text-lg font-medium">Category Master</h3>
-              <p className="text-sm text-gray-500">{categories.length} categories</p>
-            </div>
-          </div>
-        </div>
+        
         <div 
           className="bg-white rounded-xl shadow-lg p-6 cursor-pointer hover:shadow-xl transition"
           onClick={() => setMasterType('product')}
@@ -1044,7 +1032,7 @@ const ProductionDashboard = () => {
           {activeMenu === 'master' && (
             <>
               {!masterType && renderMasterDataMenu()}
-              {masterType === 'category' && renderCategoryForm()}
+   
               {masterType === 'product' && renderProductMasterForm()}
               {masterType === 'design' && renderDesignMasterForm()}
             </>

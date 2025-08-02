@@ -11,8 +11,7 @@ const SizeDataMasterSchema = new mongoose.Schema({
   category: { type: String, required: true, unique: true },
   types: [{ type: String, required: true }],
   values: {
-    type: Map,
-    of: [ValueItemSchema], // key: sizeType, value: array of {value, description}
+    type: mongoose.Schema.Types.Mixed, // Changed from Map to Mixed
     required: true
   },
   createdAt: { type: Date, default: Date.now }

@@ -6,22 +6,41 @@ const imagekit = require('../config/imagekit');
 const SizeDataMaster = require('../models/SizeDataMaster');
 
 // Generate next Product Serial Number
-async function getNextProductSerialNumber() {
-  const last = await ProductMaster.findOne().sort({ serialNumber: -1 });
-  if (!last) return 'SJPROD0001';
-  const lastNumber = parseInt(last.serialNumber.replace('SJPROD', ''));
-  const nextNumber = (lastNumber + 1).toString().padStart(4, '0');
-  return `SJPROD${nextNumber}`;
+async function getNextProductSerialNumber(category) {
+  const formattedCategory = category.trim().toUpperCase();
+
+  const regex = new RegExp(`^SJ_${formattedCategory}(\\d+)$`);
+
+  const last = await ProductMaster
+    .findOne({ serialNumber: { $regex: regex } })
+    .sort({ serialNumber: -1 });
+
+  if (!last) return `SJ_${formattedCategory}01`;
+
+  const lastNumber = parseInt(last.serialNumber.replace(`SJ_${formattedCategory}`, ''));
+  const nextNumber = (lastNumber + 1).toString().padStart(2, '0');
+  
+  return `SJ_${formattedCategory}${nextNumber}`;
 }
 
 // Generate next Style Number
-async function getNextStyleNumber() {
-  const last = await DesignMaster.findOne().sort({ styleNumber: -1 });
-  if (!last) return 'SJSTYLE0001';
-  const lastNumber = parseInt(last.styleNumber.replace('SJSTYLE', ''));
-  const nextNumber = (lastNumber + 1).toString().padStart(4, '0');
-  return `SJSTYLE${nextNumber}`;
+async function getNextStyleNumber(category) {
+  const formattedCategory = category.trim().toUpperCase();
+
+  const regex = new RegExp(`^STYLE_${formattedCategory}(\\d+)$`);
+
+  const last = await DesignMaster
+    .findOne({ styleNumber: { $regex: regex } })
+    .sort({ styleNumber: -1 });
+
+  if (!last) return `STYLE_${formattedCategory}01`;
+
+  const lastNumber = parseInt(last.styleNumber.replace(`STYLE_${formattedCategory}`, ''));
+  const nextNumber = (lastNumber + 1).toString().padStart(2, '0');
+  
+  return `STYLE_${formattedCategory}${nextNumber}`;
 }
+
 
 // Create Product Master
 exports.createProductMaster = async (req, res) => {
@@ -165,46 +184,50 @@ exports.createOrUpdateSizeDataMaster = async (req, res) => {
   try {
     const { category, types, values } = req.body;
 
-    // Convert object to Map if needed
-    let valuesToStore = values;
-    if (values && !(values instanceof Map)) {
-      valuesToStore = new Map(Object.entries(values));
+    // Validate input
+    if (!category || !Array.isArray(types) || types.length === 0) {
+      return res.status(400).json({ error: 'Category and at least one type required' });
+    }
+
+    if (!values || Object.keys(values).length === 0) {
+      return res.status(400).json({ error: 'Values object cannot be empty' });
+    }
+
+    // Validate each type has values
+    for (const type of types) {
+      if (!Array.isArray(values[type])) {
+        return res.status(400).json({ error: `Values for ${type} must be an array` });
+      }
     }
 
     const formattedCategory = category.trim().toUpperCase();
 
-    const existing = await SizeDataMaster.findOne({ category: formattedCategory });
+    // Update or create document
+    const existing = await SizeDataMaster.findOneAndUpdate(
+      { category: formattedCategory },
+      {
+        $set: {
+          types,
+          values
+        }
+      },
+      { new: true, upsert: true }
+    );
 
-    if (existing) {
-      existing.types = types;
-      existing.values = valuesToStore;
-      await existing.save();
-      return res.status(200).json({ 
-        message: 'Size data updated', 
-        data: existing 
-      });
-    }
-
-    const newSizeData = new SizeDataMaster({
-      category: formattedCategory,
-      types,
-      values: valuesToStore
-    });
-
-    await newSizeData.save();
-    res.status(201).json({ 
-      message: 'Size data created', 
-      data: newSizeData 
+    res.status(200).json({
+      message: existing ? 'Size data updated' : 'Size data created',
+      data: existing
     });
 
   } catch (err) {
     console.error('Error:', err);
     res.status(500).json({ 
-      error: 'Server error', 
+      error: 'Server error',
       details: err.message 
     });
   }
 };
+
 
 
 //get

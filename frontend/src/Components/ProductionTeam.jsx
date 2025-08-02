@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { FiMenu, FiX, FiHome, FiDatabase, FiShoppingBag, FiPlus, FiAward, FiTrash2, FiCheckCircle } from 'react-icons/fi';
+import { FiMenu, FiX, FiHome, FiDatabase, FiShoppingBag, FiPlus, FiAward, FiTrash2 } from 'react-icons/fi';
 
 const API_BASE_URL = import.meta.env.VITE_BASE_URL || 'http://localhost:3000';
 
 const ProductionDashboard = () => {
-  // State management
   const [activeMenu, setActiveMenu] = useState(() => {
     const saved = localStorage.getItem('activeMenu');
     return saved || 'dashboard';
@@ -18,14 +17,13 @@ const ProductionDashboard = () => {
   
   const [categories, setCategories] = useState([]);
   const [sizeTypes, setSizeTypes] = useState([]);
-  const [sizeValues, setSizeValues] = useState({});
+  const [sizeValues, setSizeValues] = useState([]);
   const [productMasters, setProductMasters] = useState([]);
   const [designMasters, setDesignMasters] = useState([]);
   const [loading, setLoading] = useState(false);
   const [previewImage, setPreviewImage] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showCategoryForm, setShowCategoryForm] = useState(false);
-  const [successMessage, setSuccessMessage] = useState('');
 
   // Form states
   const [categoryForm, setCategoryForm] = useState({
@@ -55,50 +53,24 @@ const ProductionDashboard = () => {
     imageFile: null
   });
 
-  // Persist state to localStorage
   useEffect(() => {
     localStorage.setItem('activeMenu', activeMenu);
     localStorage.setItem('masterType', masterType);
   }, [activeMenu, masterType]);
 
-  // Fetch initial data
   useEffect(() => {
     fetchAllSizeData();
     fetchAllProductMasters();
     fetchAllDesignMasters();
   }, []);
 
-  // Helper function to show success messages
-  const showSuccess = (message) => {
-    setSuccessMessage(message);
-    setTimeout(() => setSuccessMessage(''), 3000);
-  };
-
-  // API calls
   const fetchAllSizeData = async () => {
     try {
       setLoading(true);
       const response = await axios.get(`${API_BASE_URL}/api/pdmaster/getAllSizeData`);
-      
-      if (response.data && response.data.data) {
-        // Create a map of categories to their data
-        const categoriesMap = {};
-        const categoriesList = [];
-        
-        response.data.data.forEach(item => {
-          categoriesMap[item.category] = {
-            types: item.types,
-            values: item.values
-          };
-          categoriesList.push(item.category);
-        });
-
-        setCategories(categoriesList);
-        setSizeValues(categoriesMap);
-      }
+      setCategories(response.data.data.map(item => item.category));
     } catch (error) {
       console.error('Error fetching size data:', error);
-      alert('Failed to fetch size data');
     } finally {
       setLoading(false);
     }
@@ -130,26 +102,39 @@ const ProductionDashboard = () => {
     }
   };
 
-  const handleCategoryChange = (value) => {
-    if (value && sizeValues[value]) {
-      setSizeTypes(sizeValues[value].types || []);
-      setProductForm(prev => ({
-        ...prev,
+  const handleCategoryChange = async (value) => {
+    try {
+      setLoading(true);
+      const response = await axios.get(`${API_BASE_URL}/api/pdmaster/getByCategory?category=${value}`);
+      const categoryData = response.data.data;
+      
+      if (categoryData) {
+        setSizeTypes(categoryData.types || []);
+        setSizeValues(categoryData.values || {});
+      }
+      
+      setProductForm({
+        ...productForm,
         category: value,
         sizeType: '',
         sizeValue: ''
-      }));
+      });
+    } catch (error) {
+      console.error('Error fetching category data:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleSizeTypeChange = (value) => {
-    setProductForm(prev => ({
-      ...prev,
+    setProductForm({
+      ...productForm,
       sizeType: value,
       sizeValue: ''
-    }));
+    });
   };
 
+  // Category form handlers
   const handleAddSizeType = () => {
     if (tempSizeType && !categoryForm.types.includes(tempSizeType)) {
       setCategoryForm({
@@ -227,7 +212,7 @@ const ProductionDashboard = () => {
         values: categoryForm.values
       });
       
-      showSuccess('Category successfully created!');
+      alert('Category created/updated successfully!');
       setCategoryForm({
         category: '',
         types: [],
@@ -236,7 +221,7 @@ const ProductionDashboard = () => {
       fetchAllSizeData();
       setShowCategoryForm(false);
     } catch (error) {
-      alert(`Error: ${error.response?.data?.error || error.message}`);
+      alert(`Error: ${error.response?.data?.message || error.message}`);
       console.error('Submission error:', error);
     } finally {
       setLoading(false);
@@ -264,7 +249,7 @@ const ProductionDashboard = () => {
       );
 
       if (response.data.success) {
-        showSuccess('Product Master successfully created!');
+        alert('Product Master created successfully!');
         setProductForm({
           category: '',
           sizeType: '',
@@ -275,7 +260,7 @@ const ProductionDashboard = () => {
         throw new Error(response.data.message || 'Failed to create product');
       }
     } catch (error) {
-      alert(`Error: ${error.response?.data?.error || error.message}`);
+      alert(`Error: ${error.response?.data?.message || error.message}`);
       console.error('Submission error:', error);
     } finally {
       setLoading(false);
@@ -318,11 +303,9 @@ const ProductionDashboard = () => {
       formData.append('diaPcs', designForm.diaPcs);
       formData.append('clarity', designForm.clarity);
       formData.append('color', designForm.color);
-      if (designForm.imageFile) {
-        formData.append('image', designForm.imageFile);
-      }
+      formData.append('image', designForm.imageFile);
 
-      await axios.post(
+      const response = await axios.post(
         `${API_BASE_URL}/api/pdmaster/createDesignMaster`,
         formData,
         { headers: {
@@ -330,7 +313,7 @@ const ProductionDashboard = () => {
         } }
       );
 
-      showSuccess('Design Master successfully created!');
+      alert('Design Master created successfully!');
       setDesignForm({
         serialNumber: '',
         grossWt: '',
@@ -344,24 +327,13 @@ const ProductionDashboard = () => {
       setPreviewImage(null);
       fetchAllDesignMasters();
     } catch (error) {
-      alert(`Failed to create design master: ${error.response?.data?.error || error.message}`);
+      alert(`Failed to create design master: ${error.response?.data?.message || error.message}`);
       console.error('Submission error:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  // Success Message Component
-  const SuccessAlert = ({ message }) => (
-    <div className="fixed top-4 right-4 z-50">
-      <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg shadow-lg flex items-center">
-        <FiCheckCircle className="mr-2" />
-        <span>{message}</span>
-      </div>
-    </div>
-  );
-
-  // Render methods
   const renderDashboard = () => (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -442,7 +414,7 @@ const ProductionDashboard = () => {
         </button>
       </div>
       
-      <form onSubmit={handleCategorySubmit} className="space-y-6">
+      <form onSubmit={handleCategorySubmit} className="space-y-6 grid-cols-2">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Category Name</label>
           <input
@@ -631,13 +603,10 @@ const ProductionDashboard = () => {
                   required
                 >
                   <option value="">Select category</option>
-                  {categories.map((category, index) => (
-                    <option key={index} value={category}>{category}</option>
+                  {categories.map(category => (
+                    <option key={category} value={category}>{category}</option>
                   ))}
                 </select>
-                {categories.length === 0 && (
-                  <p className="mt-1 text-xs text-red-500">No categories available. Please create one first.</p>
-                )}
               </div>
               
               <div>
@@ -646,17 +615,14 @@ const ProductionDashboard = () => {
                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
                   value={productForm.sizeType}
                   onChange={(e) => handleSizeTypeChange(e.target.value)}
-                  disabled={!productForm.category || sizeTypes.length === 0}
+                  disabled={!productForm.category}
                   required
                 >
-                  <option value="">{sizeTypes.length === 0 ? 'No size types available' : 'Select size type'}</option>
-                  {sizeTypes.map((type, index) => (
-                    <option key={index} value={type}>{type}</option>
+                  <option value="">Select size type</option>
+                  {sizeTypes.map(type => (
+                    <option key={type} value={type}>{type}</option>
                   ))}
                 </select>
-                {productForm.category && sizeTypes.length === 0 && (
-                  <p className="mt-1 text-xs text-red-500">No size types defined for this category</p>
-                )}
               </div>
               
               <div>
@@ -665,27 +631,16 @@ const ProductionDashboard = () => {
                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
                   value={productForm.sizeValue}
                   onChange={(e) => setProductForm({...productForm, sizeValue: e.target.value})}
-                  disabled={!productForm.sizeType || !sizeValues[productForm.category]?.values?.[productForm.sizeType]?.length}
+                  disabled={!productForm.sizeType}
                   required
                 >
-                  <option value="">
-                    {!productForm.sizeType 
-                      ? 'Select size type first' 
-                      : !sizeValues[productForm.category]?.values?.[productForm.sizeType]?.length 
-                        ? 'No size values available' 
-                        : 'Select size value'
-                    }
-                  </option>
-                  {sizeValues[productForm.category]?.values?.[productForm.sizeType]?.map((item, index) => (
+                  <option value="">Select size value</option>
+                  {sizeValues[productForm.sizeType]?.map((item, index) => (
                     <option key={index} value={item.value}>
                       {item.value} - {item.description}
                     </option>
                   ))}
                 </select>
-                {productForm.sizeType && (!sizeValues[productForm.category]?.values?.[productForm.sizeType] || 
-                  sizeValues[productForm.category]?.values?.[productForm.sizeType].length === 0) && (
-                  <p className="mt-1 text-xs text-red-500">No size values defined for this size type</p>
-                )}
               </div>
             </div>
             
@@ -1005,9 +960,6 @@ const ProductionDashboard = () => {
 
   return (
     <div className="flex flex-col h-screen bg-gray-50">
-      {/* Success Message */}
-      {successMessage && <SuccessAlert message={successMessage} />}
-
       {/* Mobile header */}
       <div className="md:hidden bg-[#00072D] text-white p-4 flex justify-between items-center sticky top-0 z-10 shadow-md">
         <button 
@@ -1021,7 +973,7 @@ const ProductionDashboard = () => {
       </div>
 
       <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar */}
+        {/* Sidebar - Fixed and not scrolling */}
         <div 
           className={`fixed inset-y-0 left-0 transform ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 z-20 w-64 bg-[#00072D] text-white transition duration-200 ease-in-out md:transition-none flex flex-col`}
           style={{ height: '100vh' }}
@@ -1073,7 +1025,7 @@ const ProductionDashboard = () => {
           ></div>
         )}
 
-        {/* Main Content */}
+        {/* Main Content - Scrollable */}
         <div className="flex-1 overflow-auto p-4 md:p-6">
           {activeMenu === 'dashboard' && renderDashboard()}
 

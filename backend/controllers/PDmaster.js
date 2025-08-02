@@ -6,22 +6,7 @@ const imagekit = require('../config/imagekit');
 const SizeDataMaster = require('../models/SizeDataMaster');
 
 // Generate next Product Serial Number
-async function getNextProductSerialNumber(category) {
-  const formattedCategory = category.trim().toUpperCase();
 
-  const regex = new RegExp(`^SJ_${formattedCategory}(\\d+)$`);
-
-  const last = await ProductMaster
-    .findOne({ serialNumber: { $regex: regex } })
-    .sort({ serialNumber: -1 });
-
-  if (!last) return `SJ_${formattedCategory}01`;
-
-  const lastNumber = parseInt(last.serialNumber.replace(`SJ_${formattedCategory}`, ''));
-  const nextNumber = (lastNumber + 1).toString().padStart(2, '0');
-  
-  return `SJ_${formattedCategory}${nextNumber}`;
-}
 
 // Generate next Style Number
 async function getNextStyleNumber(category) {
@@ -43,46 +28,72 @@ async function getNextStyleNumber(category) {
 
 
 // Create Product Master
+// Improved getNextProductSerialNumber function
+const getNextProductSerialNumber = async (category) => {
+  try {
+    if (!category) {
+      throw new Error('Category is required');
+    }
+
+    // Get the prefix from category (first letter of each word)
+    const prefix = category.split(' ')
+      .map(word => word.charAt(0).toUpperCase())
+      .join('');
+
+    // Find the highest serial number with this prefix
+    const lastProduct = await ProductMaster.findOne({ 
+      serialNumber: new RegExp(`^${prefix}\\d+$`)
+    }).sort({ serialNumber: -1 });
+
+    let nextNumber = 1;
+    if (lastProduct && lastProduct.serialNumber) {
+      const lastNumber = parseInt(lastProduct.serialNumber.replace(prefix, '')) || 0;
+      nextNumber = lastNumber + 1;
+    }
+
+    return `${prefix}${nextNumber.toString().padStart(4, '0')}`;
+  } catch (error) {
+    console.error('Error generating serial number:', error);
+    throw error;
+  }
+};
+
+// Improved createProductMaster function
 exports.createProductMaster = async (req, res) => {
   try {
-    console.log('Request body:', req.body);
-
     const { category, sizeType, sizeValue } = req.body;
 
-    // Validate required fields
     if (!category || !sizeType || !sizeValue) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         success: false,
-        message: "All fields are required" 
+        message: 'Category, sizeType and sizeValue are required'
       });
     }
 
-    // Generate Serial Number
-    const serialNumber = await getNextProductSerialNumber();
+    const serialNumber = await getNextProductSerialNumber(category);
 
-    // Create new product
-    const newProduct = await ProductMaster.create({
+    const newProduct = new ProductMaster({
       serialNumber,
       category,
       sizeType,
       sizeValue
     });
 
-    res.status(201).json({ 
-      success: true, 
-      data: newProduct 
-    });
+    await newProduct.save();
 
-  } catch (err) {
-    console.error('Error creating Product Master:', err);
-    res.status(500).json({
+    return res.status(201).json({
+      success: true,
+      message: 'Product Master created successfully',
+      data: newProduct
+    });
+  } catch (error) {
+    console.error('Error creating Product Master:', error);
+    return res.status(500).json({
       success: false,
-      message: 'Server Error',
-      error: err.message
+      message: error.message || 'Failed to create Product Master'
     });
   }
 };
-
 
 // Other controller methods remain the same...
 

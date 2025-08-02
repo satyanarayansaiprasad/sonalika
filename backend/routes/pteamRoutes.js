@@ -19,7 +19,7 @@ router.get('/getAllProductMasters', getAllProductMasters);
 router.get('/getAllDesignMasters', getAllDesignMasters);
 
 
-router.post('/createSizeDataMaster', createOrUpdateSizeDataMaster);
+router.post('/createOrUpdateSizeDataMaster', createOrUpdateSizeDataMaster);
 
 router.get('/getAllSizeData', getAllSizeData); // get all
 // router.get('/size-data/:category',getSizeDataByCategory); // get one

@@ -5,16 +5,22 @@ const ValueItemSchema = new mongoose.Schema({
   description: { type: String }
 }, { _id: false });
 
-const TypeValuesMapSchema = new mongoose.Schema({}, { strict: false, _id: false });
-
 const SizeDataMasterSchema = new mongoose.Schema({
-  category: { type: String, required: true, unique: true },
-  types: [{ type: String, required: true }],
-  values: {
-    type: mongoose.Schema.Types.Mixed, // Changed from Map to Mixed
-    required: true
+  category: { 
+    type: String, 
+    required: true, 
+    unique: true,
+    uppercase: true
   },
-  createdAt: { type: Date, default: Date.now }
-});
+  types: [{ 
+    type: String, 
+    required: true 
+  }],
+  values: {
+    type: Map,
+    of: [ValueItemSchema],
+    required: true
+  }
+}, { timestamps: true });
 
 module.exports = mongoose.model('SizeDataMaster', SizeDataMasterSchema);

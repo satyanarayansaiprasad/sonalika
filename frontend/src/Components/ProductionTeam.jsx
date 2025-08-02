@@ -17,7 +17,7 @@ const ProductionDashboard = () => {
   
   const [categories, setCategories] = useState([]);
   const [sizeTypes, setSizeTypes] = useState([]);
-  const [sizeValues, setSizeValues] = useState([]);
+  const [sizeValues, setSizeValues] = useState({});
   const [productMasters, setProductMasters] = useState([]);
   const [designMasters, setDesignMasters] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -134,7 +134,6 @@ const ProductionDashboard = () => {
     });
   };
 
-  // Category form handlers
   const handleAddSizeType = () => {
     if (tempSizeType && !categoryForm.types.includes(tempSizeType)) {
       setCategoryForm({
@@ -615,14 +614,17 @@ const ProductionDashboard = () => {
                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
                   value={productForm.sizeType}
                   onChange={(e) => handleSizeTypeChange(e.target.value)}
-                  disabled={!productForm.category}
+                  disabled={!productForm.category || sizeTypes.length === 0}
                   required
                 >
-                  <option value="">Select size type</option>
+                  <option value="">{sizeTypes.length === 0 ? 'No size types available' : 'Select size type'}</option>
                   {sizeTypes.map(type => (
                     <option key={type} value={type}>{type}</option>
                   ))}
                 </select>
+                {productForm.category && sizeTypes.length === 0 && (
+                  <p className="mt-1 text-xs text-red-500">No size types defined for this category</p>
+                )}
               </div>
               
               <div>
@@ -631,16 +633,26 @@ const ProductionDashboard = () => {
                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
                   value={productForm.sizeValue}
                   onChange={(e) => setProductForm({...productForm, sizeValue: e.target.value})}
-                  disabled={!productForm.sizeType}
+                  disabled={!productForm.sizeType || !sizeValues[productForm.sizeType]?.length}
                   required
                 >
-                  <option value="">Select size value</option>
+                  <option value="">
+                    {!productForm.sizeType 
+                      ? 'Select size type first' 
+                      : !sizeValues[productForm.sizeType]?.length 
+                        ? 'No size values available' 
+                        : 'Select size value'
+                    }
+                  </option>
                   {sizeValues[productForm.sizeType]?.map((item, index) => (
                     <option key={index} value={item.value}>
                       {item.value} - {item.description}
                     </option>
                   ))}
                 </select>
+                {productForm.sizeType && (!sizeValues[productForm.sizeType] || sizeValues[productForm.sizeType].length === 0) && (
+                  <p className="mt-1 text-xs text-red-500">No size values defined for this size type</p>
+                )}
               </div>
             </div>
             

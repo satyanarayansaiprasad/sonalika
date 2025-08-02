@@ -79,7 +79,6 @@ const ProductionDashboard = () => {
     try {
       setLoading(true);
       const response = await axios.get(`${API_BASE_URL}/api/pdmaster/getAllSizeData`);
-      console.log('Size data response:', response.data);
       
       if (response.data && response.data.data) {
         const formattedData = response.data.data.map(item => ({
@@ -138,31 +137,29 @@ const ProductionDashboard = () => {
     }
   };
 
-  // Category change handler - Fixed version
-  const handleCategoryChange = (value) => {
-    console.log('Selected category:', value);
-    console.log('Size values:', sizeValues);
-    
-    if (value && sizeValues[value]) {
-      const types = sizeValues[value].types || [];
-      console.log('Types for category:', types);
-      setSizeTypes(types);
-    } else {
-      setSizeTypes([]);
-    }
-    
+  // Fixed category change handler
+  const handleCategoryChange = (selectedCategory) => {
+    // Reset dependent fields when category changes
     setProductForm(prev => ({
       ...prev,
-      category: value,
+      category: selectedCategory,
       sizeType: '',
       sizeValue: ''
     }));
+
+    // Update size types based on selected category
+    if (selectedCategory && sizeValues[selectedCategory]) {
+      setSizeTypes(sizeValues[selectedCategory].types || []);
+    } else {
+      setSizeTypes([]);
+    }
   };
 
-  const handleSizeTypeChange = (value) => {
+  // Fixed size type change handler
+  const handleSizeTypeChange = (selectedSizeType) => {
     setProductForm(prev => ({
       ...prev,
-      sizeType: value,
+      sizeType: selectedSizeType,
       sizeValue: ''
     }));
   };
@@ -379,6 +376,12 @@ const ProductionDashboard = () => {
       </div>
     </div>
   );
+
+  // Get size values for the selected category and size type
+  const getSizeValueOptions = () => {
+    if (!productForm.category || !productForm.sizeType) return [];
+    return sizeValues[productForm.category]?.values[productForm.sizeType] || [];
+  };
 
   // Render methods
   const renderDashboard = () => (
@@ -617,7 +620,7 @@ const ProductionDashboard = () => {
       {showCategoryForm ? (
         renderCategoryForm()
       ) : (
-        <div className="bg-white rounded-xl shadow-lg p-6">
+        <div className="bg-white h-screen rounded-xl shadow-lg p-6">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-semibold text-gray-800">Create Product Master</h2>
             <div className="flex space-x-2">
@@ -681,24 +684,24 @@ const ProductionDashboard = () => {
                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
                   value={productForm.sizeValue}
                   onChange={(e) => setProductForm({...productForm, sizeValue: e.target.value})}
-                  disabled={!productForm.sizeType || !sizeValues[productForm.category]?.values[productForm.sizeType]?.length}
+                  disabled={!productForm.sizeType || getSizeValueOptions().length === 0}
                   required
                 >
                   <option value="">
                     {!productForm.sizeType 
                       ? 'Select size type first' 
-                      : !sizeValues[productForm.category]?.values[productForm.sizeType]?.length 
+                      : getSizeValueOptions().length === 0
                         ? 'No size values available' 
                         : 'Select size value'
                     }
                   </option>
-                  {sizeValues[productForm.category]?.values[productForm.sizeType]?.map((item, index) => (
+                  {getSizeValueOptions().map((item, index) => (
                     <option key={index} value={item.value}>
                       {item.value} - {item.description}
                     </option>
                   ))}
                 </select>
-                {productForm.sizeType && (!sizeValues[productForm.category]?.values[productForm.sizeType] || sizeValues[productForm.category].values[productForm.sizeType].length === 0) && (
+                {productForm.sizeType && getSizeValueOptions().length === 0 && (
                   <p className="mt-1 text-xs text-red-500">No size values defined for this size type</p>
                 )}
               </div>

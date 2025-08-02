@@ -1,39 +1,170 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { FiMenu, FiX, FiHome, FiDatabase, FiShoppingBag, FiPlus, FiAward, FiTrash2, FiCheckCircle } from 'react-icons/fi';
+import { FiMenu, FiX, FiHome, FiDatabase, FiShoppingBag, FiPlus, FiAward } from 'react-icons/fi';
 
 const API_BASE_URL = import.meta.env.VITE_BASE_URL || 'http://localhost:3000';
 
+const sizeData = {
+  'NECKLACE': {
+    types: ['Length'],
+    values: {
+      'Length': [
+        { value: '36cm', description: '14"' },
+        { value: '41cm', description: '16"' },
+        { value: '46cm', description: '18"' },
+        { value: '51cm', description: '20"' },
+        { value: '61cm', description: '24"' },
+        { value: '76cm', description: '30"' },
+        { value: '84cm', description: '33"' }
+      ]
+    }
+  },
+  'LADIES BRACELET': {
+    types: ['Size'],
+    values: {
+      'Size': [
+        { value: 'S', description: '14.0-15.4 cm / 5.51-6.06 inch' },
+        { value: 'M', description: '15.5-17.4 cm / 6.07-6.85 inch' },
+        { value: 'L', description: '17.5-19.4 cm / 6.86-7.64 inch' },
+        { value: 'XL', description: '19.5-21.4 cm / 7.65-8.43 inch' },
+        { value: 'XXL', description: '21.5-23.4 cm / 8.44-9.21 inch' }
+      ]
+    }
+  },
+  'LADIES BANGLE': {
+    types: ['Diameter', 'Circumference'],
+    values: {
+      'Diameter': [
+        { value: '2.2', description: '2.125 inches / 5.4 cm' },
+        { value: '2.4', description: '2.25 inches / 5.7 cm' },
+        { value: '2.6', description: '2.375 inches / 6 cm' },
+        { value: '2.8', description: '2.5 inches / 6.5 cm' },
+        { value: '2.10', description: '2.625 inches / 6.7 cm' },
+        { value: '2.12', description: '2.75 inches / 7 cm' }
+      ],
+      'Circumference': [
+        { value: '6.67', description: '6.67 inches' },
+        { value: '7.06', description: '7.06 inches' },
+        { value: '7.46', description: '7.46 inches' },
+        { value: '7.85', description: '7.85 inches' },
+        { value: '8.24', description: '8.24 inches' },
+        { value: '8.64', description: '8.64 inches' }
+      ]
+    }
+  },
+  'LADIES RING': {
+    types: ['Size'],
+    values: {
+      'Size': [
+        { value: '1', description: '13mm' },
+        { value: '2', description: '13.3mm' },
+        { value: '3', description: '13.6mm' },
+        { value: '4', description: '14mm' },
+        { value: '5', description: '14.3mm' },
+        { value: '6', description: '14.6mm' },
+        { value: '7', description: '14.9mm' },
+        { value: '8', description: '15.3mm' },
+        { value: '9', description: '15.6mm' },
+        { value: '10', description: '16mm' },
+        { value: '11', description: '16.2mm' },
+        { value: '12', description: '16.5mm' },
+        { value: '13', description: '16.8mm' },
+        { value: '14', description: '17.2mm' },
+        { value: '15', description: '17.4mm' },
+        { value: '16', description: '17.8mm' },
+        { value: '17', description: '18.1mm' },
+        { value: '18', description: '18.5mm' },
+        { value: '19', description: '18.8mm' },
+        { value: '20', description: '19.2mm' },
+        { value: '21', description: '19.5mm' },
+        { value: '22', description: '19.8mm' },
+        { value: '23', description: '20mm' },
+        { value: '24', description: '20.4mm' }
+      ]
+    }
+  },
+  'GENTS RING': {
+    types: ['Size'],
+    values: {
+      'Size': [
+        { value: '10', description: '16mm' },
+        { value: '11', description: '16.2mm' },
+        { value: '12', description: '16.5mm' },
+        { value: '13', description: '16.8mm' },
+        { value: '14', description: '17.2mm' },
+        { value: '15', description: '17.4mm' },
+        { value: '16', description: '17.8mm' },
+        { value: '17', description: '18.1mm' },
+        { value: '18', description: '18.5mm' },
+        { value: '19', description: '18.8mm' },
+        { value: '20', description: '19.2mm' },
+        { value: '21', description: '19.5mm' },
+        { value: '22', description: '19.8mm' },
+        { value: '23', description: '20mm' },
+        { value: '24', description: '20.4mm' },
+        { value: '25', description: '20.8mm' },
+        { value: '26', description: '21.2mm' },
+        { value: '27', description: '21.6mm' },
+        { value: '28', description: '22mm' }
+      ]
+    }
+  },
+  'EARRING': {
+    types: ['Size'],
+    values: {
+      'Size': [
+        { value: 'Small', description: 'Up to 10mm' },
+        { value: 'Medium', description: '10-15mm' },
+        { value: 'Large', description: '15-20mm' },
+        { value: 'Extra Large', description: '20mm+' }
+      ]
+    }
+  },
+  'PENDANT': {
+    types: ['Size'],
+    values: {
+      'Size': [
+        { value: 'Small', description: 'Up to 15mm' },
+        { value: 'Medium', description: '15-25mm' },
+        { value: 'Large', description: '25-35mm' },
+        { value: 'Extra Large', description: '35mm+' }
+      ]
+    }
+  }
+};
+
 const ProductionDashboard = () => {
-  // State management
-  const [activeMenu, setActiveMenu] = useState('dashboard');
-  const [masterType, setMasterType] = useState(null);
-  const [categories, setCategories] = useState([]);
+  const [activeMenu, setActiveMenu] = useState(() => {
+    const saved = localStorage.getItem('activeMenu');
+    return saved || 'dashboard';
+  });
+  
+  const [masterType, setMasterType] = useState(() => {
+    const saved = localStorage.getItem('masterType');
+    return saved || null;
+  });
+  
+  const [categories] = useState(Object.keys(sizeData));
   const [sizeTypes, setSizeTypes] = useState([]);
-  const [sizeValues, setSizeValues] = useState({});
+  const [sizeValues, setSizeValues] = useState([]);
   const [productMasters, setProductMasters] = useState([]);
   const [designMasters, setDesignMasters] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [productSerialNumbers, setProductSerialNumbers] = useState([]);
   const [previewImage, setPreviewImage] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [showCategoryForm, setShowCategoryForm] = useState(false);
-  const [successMessage, setSuccessMessage] = useState('');
 
-  // Form states
-  const [categoryForm, setCategoryForm] = useState({
-    category: '',
-    types: [],
-    values: {}
-  });
-
-  const [tempSizeType, setTempSizeType] = useState('');
-  const [tempSizeValue, setTempSizeValue] = useState('');
-  const [tempSizeDescription, setTempSizeDescription] = useState('');
+  useEffect(() => {
+    localStorage.setItem('activeMenu', activeMenu);
+    localStorage.setItem('masterType', masterType);
+  }, [activeMenu, masterType]);
 
   const [productForm, setProductForm] = useState({
     category: '',
     sizeType: '',
-    sizeValue: ''
+    sizeValue: '',
+    description: '',
+    imageFile: null
   });
   
   const [designForm, setDesignForm] = useState({
@@ -43,60 +174,24 @@ const ProductionDashboard = () => {
     diaWt: '',
     diaPcs: '',
     clarity: '',
-    color: '',
-    imageFile: null
+    color: ''
   });
 
-  // Fetch initial data
   useEffect(() => {
-    fetchAllSizeData();
     fetchAllProductMasters();
     fetchAllDesignMasters();
   }, []);
 
-  // Helper function to show success messages
-  const showSuccess = (message) => {
-    setSuccessMessage(message);
-    setTimeout(() => setSuccessMessage(''), 3000);
-  };
-
-  // API calls
-  const fetchAllSizeData = async () => {
-    try {
-      setLoading(true);
-      const response = await axios.get(`${API_BASE_URL}/api/pdmaster/getAllSizeData`);
-      
-      if (response.data && Array.isArray(response.data)) {
-        const formattedData = response.data.map(item => ({
-          category: item.category,
-          types: item.types || [],
-          values: item.values || {}
-        }));
-
-        const uniqueCategories = [...new Set(formattedData.map(item => item.category))]
-          .filter(cat => cat)
-          .sort((a, b) => a.localeCompare(b));
-        
-        setCategories(uniqueCategories);
-        
-        const sizeDataMap = {};
-        formattedData.forEach(item => {
-          if (item.category) {
-            sizeDataMap[item.category] = {
-              types: item.types || [],
-              values: item.values || {}
-            };
-          }
-        });
-        setSizeValues(sizeDataMap);
-      }
-    } catch (error) {
-      console.error('Error fetching size data:', error);
-      alert('Failed to load size data');
-    } finally {
-      setLoading(false);
+  useEffect(() => {
+    if (productMasters.length > 0) {
+      setProductSerialNumbers(
+        productMasters.map(pm => ({
+          value: pm.serialNumber,
+          label: pm.serialNumber
+        }))
+      );
     }
-  };
+  }, [productMasters]);
 
   const fetchAllProductMasters = async () => {
     try {
@@ -124,161 +219,26 @@ const ProductionDashboard = () => {
     }
   };
 
-  // Category change handler
   const handleCategoryChange = (value) => {
-    if (value && sizeValues[value]) {
-      const types = sizeValues[value].types || [];
-      setSizeTypes(types);
-    } else {
-      setSizeTypes([]);
-    }
-    
-    setProductForm(prev => ({
-      ...prev,
+    const types = sizeData[value]?.types || [];
+    setSizeTypes(types);
+    setProductForm({
+      ...productForm,
       category: value,
       sizeType: '',
       sizeValue: ''
-    }));
+    });
+    setSizeValues([]);
   };
 
-  const handleSizeTypeChange = (value) => {
-    setProductForm(prev => ({
-      ...prev,
+  const handleSizeTypeChange = (value, category) => {
+    const values = sizeData[category]?.values[value] || [];
+    setSizeValues(values);
+    setProductForm({
+      ...productForm,
       sizeType: value,
       sizeValue: ''
-    }));
-  };
-
-  const handleAddSizeType = () => {
-    if (tempSizeType && !categoryForm.types.includes(tempSizeType)) {
-      setCategoryForm({
-        ...categoryForm,
-        types: [...categoryForm.types, tempSizeType],
-        values: {
-          ...categoryForm.values,
-          [tempSizeType]: []
-        }
-      });
-      setTempSizeType('');
-    }
-  };
-
-  const handleRemoveSizeType = (typeToRemove) => {
-    const newTypes = categoryForm.types.filter(type => type !== typeToRemove);
-    const newValues = { ...categoryForm.values };
-    delete newValues[typeToRemove];
-    
-    setCategoryForm({
-      ...categoryForm,
-      types: newTypes,
-      values: newValues
     });
-  };
-
-  const handleAddSizeValue = () => {
-    if (tempSizeValue && tempSizeDescription) {
-      const currentType = productForm.sizeType;
-      if (currentType) {
-        const updatedValues = {
-          ...categoryForm.values,
-          [currentType]: [
-            ...(categoryForm.values[currentType] || []),
-            { value: tempSizeValue, description: tempSizeDescription }
-          ]
-        };
-        
-        setCategoryForm({
-          ...categoryForm,
-          values: updatedValues
-        });
-        
-        setTempSizeValue('');
-        setTempSizeDescription('');
-      }
-    }
-  };
-
-  const handleRemoveSizeValue = (type, index) => {
-    const updatedValues = {
-      ...categoryForm.values,
-      [type]: categoryForm.values[type].filter((_, i) => i !== index)
-    };
-    
-    setCategoryForm({
-      ...categoryForm,
-      values: updatedValues
-    });
-  };
-
-  const handleCategorySubmit = async (e) => {
-    e.preventDefault();
-    
-    if (!categoryForm.category || categoryForm.types.length === 0) {
-      alert('Please add at least one size type and values');
-      return;
-    }
-
-    try {
-      setLoading(true);
-      await axios.post(`${API_BASE_URL}/api/pdmaster/createSizeDataMaster`, {
-        category: categoryForm.category.toUpperCase(),
-        types: categoryForm.types,
-        values: categoryForm.values
-      });
-      
-      showSuccess('Category successfully created/updated!');
-      setCategoryForm({
-        category: '',
-        types: [],
-        values: {}
-      });
-      fetchAllSizeData();
-      setShowCategoryForm(false);
-    } catch (error) {
-      alert(`Error: ${error.response?.data?.message || error.message}`);
-      console.error('Submission error:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleProductSubmit = async (e) => {
-    e.preventDefault();
-    
-    if (!productForm.category || !productForm.sizeType || !productForm.sizeValue) {
-      alert('Please fill all required fields');
-      return;
-    }
-
-    try {
-      setLoading(true);
-      
-      const response = await axios.post(
-        `${API_BASE_URL}/api/pdmaster/createProductMaster`,
-        {
-          category: productForm.category,
-          sizeType: productForm.sizeType,
-          sizeValue: productForm.sizeValue
-        }
-      );
-
-      if (response.data.success) {
-        showSuccess('Product Master successfully created!');
-        setProductForm({
-          category: '',
-          sizeType: '',
-          sizeValue: ''
-        });
-        fetchAllProductMasters();
-      } else {
-        throw new Error(response.data.message || 'Failed to create product');
-      }
-    } catch (error) {
-      alert(`Error: ${error.response?.data?.message || error.message}`);
-      console.error('Submission error:', error);
-    } finally {
-      setLoading(false);
-    }
   };
 
   const handleImageChange = (e) => {
@@ -296,11 +256,61 @@ const ProductionDashboard = () => {
         return;
       }
 
-      setDesignForm({
-        ...designForm,
+      setProductForm({
+        ...productForm,
         imageFile: file
       });
       setPreviewImage(URL.createObjectURL(file));
+    }
+  };
+
+  const handleProductSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!productForm.category || !productForm.sizeType || !productForm.sizeValue || !productForm.description || !productForm.imageFile) {
+      alert('Please fill all fields and select an image');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      
+      const formData = new FormData();
+      formData.append('category', productForm.category);
+      formData.append('sizeType', productForm.sizeType);
+      formData.append('sizeValue', productForm.sizeValue);
+      formData.append('description', productForm.description);
+      formData.append('image', productForm.imageFile);
+
+      const response = await axios.post(
+        `${API_BASE_URL}/api/pdmaster/createProductMaster`,
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        }
+      );
+
+      if (response.data.success) {
+        alert('Product Master created successfully!');
+        setProductForm({
+          category: '',
+          sizeType: '',
+          sizeValue: '',
+          description: '',
+          imageFile: null
+        });
+        setPreviewImage(null);
+        fetchAllProductMasters();
+      } else {
+        throw new Error(response.data.message || 'Failed to create product');
+      }
+    } catch (error) {
+      alert(`Error: ${error.response?.data?.message || error.message}`);
+      console.error('Submission error:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -309,29 +319,20 @@ const ProductionDashboard = () => {
     try {
       setLoading(true);
       
-      const formData = new FormData();
-      formData.append('serialNumber', designForm.serialNumber);
-      formData.append('grossWt', designForm.grossWt);
-      formData.append('netWt', designForm.netWt);
-      formData.append('diaWt', designForm.diaWt);
-      formData.append('diaPcs', designForm.diaPcs);
-      formData.append('clarity', designForm.clarity);
-      formData.append('color', designForm.color);
-      if (designForm.imageFile) {
-        formData.append('imageFile', designForm.imageFile);
-      }
-
       const response = await axios.post(
         `${API_BASE_URL}/api/pdmaster/createDesignMaster`,
-        formData,
-        { 
-          headers: {
-            'Content-Type': 'multipart/form-data'
-          } 
+        {
+          serialNumber: designForm.serialNumber,
+          grossWt: designForm.grossWt,
+          netWt: designForm.netWt,
+          diaWt: designForm.diaWt,
+          diaPcs: designForm.diaPcs,
+          clarity: designForm.clarity,
+          color: designForm.color
         }
       );
 
-      showSuccess('Design Master successfully created!');
+      alert('Design Master created successfully!');
       setDesignForm({
         serialNumber: '',
         grossWt: '',
@@ -339,10 +340,8 @@ const ProductionDashboard = () => {
         diaWt: '',
         diaPcs: '',
         clarity: '',
-        color: '',
-        imageFile: null
+        color: ''
       });
-      setPreviewImage(null);
       fetchAllDesignMasters();
     } catch (error) {
       alert(`Failed to create design master: ${error.response?.data?.message || error.message}`);
@@ -352,17 +351,6 @@ const ProductionDashboard = () => {
     }
   };
 
-  // Success Message Component
-  const SuccessAlert = ({ message }) => (
-    <div className="fixed top-4 right-4 z-50">
-      <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg shadow-lg flex items-center">
-        <FiCheckCircle className="mr-2" />
-        <span>{message}</span>
-      </div>
-    </div>
-  );
-
-  // Render methods
   const renderDashboard = () => (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -431,146 +419,130 @@ const ProductionDashboard = () => {
     </div>
   );
 
-  const renderCategoryForm = () => (
+  const renderProductMasterForm = () => (
     <div className="bg-white rounded-xl shadow-lg p-6">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-semibold text-gray-800">Create/Update Category</h2>
+        <h2 className="text-xl font-semibold text-gray-800">Create Product Master</h2>
         <button 
-          onClick={() => setShowCategoryForm(false)}
+          onClick={() => {
+            setMasterType(null);
+            setActiveMenu('master');
+          }}
           className="text-gray-500 hover:text-gray-700"
         >
           <FiX className="text-xl" />
         </button>
       </div>
       
-      <form onSubmit={handleCategorySubmit} className="space-y-6">
+      <form onSubmit={handleProductSubmit} className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+            <select
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+              value={productForm.category}
+              onChange={(e) => handleCategoryChange(e.target.value)}
+              required
+            >
+              <option value="">Select category</option>
+              {categories.map(category => (
+                <option key={category} value={category}>{category}</option>
+              ))}
+            </select>
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Size Type</label>
+            <select
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+              value={productForm.sizeType}
+              onChange={(e) => handleSizeTypeChange(e.target.value, productForm.category)}
+              disabled={!productForm.category}
+              required
+            >
+              <option value="">Select size type</option>
+              {sizeTypes.map(type => (
+                <option key={type} value={type}>{type}</option>
+              ))}
+            </select>
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Size Value</label>
+            <select
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+              value={productForm.sizeValue}
+              onChange={(e) => setProductForm({...productForm, sizeValue: e.target.value})}
+              disabled={!productForm.sizeType}
+              required
+            >
+              <option value="">Select size value</option>
+              {sizeValues.map((item, index) => (
+                <option key={index} value={item.value}>
+                  {item.value} - {item.description}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+        
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Category Name</label>
-          <input
-            type="text"
+          <label className="block text-sm font-medium text-gray-700 mb-2">Product Image</label>
+          <div className="flex items-center space-x-4">
+            <div className="relative">
+              <input
+                type="file"
+                onChange={handleImageChange}
+                accept="image/*"
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                id="image-upload"
+                required
+              />
+              <label
+                htmlFor="image-upload"
+                className="inline-flex items-center px-4 py-3 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer transition"
+              >
+                <FiPlus className="mr-2" />
+                Choose Image
+              </label>
+            </div>
+            {previewImage && (
+              <div className="relative group">
+                <img 
+                  src={previewImage} 
+                  alt="Preview" 
+                  className="h-16 w-16 object-cover rounded-lg"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPreviewImage(null);
+                    setProductForm({...productForm, imageFile: null});
+                  }}
+                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition"
+                >
+                  <FiX className="text-xs" />
+                </button>
+              </div>
+            )}
+          </div>
+          <p className="mt-1 text-xs text-gray-500">
+            Upload a high-quality image (JPEG, PNG, WebP) under 5MB
+          </p>
+        </div>
+        
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+          <textarea
             className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-            value={categoryForm.category}
-            onChange={(e) => setCategoryForm({...categoryForm, category: e.target.value})}
-            placeholder="e.g. CHAIN, NECKLACE"
+            rows={4}
+            value={productForm.description}
+            onChange={(e) => setProductForm({...productForm, description: e.target.value})}
+            placeholder="Enter product description..."
             required
           />
         </div>
-
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Add Size Types</label>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                className="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                value={tempSizeType}
-                onChange={(e) => setTempSizeType(e.target.value)}
-                placeholder="e.g. Length, Diameter"
-              />
-              <button
-                type="button"
-                onClick={handleAddSizeType}
-                className="bg-blue-500 text-white px-4 py-3 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition"
-              >
-                Add Type
-              </button>
-            </div>
-          </div>
-
-          {categoryForm.types.length > 0 && (
-            <div className="border border-gray-200 rounded-lg p-4">
-              <h3 className="text-sm font-medium text-gray-700 mb-3">Current Size Types</h3>
-              <div className="space-y-3">
-                {categoryForm.types.map((type, index) => (
-                  <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                    <span className="font-medium">{type}</span>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveSizeType(type)}
-                      className="text-red-500 hover:text-red-700 p-1"
-                    >
-                      <FiTrash2 />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {categoryForm.types.length > 0 && (
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Select Size Type to Add Values</label>
-              <select
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                value={productForm.sizeType}
-                onChange={(e) => handleSizeTypeChange(e.target.value)}
-                required
-              >
-                <option value="">Select size type</option>
-                {categoryForm.types.map(type => (
-                  <option key={type} value={type}>{type}</option>
-                ))}
-              </select>
-            </div>
-
-            {productForm.sizeType && (
-              <>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Add Size Values for {productForm.sizeType}</label>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <input
-                      type="text"
-                      className="p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                      value={tempSizeValue}
-                      onChange={(e) => setTempSizeValue(e.target.value)}
-                      placeholder="Value (e.g. 36cm)"
-                    />
-                    <input
-                      type="text"
-                      className="p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                      value={tempSizeDescription}
-                      onChange={(e) => setTempSizeDescription(e.target.value)}
-                      placeholder="Description (e.g. 14 inch)"
-                    />
-                    <button
-                      type="button"
-                      onClick={handleAddSizeValue}
-                      className="bg-blue-500 text-white px-4 py-3 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition"
-                    >
-                      Add Value
-                    </button>
-                  </div>
-                </div>
-
-                {categoryForm.values[productForm.sizeType]?.length > 0 && (
-                  <div className="border border-gray-200 rounded-lg p-4">
-                    <h3 className="text-sm font-medium text-gray-700 mb-3">Current Values for {productForm.sizeType}</h3>
-                    <div className="space-y-3">
-                      {categoryForm.values[productForm.sizeType].map((item, index) => (
-                        <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                          <div>
-                            <span className="font-medium">{item.value}</span>
-                            <span className="text-gray-500 ml-2">- {item.description}</span>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveSizeValue(productForm.sizeType, index)}
-                            className="text-red-500 hover:text-red-700 p-1"
-                          >
-                            <FiTrash2 />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-        )}
-
+        
         <div className="flex justify-end">
           <button 
             type="submit" 
@@ -586,128 +558,65 @@ const ProductionDashboard = () => {
                 Processing...
               </>
             ) : (
-              'Save Category'
+              'Create Product Master'
             )}
           </button>
         </div>
       </form>
-    </div>
-  );
 
-  const renderProductMasterForm = () => (
-    <div className="space-y-6">
-      {showCategoryForm ? (
-        renderCategoryForm()
-      ) : (
-        <div className="bg-white rounded-xl shadow-lg p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-semibold text-gray-800">Create Product Master</h2>
-            <div className="flex space-x-2">
-              <button 
-                onClick={() => setShowCategoryForm(true)}
-                className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition"
-              >
-                Create Category
-              </button>
-              <button 
-                onClick={() => {
-                  setMasterType(null);
-                  setActiveMenu('master');
-                }}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <FiX className="text-xl" />
-              </button>
+      <div className="mt-12">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold text-gray-800">Product Master Records</h2>
+          <span className="text-sm text-gray-500">{productMasters.length} records</span>
+        </div>
+        
+        <div className="overflow-x-auto">
+          <div className="inline-block min-w-full align-middle">
+            <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 rounded-lg">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Serial</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Size</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Image</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {productMasters.map((product) => (
+                    <tr key={product._id} className="hover:bg-gray-50 transition">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{product.serialNumber}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{product.category}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {product.sizeType}: {product.sizeValue}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {product.imageFile ? (
+                          <img 
+                            src={product.imageFile} 
+                            alt="Product" 
+                            className="h-10 w-10 object-cover rounded-lg"
+                            onError={(e) => {
+                              e.target.onerror = null;
+                              e.target.src = 'https://via.placeholder.com/40?text=No+Image';
+                            }}
+                          />
+                        ) : (
+                          <div className="h-10 w-10 bg-gray-200 rounded-lg flex items-center justify-center text-xs text-gray-500">
+                            No Image
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">{product.description}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
-          
-          <form onSubmit={handleProductSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                <select
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                  value={productForm.category}
-                  onChange={(e) => handleCategoryChange(e.target.value)}
-                  required
-                >
-                  <option value="">Select category</option>
-                  {categories.map((category, index) => (
-                    <option key={index} value={category}>{category}</option>
-                  ))}
-                </select>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Size Type</label>
-                <select
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                  value={productForm.sizeType}
-                  onChange={(e) => handleSizeTypeChange(e.target.value)}
-                  disabled={!productForm.category || sizeTypes.length === 0}
-                  required
-                >
-                  <option value="">{sizeTypes.length === 0 ? 'No size types available' : 'Select size type'}</option>
-                  {sizeTypes.map((type, index) => (
-                    <option key={index} value={type}>{type}</option>
-                  ))}
-                </select>
-                {productForm.category && sizeTypes.length === 0 && (
-                  <p className="mt-1 text-xs text-red-500">No size types defined for this category</p>
-                )}
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Size Value</label>
-                <select
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                  value={productForm.sizeValue}
-                  onChange={(e) => setProductForm({...productForm, sizeValue: e.target.value})}
-                  disabled={!productForm.sizeType || !sizeValues[productForm.category]?.values[productForm.sizeType]?.length}
-                  required
-                >
-                  <option value="">
-                    {!productForm.sizeType 
-                      ? 'Select size type first' 
-                      : !sizeValues[productForm.category]?.values[productForm.sizeType]?.length 
-                        ? 'No size values available' 
-                        : 'Select size value'
-                    }
-                  </option>
-                  {sizeValues[productForm.category]?.values[productForm.sizeType]?.map((item, index) => (
-                    <option key={index} value={item.value}>
-                      {item.value} - {item.description}
-                    </option>
-                  ))}
-                </select>
-                {productForm.sizeType && (!sizeValues[productForm.category]?.values[productForm.sizeType] || sizeValues[productForm.category].values[productForm.sizeType].length === 0) && (
-                  <p className="mt-1 text-xs text-red-500">No size values defined for this size type</p>
-                )}
-              </div>
-            </div>
-            
-            <div className="flex justify-end">
-              <button 
-                type="submit" 
-                className="bg-[#00072D] text-white px-6 py-3 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition flex items-center"
-                disabled={loading}
-              >
-                {loading ? (
-                  <>
-                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Processing...
-                  </>
-                ) : (
-                  'Create Product Master'
-                )}
-              </button>
-            </div>
-          </form>
         </div>
-      )}
+      </div>
     </div>
   );
 
@@ -743,10 +652,35 @@ const ProductionDashboard = () => {
                 </option>
               ))}
             </select>
+            
+            {/* Show the selected product's image */}
+            {designForm.serialNumber && (
+              <div className="mt-3 flex items-center space-x-2">
+                <span className="text-sm text-gray-600">Product:</span>
+                {productMasters.find(p => p.serialNumber === designForm.serialNumber)?.imageFile ? (
+                  <img 
+                    src={productMasters.find(p => p.serialNumber === designForm.serialNumber).imageFile} 
+                    alt="Product" 
+                    className="h-8 w-8 object-cover rounded-lg"
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = 'https://via.placeholder.com/32?text=No+Image';
+                    }}
+                  />
+                ) : (
+                  <div className="h-8 w-8 bg-gray-200 rounded-lg flex items-center justify-center text-xs text-gray-500">
+                    No Image
+                  </div>
+                )}
+                <span className="text-sm font-medium">
+                  {productMasters.find(p => p.serialNumber === designForm.serialNumber)?.category}
+                </span>
+              </div>
+            )}
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Gross Weight</label>
             <div className="relative rounded-md shadow-sm">
@@ -841,51 +775,6 @@ const ProductionDashboard = () => {
             </select>
           </div>
         </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Design Image</label>
-          <div className="flex items-center space-x-4">
-            <div className="relative">
-              <input
-                type="file"
-                onChange={handleImageChange}
-                accept="image/*"
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                id="image-upload"
-                required
-              />
-              <label
-                htmlFor="image-upload"
-                className="inline-flex items-center px-4 py-3 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer transition"
-              >
-                <FiPlus className="mr-2" />
-                Choose Image
-              </label>
-            </div>
-            {previewImage && (
-              <div className="relative group">
-                <img 
-                  src={previewImage} 
-                  alt="Preview" 
-                  className="h-16 w-16 object-cover rounded-lg"
-                />
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPreviewImage(null);
-                    setDesignForm({...designForm, imageFile: null});
-                  }}
-                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition"
-                >
-                  <FiX className="text-xs" />
-                </button>
-              </div>
-            )}
-          </div>
-          <p className="mt-1 text-xs text-gray-500">
-            Upload a high-quality image (JPEG, PNG, WebP) under 5MB
-          </p>
-        </div>
         
         <div className="flex justify-end">
           <button 
@@ -926,7 +815,6 @@ const ProductionDashboard = () => {
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Net Wt (g)</th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Diamond Wt (ct)</th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Diamond Pcs</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Image</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -938,19 +826,6 @@ const ProductionDashboard = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{design.netWt}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{design.diaWt}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{design.diaPcs}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {design.imageFile ? (
-                          <img 
-                            src={design.imageFile} 
-                            alt="Design" 
-                            className="h-10 w-10 object-cover rounded-lg"
-                          />
-                        ) : (
-                          <div className="h-10 w-10 bg-gray-200 rounded-lg flex items-center justify-center text-xs text-gray-500">
-                            No Image
-                          </div>
-                        )}
-                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -966,8 +841,7 @@ const ProductionDashboard = () => {
     <div className="space-y-6">
       <h1 className="text-2xl font-bold text-gray-800">Master Data Management</h1>
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div 
           className="bg-white rounded-xl shadow-lg p-6 cursor-pointer hover:shadow-xl transition"
           onClick={() => setMasterType('product')}
@@ -1002,9 +876,6 @@ const ProductionDashboard = () => {
 
   return (
     <div className="flex flex-col h-screen bg-gray-50">
-      {/* Success Message */}
-      {successMessage && <SuccessAlert message={successMessage} />}
-
       {/* Mobile header */}
       <div className="md:hidden bg-[#00072D] text-white p-4 flex justify-between items-center sticky top-0 z-10 shadow-md">
         <button 
@@ -1018,7 +889,7 @@ const ProductionDashboard = () => {
       </div>
 
       <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar */}
+        {/* Sidebar - Fixed and not scrolling */}
         <div 
           className={`fixed inset-y-0 left-0 transform ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 z-20 w-64 bg-[#00072D] text-white transition duration-200 ease-in-out md:transition-none flex flex-col`}
           style={{ height: '100vh' }}
@@ -1058,7 +929,7 @@ const ProductionDashboard = () => {
             </div>
           </nav>
           <div className="p-4 text-sm text-white/60 border-t border-white/10 hidden md:block">
-            PageTraffics
+           PageTraffics
           </div>
         </div>
 
@@ -1070,14 +941,13 @@ const ProductionDashboard = () => {
           ></div>
         )}
 
-        {/* Main Content */}
+        {/* Main Content - Scrollable */}
         <div className="flex-1 overflow-auto p-4 md:p-6">
           {activeMenu === 'dashboard' && renderDashboard()}
 
           {activeMenu === 'master' && (
             <>
               {!masterType && renderMasterDataMenu()}
-   
               {masterType === 'product' && renderProductMasterForm()}
               {masterType === 'design' && renderDesignMasterForm()}
             </>

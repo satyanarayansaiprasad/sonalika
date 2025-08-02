@@ -236,7 +236,7 @@ const ProductionDashboard = () => {
 
     try {
       setLoading(true);
-      await axios.post(`${API_BASE_URL}/api/pdmaster/createOrUpdateSizeDataMaster`, {
+      await axios.post(`${API_BASE_URL}/api/pdmaster/createSizeDataMaster`, {
         category: categoryForm.category.toUpperCase(),
         types: categoryForm.types,
         values: categoryForm.values

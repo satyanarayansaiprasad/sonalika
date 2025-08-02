@@ -6,16 +6,8 @@ const API_BASE_URL = import.meta.env.VITE_BASE_URL || 'http://localhost:3000';
 
 const ProductionDashboard = () => {
   // State management
-  const [activeMenu, setActiveMenu] = useState(() => {
-    const saved = localStorage.getItem('activeMenu');
-    return saved || 'dashboard';
-  });
-  
-  const [masterType, setMasterType] = useState(() => {
-    const saved = localStorage.getItem('masterType');
-    return saved || null;
-  });
-  
+  const [activeMenu, setActiveMenu] = useState('dashboard');
+  const [masterType, setMasterType] = useState(null);
   const [categories, setCategories] = useState([]);
   const [sizeTypes, setSizeTypes] = useState([]);
   const [sizeValues, setSizeValues] = useState({});
@@ -55,12 +47,6 @@ const ProductionDashboard = () => {
     imageFile: null
   });
 
-  // Persist state to localStorage
-  useEffect(() => {
-    localStorage.setItem('activeMenu', activeMenu);
-    localStorage.setItem('masterType', masterType);
-  }, [activeMenu, masterType]);
-
   // Fetch initial data
   useEffect(() => {
     fetchAllSizeData();
@@ -79,28 +65,34 @@ const ProductionDashboard = () => {
     try {
       setLoading(true);
       const response = await axios.get(`${API_BASE_URL}/api/pdmaster/getAllSizeData`);
-      const formattedData = response.data.data.map(item => ({
-        category: item.category,
-        types: item.types,
-        values: item.values
-      }));
       
-      // Extract unique categories
-      const uniqueCategories = [...new Set(formattedData.map(item => item.category))];
-      setCategories(uniqueCategories);
-      
-      // Store all size data for reference
-      const sizeDataMap = {};
-      formattedData.forEach(item => {
-        sizeDataMap[item.category] = {
-          types: item.types,
-          values: item.values
-        };
-      });
-      setSizeValues(sizeDataMap);
-      
+      if (response.data && Array.isArray(response.data)) {
+        const formattedData = response.data.map(item => ({
+          category: item.category,
+          types: item.types || [],
+          values: item.values || {}
+        }));
+
+        const uniqueCategories = [...new Set(formattedData.map(item => item.category))]
+          .filter(cat => cat)
+          .sort((a, b) => a.localeCompare(b));
+        
+        setCategories(uniqueCategories);
+        
+        const sizeDataMap = {};
+        formattedData.forEach(item => {
+          if (item.category) {
+            sizeDataMap[item.category] = {
+              types: item.types || [],
+              values: item.values || {}
+            };
+          }
+        });
+        setSizeValues(sizeDataMap);
+      }
     } catch (error) {
       console.error('Error fetching size data:', error);
+      alert('Failed to load size data');
     } finally {
       setLoading(false);
     }
@@ -133,28 +125,20 @@ const ProductionDashboard = () => {
   };
 
   // Category change handler
-  const handleCategoryChange = async (value) => {
-    try {
-      setLoading(true);
-      
-      // Use the sizeValues we already have from fetchAllSizeData
-      if (sizeValues[value]) {
-        setSizeTypes(sizeValues[value].types || []);
-      } else {
-        setSizeTypes([]);
-      }
-      
-      setProductForm(prev => ({
-        ...prev,
-        category: value,
-        sizeType: '',
-        sizeValue: ''
-      }));
-    } catch (error) {
-      console.error('Error fetching category data:', error);
-    } finally {
-      setLoading(false);
+  const handleCategoryChange = (value) => {
+    if (value && sizeValues[value]) {
+      const types = sizeValues[value].types || [];
+      setSizeTypes(types);
+    } else {
+      setSizeTypes([]);
     }
+    
+    setProductForm(prev => ({
+      ...prev,
+      category: value,
+      sizeType: '',
+      sizeValue: ''
+    }));
   };
 
   const handleSizeTypeChange = (value) => {

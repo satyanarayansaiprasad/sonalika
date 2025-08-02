@@ -620,7 +620,7 @@ const ProductionDashboard = () => {
       {showCategoryForm ? (
         renderCategoryForm()
       ) : (
-        <div className="bg-white rounded-xl shadow-lg p-6">
+        <div className="bg-white h-screen rounded-xl shadow-lg p-6">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-semibold text-gray-800">Create Product Master</h2>
             <div className="flex space-x-2">

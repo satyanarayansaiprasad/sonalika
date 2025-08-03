@@ -22,46 +22,18 @@ async function getNextStyleNumber() {
   return `SJSTYLE${nextNumber}`;
 }
 
-// Create Product Master
+// Create Product Master (simplified without image and description)
 exports.createProductMaster = async (req, res) => {
   try {
-    console.log('Request body:', req.body);
-    console.log('Request file:', req.file);
-    
-    const { category, sizeType, sizeValue, description } = req.body;
-    const imageFile = req.file;
+    const { category, sizeType, sizeValue } = req.body;
 
     // Validate required fields
-    if (!category || !sizeType || !sizeValue || !description) {
+    if (!category || !sizeType || !sizeValue) {
       return res.status(400).json({ 
         success: false,
         message: "All fields are required" 
       });
     }
-
-    if (!imageFile) {
-      return res.status(400).json({ 
-        success: false,
-        message: "Image is required" 
-      });
-    }
-
-    // Upload to ImageKit
-    const uploadResponse = await imagekit.upload({
-      file: imageFile.buffer, // Using buffer directly
-      fileName: imageFile.originalname,
-      folder: "/products",
-    });
-
-    // Generate optimized URL
-    const imageUrl = imagekit.url({
-      path: uploadResponse.filePath,
-      transformation: [
-        { quality: "auto" }, 
-        { format: "webp" }, 
-        { width: "1280" }
-      ]
-    });
 
     // Create new product
     const serialNumber = await getNextProductSerialNumber();
@@ -69,13 +41,8 @@ exports.createProductMaster = async (req, res) => {
       serialNumber,
       category,
       sizeType,
-      sizeValue,
-      description,
-      imageFile: imageUrl
+      sizeValue
     });
-
-    // No need to unlink since we're using memory storage
-    // (file wasn't saved to disk)
     
     res.status(201).json({ 
       success: true, 
@@ -84,8 +51,6 @@ exports.createProductMaster = async (req, res) => {
 
   } catch (err) {
     console.error('Error creating Product Master:', err);
-    
-    // No file cleanup needed when using memory storage
     res.status(500).json({
       success: false,
       message: 'Server Error',
@@ -93,9 +58,8 @@ exports.createProductMaster = async (req, res) => {
     });
   }
 };
-// Other controller methods remain the same...
 
-// Create Design Master
+// Create Design Master with image upload
 exports.createDesignMaster = async (req, res) => {
   try {
     const { 
@@ -108,9 +72,43 @@ exports.createDesignMaster = async (req, res) => {
       color 
     } = req.body;
 
+    const imageFile = req.file;
+
+    // Validate required fields
+    if (!serialNumber || !grossWt || !netWt || !diaWt || !diaPcs || !clarity || !color) {
+      return res.status(400).json({ 
+        success: false,
+        message: "All fields are required" 
+      });
+    }
+
+    if (!imageFile) {
+      return res.status(400).json({ 
+        success: false,
+        message: "Design image is required" 
+      });
+    }
+
+    // Upload to ImageKit
+    const uploadResponse = await imagekit.upload({
+      file: imageFile.buffer,
+      fileName: imageFile.originalname,
+      folder: "/designs",
+    });
+
+    // Generate optimized URL
+    const imageUrl = imagekit.url({
+      path: uploadResponse.filePath,
+      transformation: [
+        { quality: "auto" }, 
+        { format: "webp" }, 
+        { width: "1280" }
+      ]
+    });
+
     const styleNumber = await getNextStyleNumber();
 
-    const newDesign = new DesignMaster({
+    const newDesign = await DesignMaster.create({
       serialNumber,
       styleNumber,
       grossWt,
@@ -118,11 +116,15 @@ exports.createDesignMaster = async (req, res) => {
       diaWt,
       diaPcs,
       clarity,
-      color
+      color,
+      imageFile: imageUrl
     });
 
-    await newDesign.save();
-    res.status(201).json({ success: true, data: newDesign });
+    res.status(201).json({ 
+      success: true, 
+      data: newDesign 
+    });
+
   } catch (err) {
     console.error('Error creating Design Master:', err);
     res.status(500).json({

@@ -43,9 +43,10 @@ async function getNextStyleNumber(category) {
 
 
 // Create Product Master
-// Create Product Master - Updated version
 exports.createProductMaster = async (req, res) => {
   try {
+    console.log('Request body:', req.body);
+
     const { category, sizeType, sizeValue } = req.body;
 
     // Validate required fields
@@ -56,15 +57,15 @@ exports.createProductMaster = async (req, res) => {
       });
     }
 
-    // Generate Serial Number - Fixed to pass category
-    const serialNumber = await getNextProductSerialNumber(category);
+    // Generate Serial Number
+    const serialNumber = await getNextProductSerialNumber();
 
     // Create new product
     const newProduct = await ProductMaster.create({
       serialNumber,
       category,
-      types: sizeType,
-      values: sizeValue
+      sizeType,
+      sizeValue
     });
 
     res.status(201).json({ 
@@ -178,99 +179,90 @@ exports.getAllDesignMasters = async (req, res) => {
 
 
 
-
-
-
-// Create or Update size data for a category
+// Create or Update Size Data by Category
 exports.createOrUpdateSizeDataMaster = async (req, res) => {
   try {
     const { category, types, values } = req.body;
 
-    if (!category || !Array.isArray(types) || typeof values !== 'object') {
-      return res.status(400).json({ 
-        success: false,
-        error: 'Invalid input format' 
-      });
+    // Validate input
+    if (!category || !Array.isArray(types) || types.length === 0) {
+      return res.status(400).json({ error: 'Category and at least one type required' });
+    }
+
+    if (!values || Object.keys(values).length === 0) {
+      return res.status(400).json({ error: 'Values object cannot be empty' });
+    }
+
+    // Validate each type has values
+    for (const type of types) {
+      if (!Array.isArray(values[type])) {
+        return res.status(400).json({ error: `Values for ${type} must be an array` });
+      }
     }
 
     const formattedCategory = category.trim().toUpperCase();
 
-    // Check if data already exists
-    let existing = await SizeDataMaster.findOne({ category: formattedCategory });
+    // Update or create document
+    const existing = await SizeDataMaster.findOneAndUpdate(
+      { category: formattedCategory },
+      {
+        $set: {
+          types,
+          values
+        }
+      },
+      { new: true, upsert: true }
+    );
 
-    if (existing) {
-      // Update
-      existing.types = types;
-      existing.values = values;
-      await existing.save();
-      return res.status(200).json({ 
-        success: true,
-        message: 'Size data updated successfully', 
-        data: existing 
-      });
-    } else {
-      // Create
-      const newSizeData = new SizeDataMaster({
-        category: formattedCategory,
-        types,
-        values
-      });
-      await newSizeData.save();
-      return res.status(201).json({ 
-        success: true,
-        message: 'Size data created successfully', 
-        data: newSizeData 
-      });
-    }
-  } catch (error) {
-    console.error('Error in size data controller:', error);
+    res.status(200).json({
+      message: existing ? 'Size data updated' : 'Size data created',
+      data: existing
+    });
+
+  } catch (err) {
+    console.error('Error:', err);
     res.status(500).json({ 
-      success: false,
-      error: 'Server error' 
+      error: 'Server error',
+      details: err.message 
     });
   }
 };
 
-// Get all size data
-exports.getAllSizeDataMasters = async (req, res) => {
+
+
+//get
+exports.getAllSizeData = async (req, res) => {
   try {
-    const data = await SizeDataMaster.find().sort({ category: 1 });
-    res.status(200).json({ 
-      success: true,
-      data 
-    });
-  } catch (error) {
-    console.error('Error fetching size data:', error);
-    res.status(500).json({ 
-      success: false,
-      error: 'Server error' 
-    });
+    const allData = await SizeDataMaster.find().sort({ category: 1 });
+
+    // Filter only valid entries (having at least one type and non-empty values)
+    const formattedData = allData
+      .filter(doc => doc.category && doc.types && doc.types.length > 0)
+      .map(doc => {
+        // Prepare clean value mapping
+        const values = {};
+        doc.types.forEach(type => {
+          const valArray = (doc.values && doc.values[type]) || [];
+          if (valArray.length > 0) {
+            values[type] = valArray;
+          }
+        });
+
+        return {
+          category: doc.category.toUpperCase(),
+          types: doc.types,
+          values: values,
+        };
+      })
+      .filter(item => Object.keys(item.values).length > 0); // remove empty ones
+
+    res.status(200).json({ data: formattedData });
+  } catch (err) {
+    console.error('Error in getAllSizeData:', err);
+    res.status(500).json({ error: 'Internal Server Error', details: err.message });
   }
 };
 
-// Get size data by category
-exports.getSizeDataByCategory = async (req, res) => {
-  try {
-    const category = req.params.category.toUpperCase();
-    const data = await SizeDataMaster.findOne({ category });
-    
-    if (!data) {
-      return res.status(404).json({ 
-        success: false,
-        error: 'Category not found' 
-      });
-    }
 
-    res.status(200).json({ 
-      success: true,
-      data 
-    });
-  } catch (error) {
-    console.error('Error fetching size data:', error);
-    res.status(500).json({ 
-      success: false,
-      error: 'Server error' 
-    });
-  }
-};
+
 

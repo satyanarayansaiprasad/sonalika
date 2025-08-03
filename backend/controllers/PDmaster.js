@@ -162,28 +162,37 @@ exports.getAllDesignMasters = async (req, res) => {
 
 
 // Add new category with size types and values
-exports.addCategorySize = async (req, res) => {
+exports.addCategorySize = require('../models/CategorySize');
+
+// POST /api/category-size
+const addCategorySize = async (req, res) => {
   try {
     const { name, types } = req.body;
 
-    // Check if the category already exists
-    const existingCategory = await CategorySize.findOne({ name: name.toUpperCase() });
-    if (existingCategory) {
-      return res.status(400).json({ message: 'Category already exists' });
+    if (!name || !Array.isArray(types) || types.length === 0) {
+      return res.status(400).json({ message: "Category name and types are required" });
     }
 
-    const newCategory = new CategorySize({
+    // Check for existing category
+    const existing = await CategorySize.findOne({ name: name.toUpperCase() });
+    if (existing) {
+      return res.status(400).json({ message: "Category already exists" });
+    }
+
+    const category = new CategorySize({
       name: name.toUpperCase(),
       types
     });
 
-    await newCategory.save();
-    return res.status(201).json({ message: 'Category added successfully', data: newCategory });
+    await category.save();
+    res.status(201).json({ message: "Category added successfully", data: category });
   } catch (error) {
-    console.error('Error adding category size:', error);
-    return res.status(500).json({ message: 'Internal Server Error' });
+    console.error("Add category error:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 };
+
+
 
 
 

@@ -1,24 +1,25 @@
 const mongoose = require('mongoose');
 
-const ValueItemSchema = new mongoose.Schema({
-  value: { type: String, required: true },
-  description: { type: String }
-}, { _id: false });
+const ValueSchema = new mongoose.Schema({
+  value: String,
+  description: String,
+});
 
 const SizeDataMasterSchema = new mongoose.Schema({
-  category: { 
-    type: String, 
-    required: true, 
+  category: {
+    type: String,
+    required: true,
     unique: true,
-    uppercase: true
+    uppercase: true,
+    trim: true
   },
-  types: [{ 
-    type: String, 
-    required: true 
-  }],
+  types: {
+    type: [String],
+    required: true
+  },
   values: {
     type: Map,
-    of: [ValueItemSchema],
+    of: [ValueSchema],
     required: true
   }
 }, { timestamps: true });

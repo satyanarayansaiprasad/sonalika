@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { FiMenu, FiX, FiHome, FiDatabase, FiShoppingBag, FiPlus, FiAward, FiChevronDown, FiChevronUp, FiTrash2, FiEdit2 } from 'react-icons/fi';
+import { FiMenu, FiX, FiHome, FiDatabase, FiShoppingBag, FiPlus, FiAward, FiChevronDown, FiChevronUp, FiTrash2, FiEdit2, FiCheckCircle } from 'react-icons/fi';
 
 const API_BASE_URL = import.meta.env.VITE_BASE_URL || 'http://localhost:3000';
 
@@ -29,6 +29,7 @@ const ProductionDashboard = () => {
     name: '',
     types: [{ name: '', values: [{ value: '', description: '' }] }]
   });
+  const [notification, setNotification] = useState({ show: false, message: '', isError: false });
 
   useEffect(() => {
     localStorage.setItem('activeMenu', activeMenu);
@@ -69,13 +70,20 @@ const ProductionDashboard = () => {
     }
   }, [productMasters]);
 
+  const showNotification = (message, isError = false) => {
+    setNotification({ show: true, message, isError });
+    setTimeout(() => {
+      setNotification({ show: false, message: '', isError: false });
+    }, 5000);
+  };
+
   const fetchAllCategories = async () => {
     try {
       setLoading(true);
       const response = await axios.get(`${API_BASE_URL}/api/pdmaster/category-size`);
       setCategories(response.data.data);
     } catch (error) {
-      alert('Failed to fetch categories');
+      showNotification('Failed to fetch categories', true);
       console.error('Fetch error:', error);
     } finally {
       setLoading(false);
@@ -88,7 +96,7 @@ const ProductionDashboard = () => {
       const response = await axios.get(`${API_BASE_URL}/api/pdmaster/getAllProductMasters`);
       setProductMasters(response.data.data);
     } catch (error) {
-      alert('Failed to fetch product masters');
+      showNotification('Failed to fetch product masters', true);
       console.error('Fetch error:', error);
     } finally {
       setLoading(false);
@@ -101,7 +109,7 @@ const ProductionDashboard = () => {
       const response = await axios.get(`${API_BASE_URL}/api/pdmaster/getAllDesignMasters`);
       setDesignMasters(response.data.data);
     } catch (error) {
-      alert('Failed to fetch design masters');
+      showNotification('Failed to fetch design masters', true);
       console.error('Fetch error:', error);
     } finally {
       setLoading(false);
@@ -138,13 +146,13 @@ const ProductionDashboard = () => {
     if (file) {
       const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
       if (!allowedTypes.includes(file.type)) {
-        alert('Please upload a JPEG, PNG, or WebP image');
+        showNotification('Please upload a JPEG, PNG, or WebP image', true);
         return;
       }
 
       const maxSize = 5 * 1024 * 1024;
       if (file.size > maxSize) {
-        alert('Image must be smaller than 5MB');
+        showNotification('Image must be smaller than 5MB', true);
         return;
       }
 
@@ -160,7 +168,7 @@ const ProductionDashboard = () => {
     e.preventDefault();
     
     if (!productForm.category || !productForm.sizeType || !productForm.sizeValue) {
-      alert('Please fill all fields');
+      showNotification('Please fill all fields', true);
       return;
     }
 
@@ -177,7 +185,7 @@ const ProductionDashboard = () => {
       );
 
       if (response.data.success) {
-        alert('Product Master created successfully!');
+        showNotification('Product Master created successfully!');
         setProductForm({
           category: '',
           sizeType: '',
@@ -188,7 +196,7 @@ const ProductionDashboard = () => {
         throw new Error(response.data.message || 'Failed to create product');
       }
     } catch (error) {
-      alert(`Error: ${error.response?.data?.message || error.message}`);
+      showNotification(`Error: ${error.response?.data?.message || error.message}`, true);
       console.error('Submission error:', error);
     } finally {
       setLoading(false);
@@ -201,7 +209,7 @@ const ProductionDashboard = () => {
     if (!designForm.serialNumber || !designForm.grossWt || !designForm.netWt || 
         !designForm.diaWt || !designForm.diaPcs || !designForm.clarity || 
         !designForm.color || !designForm.imageFile) {
-      alert('Please fill all fields and upload a design image');
+      showNotification('Please fill all fields and upload a design image', true);
       return;
     }
 
@@ -228,7 +236,7 @@ const ProductionDashboard = () => {
         }
       );
 
-      alert('Design Master created successfully!');
+      showNotification('Design Master created successfully!');
       setDesignForm({
         serialNumber: '',
         grossWt: '',
@@ -242,7 +250,7 @@ const ProductionDashboard = () => {
       setPreviewImage(null);
       fetchAllDesignMasters();
     } catch (error) {
-      alert(`Failed to create design master: ${error.response?.data?.message || error.message}`);
+      showNotification(`Failed to create design master: ${error.response?.data?.message || error.message}`, true);
       console.error('Submission error:', error);
     } finally {
       setLoading(false);
@@ -260,7 +268,7 @@ const ProductionDashboard = () => {
       });
       
       if (response.data.message === "Category added successfully") {
-        alert('Category added successfully!');
+        showNotification('Category added successfully!');
         setNewCategory({
           name: '',
           types: [{ name: '', values: [{ value: '', description: '' }] }]
@@ -271,7 +279,7 @@ const ProductionDashboard = () => {
         throw new Error(response.data.message || 'Failed to add category');
       }
     } catch (error) {
-      alert(`Error: ${error.response?.data?.message || error.message}`);
+      showNotification(`Error: ${error.response?.data?.message || error.message}`, true);
       console.error('Add category error:', error);
     } finally {
       setLoading(false);
@@ -486,10 +494,8 @@ const ProductionDashboard = () => {
         </div>
       </form>
 
-  
-
       {/* Add Category Section */}
-      <div className="mt-12 bg-white h-full rounded-xl shadow-lg p-6">
+      <div className="mt-12  p-6">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-semibold text-gray-800">Category Management</h2>
           <button 
@@ -964,6 +970,20 @@ const ProductionDashboard = () => {
 
   return (
     <div className="flex flex-col h-screen bg-gray-50">
+      {/* Notification */}
+      {notification.show && (
+        <div className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg flex items-center ${notification.isError ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>
+          <FiCheckCircle className="mr-2" />
+          <span>{notification.message}</span>
+          <button 
+            onClick={() => setNotification({ show: false, message: '', isError: false })}
+            className="ml-4"
+          >
+            <FiX />
+          </button>
+        </div>
+      )}
+
       {/* Mobile header */}
       <div className="md:hidden bg-[#00072D] text-white p-4 flex justify-between items-center sticky top-0 z-10 shadow-md">
         <button 

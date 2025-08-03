@@ -489,7 +489,7 @@ const ProductionDashboard = () => {
   
 
       {/* Add Category Section */}
-      <div className="mt-12 bg-white h-screen rounded-xl shadow-lg p-6">
+      <div className="mt-12 bg-white  rounded-xl shadow-lg p-6">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-semibold text-gray-800">Category Management</h2>
           <button 

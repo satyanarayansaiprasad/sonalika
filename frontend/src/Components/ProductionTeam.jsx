@@ -63,7 +63,7 @@ const ProductionDashboard = () => {
 
   // Fetch initial data
   useEffect(() => {
-    fetchAllSizeData();
+    fetchAllCategories();
     fetchAllProductMasters();
     fetchAllDesignMasters();
   }, []);
@@ -75,25 +75,19 @@ const ProductionDashboard = () => {
   };
 
   // API calls
-  const fetchAllSizeData = async () => {
+  const fetchAllCategories = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_BASE_URL}/api/pdmaster/getAllSizeData`);
+      const response = await axios.get(`${API_BASE_URL}/api/size-data/all`);
       
-      if (response.data && response.data.data) {
-        const formattedData = response.data.data.map(item => ({
-          category: item.category,
-          types: item.types,
-          values: item.values
-        }));
-        
+      if (response.data) {
         // Extract unique categories
-        const uniqueCategories = [...new Set(formattedData.map(item => item.category))];
+        const uniqueCategories = response.data.map(item => item.category);
         setCategories(uniqueCategories);
         
         // Store all size data for reference
         const sizeDataMap = {};
-        formattedData.forEach(item => {
+        response.data.forEach(item => {
           if (item.category) {
             sizeDataMap[item.category] = {
               types: item.types || [],
@@ -104,10 +98,30 @@ const ProductionDashboard = () => {
         setSizeValues(sizeDataMap);
       }
     } catch (error) {
-      console.error('Error fetching size data:', error);
-      alert('Failed to load size data');
+      console.error('Error fetching categories:', error);
+      alert('Failed to load categories');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchSizeDataByCategory = async (category) => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/size-data/${category}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching size data:', error);
+      return null;
+    }
+  };
+
+  const createOrUpdateCategory = async (categoryData) => {
+    try {
+      const response = await axios.post(`${API_BASE_URL}/api/size-data/createOrUpdate`, categoryData);
+      return response.data;
+    } catch (error) {
+      console.error('Error creating/updating category:', error);
+      throw error;
     }
   };
 
@@ -137,8 +151,8 @@ const ProductionDashboard = () => {
     }
   };
 
-  // Fixed category change handler
-  const handleCategoryChange = (selectedCategory) => {
+  // Category change handler
+  const handleCategoryChange = async (selectedCategory) => {
     // Reset dependent fields when category changes
     setProductForm(prev => ({
       ...prev,
@@ -147,15 +161,16 @@ const ProductionDashboard = () => {
       values: ''
     }));
 
-    // Update size types based on selected category
-    if (selectedCategory && sizeValues[selectedCategory]) {
-      setSizeTypes(sizeValues[selectedCategory].types || []);
+    // Fetch size data for the selected category
+    const sizeData = await fetchSizeDataByCategory(selectedCategory);
+    if (sizeData) {
+      setSizeTypes(sizeData.types || []);
     } else {
       setSizeTypes([]);
     }
   };
 
-  // Fixed size type change handler
+  // Size type change handler
   const handleSizeTypeChange = (selectedSizeType) => {
     setProductForm(prev => ({
       ...prev,
@@ -235,7 +250,7 @@ const ProductionDashboard = () => {
 
     try {
       setLoading(true);
-      await axios.post(`${API_BASE_URL}/api/pdmaster/createSizeDataMaster`, {
+      await createOrUpdateCategory({
         category: categoryForm.category.toUpperCase(),
         types: categoryForm.types,
         values: categoryForm.values
@@ -247,10 +262,10 @@ const ProductionDashboard = () => {
         types: [],
         values: {}
       });
-      fetchAllSizeData();
+      fetchAllCategories();
       setShowCategoryForm(false);
     } catch (error) {
-      alert(`Error: ${error.response?.data?.message || error.message}`);
+      alert(`Error: ${error.response?.data?.error || error.message}`);
       console.error('Submission error:', error);
     } finally {
       setLoading(false);

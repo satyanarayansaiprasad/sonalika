@@ -231,14 +231,20 @@ exports.getAllSizeDataMasters = async (req, res) => {
 
 
 
-
+// GET /api/size-data/:category
 exports.getSizeDataByCategory = async (req, res) => {
   try {
-    const category = req.params.category.toUpperCase();
+    const category = req.params.category.toUpperCase(); // normalize
     const data = await SizeDataMaster.findOne({ category });
-    if (!data) return res.status(404).json({ error: 'Category not found' });
+    
+    if (!data) {
+      return res.status(404).json({ error: 'Category not found' });
+    }
+
     res.status(200).json(data);
   } catch (error) {
+    console.error('Error fetching size data:', error);
     res.status(500).json({ error: 'Server error' });
   }
 };
+

@@ -7,7 +7,8 @@ const {
   getAllProductMasters,
   getAllDesignMasters,
   createOrUpdateSizeDataMaster,
-  getAllSizeData,
+  getAllSizeDataMasters,
+  getSizeDataByCategory
     
   } = require('../controllers/PDmaster');
 
@@ -21,7 +22,8 @@ router.get('/getAllDesignMasters', getAllDesignMasters);
 
 router.post('/createSizeDataMaster', createOrUpdateSizeDataMaster);
 
-router.get('/getAllSizeData', getAllSizeData); // get all
+router.get('/getAllSizeData', getAllSizeDataMasters);
+router.get('/:category', getSizeDataByCategory); 
 // router.get('/size-data/:category',getSizeDataByCategory); // get one
 // router.put('/size-data/:category', updateSizeData); // update existing
 

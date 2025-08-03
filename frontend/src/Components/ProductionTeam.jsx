@@ -63,7 +63,7 @@ const ProductionDashboard = () => {
 
   // Fetch initial data
   useEffect(() => {
-    fetchAllCategories();
+    fetchAllSizeData();
     fetchAllProductMasters();
     fetchAllDesignMasters();
   }, []);
@@ -75,14 +75,14 @@ const ProductionDashboard = () => {
   };
 
   // API calls
-  const fetchAllCategories = async () => {
+  const fetchAllSizeData = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_BASE_URL}/api/size-data/all`);
+      const response = await axios.get(`${API_BASE_URL}/api/pdmaster/getAllSizeData`);
       
       if (response.data) {
         // Extract unique categories
-        const uniqueCategories = response.data.map(item => item.category);
+        const uniqueCategories = [...new Set(response.data.map(item => item.category))];
         setCategories(uniqueCategories);
         
         // Store all size data for reference
@@ -98,8 +98,8 @@ const ProductionDashboard = () => {
         setSizeValues(sizeDataMap);
       }
     } catch (error) {
-      console.error('Error fetching categories:', error);
-      alert('Failed to load categories');
+      console.error('Error fetching size data:', error);
+      alert('Failed to load size data');
     } finally {
       setLoading(false);
     }
@@ -107,21 +107,11 @@ const ProductionDashboard = () => {
 
   const fetchSizeDataByCategory = async (category) => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/size-data/${category}`);
+      const response = await axios.get(`${API_BASE_URL}/api/pdmaster/${category}`);
       return response.data;
     } catch (error) {
-      console.error('Error fetching size data:', error);
+      console.error('Error fetching size data by category:', error);
       return null;
-    }
-  };
-
-  const createOrUpdateCategory = async (categoryData) => {
-    try {
-      const response = await axios.post(`${API_BASE_URL}/api/size-data/createOrUpdate`, categoryData);
-      return response.data;
-    } catch (error) {
-      console.error('Error creating/updating category:', error);
-      throw error;
     }
   };
 
@@ -151,32 +141,44 @@ const ProductionDashboard = () => {
     }
   };
 
-  // Category change handler
+  // Handle category change - fetch size types and values for the selected category
   const handleCategoryChange = async (selectedCategory) => {
-    // Reset dependent fields when category changes
-    setProductForm(prev => ({
-      ...prev,
-      category: selectedCategory,
-      types: '',
-      values: ''
-    }));
+    if (!selectedCategory) {
+      setSizeTypes([]);
+      setProductForm(prev => ({
+        ...prev,
+        category: '',
+        types: '',
+        values: ''
+      }));
+      return;
+    }
 
-    // Fetch size data for the selected category
-    const sizeData = await fetchSizeDataByCategory(selectedCategory);
-    if (sizeData) {
-      setSizeTypes(sizeData.types || []);
-    } else {
+    try {
+      const data = await fetchSizeDataByCategory(selectedCategory);
+      if (data) {
+        setSizeTypes(data.types || []);
+        setSizeValues(prev => ({
+          ...prev,
+          [selectedCategory]: {
+            types: data.types || [],
+            values: data.values || {}
+          }
+        }));
+      } else {
+        setSizeTypes([]);
+      }
+
+      setProductForm(prev => ({
+        ...prev,
+        category: selectedCategory,
+        types: '',
+        values: ''
+      }));
+    } catch (error) {
+      console.error('Error handling category change:', error);
       setSizeTypes([]);
     }
-  };
-
-  // Size type change handler
-  const handleSizeTypeChange = (selectedSizeType) => {
-    setProductForm(prev => ({
-      ...prev,
-      types: selectedSizeType,
-      values: ''
-    }));
   };
 
   const handleAddSizeType = () => {
@@ -250,7 +252,7 @@ const ProductionDashboard = () => {
 
     try {
       setLoading(true);
-      await createOrUpdateCategory({
+      const response = await axios.post(`${API_BASE_URL}/api/pdmaster/createSizeDataMaster`, {
         category: categoryForm.category.toUpperCase(),
         types: categoryForm.types,
         values: categoryForm.values
@@ -262,7 +264,7 @@ const ProductionDashboard = () => {
         types: [],
         values: {}
       });
-      fetchAllCategories();
+      fetchAllSizeData();
       setShowCategoryForm(false);
     } catch (error) {
       alert(`Error: ${error.response?.data?.error || error.message}`);
@@ -396,7 +398,7 @@ const ProductionDashboard = () => {
   const getSizeValueOptions = () => {
     if (!productForm.category || !productForm.types) return [];
     const categoryData = sizeValues[productForm.category];
-    if (!categoryData) return [];
+    if (!categoryData || !categoryData.values) return [];
     return categoryData.values[productForm.types] || [];
   };
 

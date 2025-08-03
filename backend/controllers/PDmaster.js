@@ -3,71 +3,77 @@ const fs = require('fs');
 const ProductMaster = require('../models/ProductMaster');
 const DesignMaster = require('../models/DesignMaster');
 const imagekit = require('../config/imagekit');
-const SizeDataMaster = require('../models/SizeDataMaster');
 
 // Generate next Product Serial Number
-async function getNextProductSerialNumber(category) {
-  const formattedCategory = category.trim().toUpperCase();
-
-  const regex = new RegExp(`^SJ_${formattedCategory}(\\d+)$`);
-
-  const last = await ProductMaster
-    .findOne({ serialNumber: { $regex: regex } })
-    .sort({ serialNumber: -1 });
-
-  if (!last) return `SJ_${formattedCategory}01`;
-
-  const lastNumber = parseInt(last.serialNumber.replace(`SJ_${formattedCategory}`, ''));
-  const nextNumber = (lastNumber + 1).toString().padStart(2, '0');
-  
-  return `SJ_${formattedCategory}${nextNumber}`;
+async function getNextProductSerialNumber() {
+  const last = await ProductMaster.findOne().sort({ serialNumber: -1 });
+  if (!last) return 'SJPROD0001';
+  const lastNumber = parseInt(last.serialNumber.replace('SJPROD', ''));
+  const nextNumber = (lastNumber + 1).toString().padStart(4, '0');
+  return `SJPROD${nextNumber}`;
 }
 
 // Generate next Style Number
-async function getNextStyleNumber(category) {
-  const formattedCategory = category.trim().toUpperCase();
-
-  const regex = new RegExp(`^STYLE_${formattedCategory}(\\d+)$`);
-
-  const last = await DesignMaster
-    .findOne({ styleNumber: { $regex: regex } })
-    .sort({ styleNumber: -1 });
-
-  if (!last) return `STYLE_${formattedCategory}01`;
-
-  const lastNumber = parseInt(last.styleNumber.replace(`STYLE_${formattedCategory}`, ''));
-  const nextNumber = (lastNumber + 1).toString().padStart(2, '0');
-  
-  return `STYLE_${formattedCategory}${nextNumber}`;
+async function getNextStyleNumber() {
+  const last = await DesignMaster.findOne().sort({ styleNumber: -1 });
+  if (!last) return 'SJSTYLE0001';
+  const lastNumber = parseInt(last.styleNumber.replace('SJSTYLE', ''));
+  const nextNumber = (lastNumber + 1).toString().padStart(4, '0');
+  return `SJSTYLE${nextNumber}`;
 }
-
 
 // Create Product Master
 exports.createProductMaster = async (req, res) => {
   try {
-    console.log('Request body:', req.body);
-
-    const { category, sizeType, sizeValue } = req.body;
+      console.log('Request body:', req.body); // Add this for debugging
+    console.log('Request file:', req.file); // Add this for debugging
+    const { category, sizeType, sizeValue, description } = req.body;
+    const imageFile = req.file;
 
     // Validate required fields
-    if (!category || !sizeType || !sizeValue) {
+    if (!category || !sizeType || !sizeValue || !description) {
       return res.status(400).json({ 
         success: false,
         message: "All fields are required" 
       });
     }
 
-    // Generate Serial Number
-    const serialNumber = await getNextProductSerialNumber();
+    if (!imageFile) {
+      return res.status(400).json({ 
+        success: false,
+        message: "Image is required" 
+      });
+    }
+
+    // Upload to ImageKit
+   
+  const uploadResponse = await imagekit.upload({
+  file: imageFile.buffer, // Buffer from memory
+  fileName: imageFile.originalname,
+  folder: "/products",
+});
+
+
+    // Generate optimized URL
+    const imageUrl = imagekit.url({
+      path: uploadResponse.filePath,
+      transformation: [{ quality: "auto" }, { format: "webp" }, { width: "1280" }]
+    });
 
     // Create new product
+    const serialNumber = await getNextProductSerialNumber();
     const newProduct = await ProductMaster.create({
       serialNumber,
       category,
       sizeType,
-      sizeValue
+      sizeValue,
+      description,
+      imageFile: imageUrl
     });
 
+    // Clean up temporary file
+    fs.unlinkSync(imageFile.path);
+    
     res.status(201).json({ 
       success: true, 
       data: newProduct 
@@ -75,6 +81,12 @@ exports.createProductMaster = async (req, res) => {
 
   } catch (err) {
     console.error('Error creating Product Master:', err);
+    
+    // Clean up temp file if error occurred
+    if (req.file) {
+      fs.unlinkSync(req.file.path).catch(console.error);
+    }
+    
     res.status(500).json({
       success: false,
       message: 'Server Error',
@@ -83,44 +95,20 @@ exports.createProductMaster = async (req, res) => {
   }
 };
 
-
 // Other controller methods remain the same...
 
 // Create Design Master
 exports.createDesignMaster = async (req, res) => {
   try {
-    console.log('Request body:', req.body);
-    console.log('Request file:', req.file);
-
-    const {
+    const { 
       serialNumber,
-      grossWt,
-      netWt,
-      diaWt,
-      diaPcs,
-      clarity,
-      color
+      grossWt, 
+      netWt, 
+      diaWt, 
+      diaPcs, 
+      clarity, 
+      color 
     } = req.body;
-
-    const imageFile = req.file;
-
-    let imageUrl = null;
-    if (imageFile) {
-      const uploadResponse = await imagekit.upload({
-        file: imageFile.buffer,
-        fileName: imageFile.originalname,
-        folder: "/designs",
-      });
-
-      imageUrl = imagekit.url({
-        path: uploadResponse.filePath,
-        transformation: [
-          { quality: "auto" },
-          { format: "webp" },
-          { width: "1280" }
-        ]
-      });
-    }
 
     const styleNumber = await getNextStyleNumber();
 
@@ -132,13 +120,11 @@ exports.createDesignMaster = async (req, res) => {
       diaWt,
       diaPcs,
       clarity,
-      color,
-      imageFile: imageUrl
+      color
     });
 
     await newDesign.save();
     res.status(201).json({ success: true, data: newDesign });
-
   } catch (err) {
     console.error('Error creating Design Master:', err);
     res.status(500).json({
@@ -148,7 +134,6 @@ exports.createDesignMaster = async (req, res) => {
     });
   }
 };
-
 
 // Get all Product Masters
 exports.getAllProductMasters = async (req, res) => {
@@ -171,98 +156,3 @@ exports.getAllDesignMasters = async (req, res) => {
     res.status(500).json({ success: false, message: 'Server Error' });
   }
 };
-
-
-
-
-//
-
-
-
-// Create or Update Size Data by Category
-exports.createOrUpdateSizeDataMaster = async (req, res) => {
-  try {
-    const { category, types, values } = req.body;
-
-    // Validate input
-    if (!category || !Array.isArray(types) || types.length === 0) {
-      return res.status(400).json({ error: 'Category and at least one type required' });
-    }
-
-    if (!values || Object.keys(values).length === 0) {
-      return res.status(400).json({ error: 'Values object cannot be empty' });
-    }
-
-    // Validate each type has values
-    for (const type of types) {
-      if (!Array.isArray(values[type])) {
-        return res.status(400).json({ error: `Values for ${type} must be an array` });
-      }
-    }
-
-    const formattedCategory = category.trim().toUpperCase();
-
-    // Update or create document
-    const existing = await SizeDataMaster.findOneAndUpdate(
-      { category: formattedCategory },
-      {
-        $set: {
-          types,
-          values
-        }
-      },
-      { new: true, upsert: true }
-    );
-
-    res.status(200).json({
-      message: existing ? 'Size data updated' : 'Size data created',
-      data: existing
-    });
-
-  } catch (err) {
-    console.error('Error:', err);
-    res.status(500).json({ 
-      error: 'Server error',
-      details: err.message 
-    });
-  }
-};
-
-
-
-//get
-exports.getAllSizeData = async (req, res) => {
-  try {
-    const allData = await SizeDataMaster.find().sort({ category: 1 });
-
-    // Filter only valid entries (having at least one type and non-empty values)
-    const formattedData = allData
-      .filter(doc => doc.category && doc.types && doc.types.length > 0)
-      .map(doc => {
-        // Prepare clean value mapping
-        const values = {};
-        doc.types.forEach(type => {
-          const valArray = (doc.values && doc.values[type]) || [];
-          if (valArray.length > 0) {
-            values[type] = valArray;
-          }
-        });
-
-        return {
-          category: doc.category.toUpperCase(),
-          types: doc.types,
-          values: values,
-        };
-      })
-      .filter(item => Object.keys(item.values).length > 0); // remove empty ones
-
-    res.status(200).json({ data: formattedData });
-  } catch (err) {
-    console.error('Error in getAllSizeData:', err);
-    res.status(500).json({ error: 'Internal Server Error', details: err.message });
-  }
-};
-
-
-
-

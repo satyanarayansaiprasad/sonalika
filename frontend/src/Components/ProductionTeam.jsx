@@ -162,9 +162,7 @@ const ProductionDashboard = () => {
   const [productForm, setProductForm] = useState({
     category: '',
     sizeType: '',
-    sizeValue: '',
-    description: '',
-    imageFile: null
+    sizeValue: ''
   });
   
   const [designForm, setDesignForm] = useState({
@@ -174,7 +172,8 @@ const ProductionDashboard = () => {
     diaWt: '',
     diaPcs: '',
     clarity: '',
-    color: ''
+    color: '',
+    designImage: null
   });
 
   useEffect(() => {
@@ -241,7 +240,7 @@ const ProductionDashboard = () => {
     });
   };
 
-  const handleImageChange = (e) => {
+  const handleDesignImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
       const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
@@ -256,9 +255,9 @@ const ProductionDashboard = () => {
         return;
       }
 
-      setProductForm({
-        ...productForm,
-        imageFile: file
+      setDesignForm({
+        ...designForm,
+        designImage: file
       });
       setPreviewImage(URL.createObjectURL(file));
     }
@@ -267,28 +266,20 @@ const ProductionDashboard = () => {
   const handleProductSubmit = async (e) => {
     e.preventDefault();
     
-    if (!productForm.category || !productForm.sizeType || !productForm.sizeValue || !productForm.description || !productForm.imageFile) {
-      alert('Please fill all fields and select an image');
+    if (!productForm.category || !productForm.sizeType || !productForm.sizeValue) {
+      alert('Please fill all fields');
       return;
     }
 
     try {
       setLoading(true);
       
-      const formData = new FormData();
-      formData.append('category', productForm.category);
-      formData.append('sizeType', productForm.sizeType);
-      formData.append('sizeValue', productForm.sizeValue);
-      formData.append('description', productForm.description);
-      formData.append('image', productForm.imageFile);
-
       const response = await axios.post(
         `${API_BASE_URL}/api/pdmaster/createProductMaster`,
-        formData,
         {
-          headers: {
-            'Content-Type': 'multipart/form-data'
-          }
+          category: productForm.category,
+          sizeType: productForm.sizeType,
+          sizeValue: productForm.sizeValue
         }
       );
 
@@ -297,11 +288,8 @@ const ProductionDashboard = () => {
         setProductForm({
           category: '',
           sizeType: '',
-          sizeValue: '',
-          description: '',
-          imageFile: null
+          sizeValue: ''
         });
-        setPreviewImage(null);
         fetchAllProductMasters();
       } else {
         throw new Error(response.data.message || 'Failed to create product');
@@ -316,19 +304,34 @@ const ProductionDashboard = () => {
 
   const handleDesignSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!designForm.serialNumber || !designForm.grossWt || !designForm.netWt || 
+        !designForm.diaWt || !designForm.diaPcs || !designForm.clarity || 
+        !designForm.color || !designForm.designImage) {
+      alert('Please fill all fields and upload a design image');
+      return;
+    }
+
     try {
       setLoading(true);
       
+      const formData = new FormData();
+      formData.append('serialNumber', designForm.serialNumber);
+      formData.append('grossWt', designForm.grossWt);
+      formData.append('netWt', designForm.netWt);
+      formData.append('diaWt', designForm.diaWt);
+      formData.append('diaPcs', designForm.diaPcs);
+      formData.append('clarity', designForm.clarity);
+      formData.append('color', designForm.color);
+      formData.append('image', designForm.designImage);
+
       const response = await axios.post(
         `${API_BASE_URL}/api/pdmaster/createDesignMaster`,
+        formData,
         {
-          serialNumber: designForm.serialNumber,
-          grossWt: designForm.grossWt,
-          netWt: designForm.netWt,
-          diaWt: designForm.diaWt,
-          diaPcs: designForm.diaPcs,
-          clarity: designForm.clarity,
-          color: designForm.color
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
         }
       );
 
@@ -340,8 +343,10 @@ const ProductionDashboard = () => {
         diaWt: '',
         diaPcs: '',
         clarity: '',
-        color: ''
+        color: '',
+        designImage: null
       });
+      setPreviewImage(null);
       fetchAllDesignMasters();
     } catch (error) {
       alert(`Failed to create design master: ${error.response?.data?.message || error.message}`);
@@ -486,63 +491,6 @@ const ProductionDashboard = () => {
           </div>
         </div>
         
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Product Image</label>
-          <div className="flex items-center space-x-4">
-            <div className="relative">
-              <input
-                type="file"
-                onChange={handleImageChange}
-                accept="image/*"
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                id="image-upload"
-                required
-              />
-              <label
-                htmlFor="image-upload"
-                className="inline-flex items-center px-4 py-3 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer transition"
-              >
-                <FiPlus className="mr-2" />
-                Choose Image
-              </label>
-            </div>
-            {previewImage && (
-              <div className="relative group">
-                <img 
-                  src={previewImage} 
-                  alt="Preview" 
-                  className="h-16 w-16 object-cover rounded-lg"
-                />
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPreviewImage(null);
-                    setProductForm({...productForm, imageFile: null});
-                  }}
-                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition"
-                >
-                  <FiX className="text-xs" />
-                </button>
-              </div>
-            )}
-          </div>
-          <p className="mt-1 text-xs text-gray-500">
-            Upload a high-quality image (JPEG, PNG, WebP) under 5MB
-          </p>
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-          <textarea
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-            rows={4}
-            value={productForm.description}
-            onChange={(e) => setProductForm({...productForm, description: e.target.value})}
-            placeholder="Enter product description..."
-            required
-          />
-        </div>
-        
         <div className="flex justify-end">
           <button 
             type="submit" 
@@ -579,8 +527,6 @@ const ProductionDashboard = () => {
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Serial</th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Size</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Image</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -591,24 +537,6 @@ const ProductionDashboard = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {product.sizeType}: {product.sizeValue}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {product.imageFile ? (
-                          <img 
-                            src={product.imageFile} 
-                            alt="Product" 
-                            className="h-10 w-10 object-cover rounded-lg"
-                            onError={(e) => {
-                              e.target.onerror = null;
-                              e.target.src = 'https://via.placeholder.com/40?text=No+Image';
-                            }}
-                          />
-                        ) : (
-                          <div className="h-10 w-10 bg-gray-200 rounded-lg flex items-center justify-center text-xs text-gray-500">
-                            No Image
-                          </div>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">{product.description}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -652,32 +580,52 @@ const ProductionDashboard = () => {
                 </option>
               ))}
             </select>
-            
-            {/* Show the selected product's image */}
-            {designForm.serialNumber && (
-              <div className="mt-3 flex items-center space-x-2">
-                <span className="text-sm text-gray-600">Product:</span>
-                {productMasters.find(p => p.serialNumber === designForm.serialNumber)?.imageFile ? (
-                  <img 
-                    src={productMasters.find(p => p.serialNumber === designForm.serialNumber).imageFile} 
-                    alt="Product" 
-                    className="h-8 w-8 object-cover rounded-lg"
-                    onError={(e) => {
-                      e.target.onerror = null;
-                      e.target.src = 'https://via.placeholder.com/32?text=No+Image';
-                    }}
-                  />
-                ) : (
-                  <div className="h-8 w-8 bg-gray-200 rounded-lg flex items-center justify-center text-xs text-gray-500">
-                    No Image
-                  </div>
-                )}
-                <span className="text-sm font-medium">
-                  {productMasters.find(p => p.serialNumber === designForm.serialNumber)?.category}
-                </span>
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Design Image</label>
+          <div className="flex items-center space-x-4">
+            <div className="relative">
+              <input
+                type="file"
+                onChange={handleDesignImageChange}
+                accept="image/*"
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                id="design-image-upload"
+                required
+              />
+              <label
+                htmlFor="design-image-upload"
+                className="inline-flex items-center px-4 py-3 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer transition"
+              >
+                <FiPlus className="mr-2" />
+                Choose Design Image
+              </label>
+            </div>
+            {previewImage && (
+              <div className="relative group">
+                <img 
+                  src={previewImage} 
+                  alt="Preview" 
+                  className="h-16 w-16 object-cover rounded-lg"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPreviewImage(null);
+                    setDesignForm({...designForm, designImage: null});
+                  }}
+                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition"
+                >
+                  <FiX className="text-xs" />
+                </button>
               </div>
             )}
           </div>
+          <p className="mt-1 text-xs text-gray-500">
+            Upload a high-quality image (JPEG, PNG, WebP) under 5MB
+          </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -811,6 +759,7 @@ const ProductionDashboard = () => {
                   <tr>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product Serial</th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Style Number</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Design Image</th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Gross Wt (g)</th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Net Wt (g)</th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Diamond Wt (ct)</th>
@@ -822,6 +771,23 @@ const ProductionDashboard = () => {
                     <tr key={design._id} className="hover:bg-gray-50 transition">
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{design.serialNumber}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{design.styleNumber}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {design.designImage ? (
+                          <img 
+                            src={design.designImage} 
+                            alt="Design" 
+                            className="h-10 w-10 object-cover rounded-lg"
+                            onError={(e) => {
+                              e.target.onerror = null;
+                              e.target.src = 'https://via.placeholder.com/40?text=No+Image';
+                            }}
+                          />
+                        ) : (
+                          <div className="h-10 w-10 bg-gray-200 rounded-lg flex items-center justify-center text-xs text-gray-500">
+                            No Image
+                          </div>
+                        )}
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{design.grossWt}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{design.netWt}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{design.diaWt}</td>

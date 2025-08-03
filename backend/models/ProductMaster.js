@@ -5,8 +5,8 @@ const ProductMasterSchema = new mongoose.Schema({
   category: { type: String, required: true },
   sizeType: { type: String },
   sizeValue: { type: String },
-  description: { type: String },
-  imageFile: { type: String, required: true },
+  
+ 
   createdAt: { type: Date, default: Date.now }
 });
 

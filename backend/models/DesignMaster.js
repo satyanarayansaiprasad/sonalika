@@ -9,6 +9,7 @@ const DesignMasterSchema = new mongoose.Schema({
   diaPcs: { type: Number, default: 0 },
   clarity: { type: String, default: 'vvs' },
   color: { type: String, default: 'e-f' },
+   imageFile: { type: String, required: true },
   createdAt: { type: Date, default: Date.now }
 });
 

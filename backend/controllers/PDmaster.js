@@ -186,3 +186,80 @@ exports.addCategorySize = async (req, res) => {
 };
 
 
+
+
+// Get all size categories
+exports.getAllCategorySizes = async (req, res) => {
+  try {
+    const categories = await CategorySize.find().sort({ name: 1 });
+    return res.status(200).json({ data: categories });
+  } catch (error) {
+    console.error('Error fetching category sizes:', error);
+    return res.status(500).json({ message: 'Internal Server Error' });
+  }
+};
+
+// Get single category by name
+exports.getCategorySize = async (req, res) => {
+  try {
+    const { name } = req.params;
+    const category = await CategorySize.findOne({ name: name.toUpperCase() });
+    
+    if (!category) {
+      return res.status(404).json({ message: 'Category not found' });
+    }
+    
+    return res.status(200).json({ data: category });
+  } catch (error) {
+    console.error('Error fetching category size:', error);
+    return res.status(500).json({ message: 'Internal Server Error' });
+  }
+};
+
+// Update a category
+exports.updateCategorySize = async (req, res) => {
+  try {
+    const { name } = req.params;
+    const { types } = req.body;
+
+    const updatedCategory = await CategorySize.findOneAndUpdate(
+      { name: name.toUpperCase() },
+      { $set: { types } },
+      { new: true }
+    );
+
+    if (!updatedCategory) {
+      return res.status(404).json({ message: 'Category not found' });
+    }
+
+    return res.status(200).json({ 
+      message: 'Category updated successfully', 
+      data: updatedCategory 
+    });
+  } catch (error) {
+    console.error('Error updating category size:', error);
+    return res.status(500).json({ message: 'Internal Server Error' });
+  }
+};
+
+// Delete a category
+exports.deleteCategorySize = async (req, res) => {
+  try {
+    const { name } = req.params;
+    const deletedCategory = await CategorySize.findOneAndDelete({ 
+      name: name.toUpperCase() 
+    });
+
+    if (!deletedCategory) {
+      return res.status(404).json({ message: 'Category not found' });
+    }
+
+    return res.status(200).json({ 
+      message: 'Category deleted successfully', 
+      data: deletedCategory 
+    });
+  } catch (error) {
+    console.error('Error deleting category size:', error);
+    return res.status(500).json({ message: 'Internal Server Error' });
+  }
+};

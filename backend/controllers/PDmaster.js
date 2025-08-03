@@ -43,29 +43,29 @@ async function getNextStyleNumber(category) {
 
 
 // Create Product Master
+// Create Product Master - Updated version
 exports.createProductMaster = async (req, res) => {
   try {
-    console.log('Request body:', req.body);
-
-    const { category, types, values } = req.body;
+    const { category, sizeType, sizeValue } = req.body;
 
     // Validate required fields
-    if (!category || !types || !values) {
+    if (!category || !sizeType || !sizeValue) {
       return res.status(400).json({ 
         success: false,
         message: "All fields are required" 
       });
     }
 
-    // Generate Serial Number
-    const serialNumber = await getNextProductSerialNumber();
+    // Generate Serial Number - Fixed to pass category
+    const serialNumber = await getNextProductSerialNumber(category);
 
     // Create new product
     const newProduct = await ProductMaster.create({
       serialNumber,
       category,
-      types,
-values    });
+      types: sizeType,
+      values: sizeValue
+    });
 
     res.status(201).json({ 
       success: true, 
@@ -180,13 +180,17 @@ exports.getAllDesignMasters = async (req, res) => {
 
 
 
+
 // Create or Update size data for a category
 exports.createOrUpdateSizeDataMaster = async (req, res) => {
   try {
     const { category, types, values } = req.body;
 
     if (!category || !Array.isArray(types) || typeof values !== 'object') {
-      return res.status(400).json({ error: 'Invalid input format' });
+      return res.status(400).json({ 
+        success: false,
+        error: 'Invalid input format' 
+      });
     }
 
     const formattedCategory = category.trim().toUpperCase();
@@ -199,7 +203,11 @@ exports.createOrUpdateSizeDataMaster = async (req, res) => {
       existing.types = types;
       existing.values = values;
       await existing.save();
-      return res.status(200).json({ message: 'Size data updated successfully', data: existing });
+      return res.status(200).json({ 
+        success: true,
+        message: 'Size data updated successfully', 
+        data: existing 
+      });
     } else {
       // Create
       const newSizeData = new SizeDataMaster({
@@ -208,43 +216,61 @@ exports.createOrUpdateSizeDataMaster = async (req, res) => {
         values
       });
       await newSizeData.save();
-      return res.status(201).json({ message: 'Size data created successfully', data: newSizeData });
+      return res.status(201).json({ 
+        success: true,
+        message: 'Size data created successfully', 
+        data: newSizeData 
+      });
     }
   } catch (error) {
     console.error('Error in size data controller:', error);
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ 
+      success: false,
+      error: 'Server error' 
+    });
   }
 };
 
-
-
-//get
+// Get all size data
 exports.getAllSizeDataMasters = async (req, res) => {
   try {
     const data = await SizeDataMaster.find().sort({ category: 1 });
-    res.status(200).json(data);
+    res.status(200).json({ 
+      success: true,
+      data 
+    });
   } catch (error) {
     console.error('Error fetching size data:', error);
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ 
+      success: false,
+      error: 'Server error' 
+    });
   }
 };
 
-
-
-// GET /api/size-data/:category
+// Get size data by category
 exports.getSizeDataByCategory = async (req, res) => {
   try {
-    const category = req.params.category.toUpperCase(); // normalize
+    const category = req.params.category.toUpperCase();
     const data = await SizeDataMaster.findOne({ category });
     
     if (!data) {
-      return res.status(404).json({ error: 'Category not found' });
+      return res.status(404).json({ 
+        success: false,
+        error: 'Category not found' 
+      });
     }
 
-    res.status(200).json(data);
+    res.status(200).json({ 
+      success: true,
+      data 
+    });
   } catch (error) {
     console.error('Error fetching size data:', error);
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ 
+      success: false,
+      error: 'Server error' 
+    });
   }
 };
 

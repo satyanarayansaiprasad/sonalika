@@ -40,8 +40,8 @@ const ProductionDashboard = () => {
 
   const [productForm, setProductForm] = useState({
     category: '',
-    types: '',
-    values: ''
+    sizeType: '',
+    sizeValue: ''
   });
   
   const [designForm, setDesignForm] = useState({
@@ -79,15 +79,22 @@ const ProductionDashboard = () => {
     try {
       setLoading(true);
       const response = await axios.get(`${API_BASE_URL}/api/pdmaster/getAllSizeData`);
+      console.log('Size data response:', response.data);
       
-      if (response.data) {
+      if (response.data && response.data.data) {
+        const formattedData = response.data.data.map(item => ({
+          category: item.category,
+          types: item.types,
+          values: item.values
+        }));
+        
         // Extract unique categories
-        const uniqueCategories = [...new Set(response.data.map(item => item.category))];
+        const uniqueCategories = [...new Set(formattedData.map(item => item.category))];
         setCategories(uniqueCategories);
         
         // Store all size data for reference
         const sizeDataMap = {};
-        response.data.forEach(item => {
+        formattedData.forEach(item => {
           if (item.category) {
             sizeDataMap[item.category] = {
               types: item.types || [],
@@ -102,16 +109,6 @@ const ProductionDashboard = () => {
       alert('Failed to load size data');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const fetchSizeDataByCategory = async (category) => {
-    try {
-      const response = await axios.get(`${API_BASE_URL}/api/pdmaster/${category}`);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching size data by category:', error);
-      return null;
     }
   };
 
@@ -141,44 +138,33 @@ const ProductionDashboard = () => {
     }
   };
 
-  // Handle category change - fetch size types and values for the selected category
-  const handleCategoryChange = async (selectedCategory) => {
-    if (!selectedCategory) {
-      setSizeTypes([]);
-      setProductForm(prev => ({
-        ...prev,
-        category: '',
-        types: '',
-        values: ''
-      }));
-      return;
-    }
-
-    try {
-      const data = await fetchSizeDataByCategory(selectedCategory);
-      if (data) {
-        setSizeTypes(data.types || []);
-        setSizeValues(prev => ({
-          ...prev,
-          [selectedCategory]: {
-            types: data.types || [],
-            values: data.values || {}
-          }
-        }));
-      } else {
-        setSizeTypes([]);
-      }
-
-      setProductForm(prev => ({
-        ...prev,
-        category: selectedCategory,
-        types: '',
-        values: ''
-      }));
-    } catch (error) {
-      console.error('Error handling category change:', error);
+  // Category change handler - Fixed version
+  const handleCategoryChange = (value) => {
+    console.log('Selected category:', value);
+    console.log('Size values:', sizeValues);
+    
+    if (value && sizeValues[value]) {
+      const types = sizeValues[value].types || [];
+      console.log('Types for category:', types);
+      setSizeTypes(types);
+    } else {
       setSizeTypes([]);
     }
+    
+    setProductForm(prev => ({
+      ...prev,
+      category: value,
+      sizeType: '',
+      sizeValue: ''
+    }));
+  };
+
+  const handleSizeTypeChange = (value) => {
+    setProductForm(prev => ({
+      ...prev,
+      sizeType: value,
+      sizeValue: ''
+    }));
   };
 
   const handleAddSizeType = () => {
@@ -209,7 +195,7 @@ const ProductionDashboard = () => {
 
   const handleAddSizeValue = () => {
     if (tempSizeValue && tempSizeDescription) {
-      const currentType = productForm.types;
+      const currentType = productForm.sizeType;
       if (currentType) {
         const updatedValues = {
           ...categoryForm.values,
@@ -252,7 +238,7 @@ const ProductionDashboard = () => {
 
     try {
       setLoading(true);
-      const response = await axios.post(`${API_BASE_URL}/api/pdmaster/createSizeDataMaster`, {
+      await axios.post(`${API_BASE_URL}/api/pdmaster/createSizeDataMaster`, {
         category: categoryForm.category.toUpperCase(),
         types: categoryForm.types,
         values: categoryForm.values
@@ -267,7 +253,7 @@ const ProductionDashboard = () => {
       fetchAllSizeData();
       setShowCategoryForm(false);
     } catch (error) {
-      alert(`Error: ${error.response?.data?.error || error.message}`);
+      alert(`Error: ${error.response?.data?.message || error.message}`);
       console.error('Submission error:', error);
     } finally {
       setLoading(false);
@@ -277,7 +263,7 @@ const ProductionDashboard = () => {
   const handleProductSubmit = async (e) => {
     e.preventDefault();
     
-    if (!productForm.category || !productForm.types || !productForm.values) {
+    if (!productForm.category || !productForm.sizeType || !productForm.sizeValue) {
       alert('Please fill all required fields');
       return;
     }
@@ -289,8 +275,8 @@ const ProductionDashboard = () => {
         `${API_BASE_URL}/api/pdmaster/createProductMaster`,
         {
           category: productForm.category,
-          types: productForm.types,
-          values: productForm.values
+          sizeType: productForm.sizeType,
+          sizeValue: productForm.sizeValue
         }
       );
 
@@ -298,8 +284,8 @@ const ProductionDashboard = () => {
         showSuccess('Product Master successfully created!');
         setProductForm({
           category: '',
-          types: '',
-          values: ''
+          sizeType: '',
+          sizeValue: ''
         });
         fetchAllProductMasters();
       } else {
@@ -393,14 +379,6 @@ const ProductionDashboard = () => {
       </div>
     </div>
   );
-
-  // Get size values for the selected category and size type
-  const getSizeValueOptions = () => {
-    if (!productForm.category || !productForm.types) return [];
-    const categoryData = sizeValues[productForm.category];
-    if (!categoryData || !categoryData.values) return [];
-    return categoryData.values[productForm.types] || [];
-  };
 
   // Render methods
   const renderDashboard = () => (
@@ -544,7 +522,7 @@ const ProductionDashboard = () => {
               <label className="block text-sm font-medium text-gray-700 mb-1">Select Size Type to Add Values</label>
               <select
                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                value={productForm.types}
+                value={productForm.sizeType}
                 onChange={(e) => handleSizeTypeChange(e.target.value)}
                 required
               >
@@ -555,10 +533,10 @@ const ProductionDashboard = () => {
               </select>
             </div>
 
-            {productForm.types && (
+            {productForm.sizeType && (
               <>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Add Size Values for {productForm.types}</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Add Size Values for {productForm.sizeType}</label>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                     <input
                       type="text"
@@ -584,11 +562,11 @@ const ProductionDashboard = () => {
                   </div>
                 </div>
 
-                {categoryForm.values[productForm.types]?.length > 0 && (
+                {categoryForm.values[productForm.sizeType]?.length > 0 && (
                   <div className="border border-gray-200 rounded-lg p-4">
-                    <h3 className="text-sm font-medium text-gray-700 mb-3">Current Values for {productForm.types}</h3>
+                    <h3 className="text-sm font-medium text-gray-700 mb-3">Current Values for {productForm.sizeType}</h3>
                     <div className="space-y-3">
-                      {categoryForm.values[productForm.types].map((item, index) => (
+                      {categoryForm.values[productForm.sizeType].map((item, index) => (
                         <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
                           <div>
                             <span className="font-medium">{item.value}</span>
@@ -596,7 +574,7 @@ const ProductionDashboard = () => {
                           </div>
                           <button
                             type="button"
-                            onClick={() => handleRemoveSizeValue(productForm.types, index)}
+                            onClick={() => handleRemoveSizeValue(productForm.sizeType, index)}
                             className="text-red-500 hover:text-red-700 p-1"
                           >
                             <FiTrash2 />
@@ -682,7 +660,7 @@ const ProductionDashboard = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Size Type</label>
                 <select
                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                  value={productForm.types}
+                  value={productForm.sizeType}
                   onChange={(e) => handleSizeTypeChange(e.target.value)}
                   disabled={!productForm.category || sizeTypes.length === 0}
                   required
@@ -701,26 +679,26 @@ const ProductionDashboard = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Size Value</label>
                 <select
                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                  value={productForm.values}
-                  onChange={(e) => setProductForm({...productForm, values: e.target.value})}
-                  disabled={!productForm.types || getSizeValueOptions().length === 0}
+                  value={productForm.sizeValue}
+                  onChange={(e) => setProductForm({...productForm, sizeValue: e.target.value})}
+                  disabled={!productForm.sizeType || !sizeValues[productForm.category]?.values[productForm.sizeType]?.length}
                   required
                 >
                   <option value="">
-                    {!productForm.types 
+                    {!productForm.sizeType 
                       ? 'Select size type first' 
-                      : getSizeValueOptions().length === 0
+                      : !sizeValues[productForm.category]?.values[productForm.sizeType]?.length 
                         ? 'No size values available' 
                         : 'Select size value'
                     }
                   </option>
-                  {getSizeValueOptions().map((item, index) => (
+                  {sizeValues[productForm.category]?.values[productForm.sizeType]?.map((item, index) => (
                     <option key={index} value={item.value}>
                       {item.value} - {item.description}
                     </option>
                   ))}
                 </select>
-                {productForm.types && getSizeValueOptions().length === 0 && (
+                {productForm.sizeType && (!sizeValues[productForm.category]?.values[productForm.sizeType] || sizeValues[productForm.category].values[productForm.sizeType].length === 0) && (
                   <p className="mt-1 text-xs text-red-500">No size values defined for this size type</p>
                 )}
               </div>

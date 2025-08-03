@@ -3,8 +3,8 @@ const mongoose = require('mongoose');
 const ProductMasterSchema = new mongoose.Schema({
   serialNumber: { type: String, required: true, unique: true },
   category: { type: String, required: true },
-  types: { type: String },
-  values: { type: String },
+  sizeType: { type: String, required: true },
+  sizeValue: { type: String, required: true },  // or [String] if multiple
   createdAt: { type: Date, default: Date.now }
 });
 

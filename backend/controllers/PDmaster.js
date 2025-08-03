@@ -25,8 +25,9 @@ async function getNextStyleNumber() {
 // Create Product Master
 exports.createProductMaster = async (req, res) => {
   try {
-      console.log('Request body:', req.body); // Add this for debugging
-    console.log('Request file:', req.file); // Add this for debugging
+    console.log('Request body:', req.body);
+    console.log('Request file:', req.file);
+    
     const { category, sizeType, sizeValue, description } = req.body;
     const imageFile = req.file;
 
@@ -46,18 +47,20 @@ exports.createProductMaster = async (req, res) => {
     }
 
     // Upload to ImageKit
-   
-  const uploadResponse = await imagekit.upload({
-  file: imageFile.buffer, // Buffer from memory
-  fileName: imageFile.originalname,
-  folder: "/products",
-});
-
+    const uploadResponse = await imagekit.upload({
+      file: imageFile.buffer, // Using buffer directly
+      fileName: imageFile.originalname,
+      folder: "/products",
+    });
 
     // Generate optimized URL
     const imageUrl = imagekit.url({
       path: uploadResponse.filePath,
-      transformation: [{ quality: "auto" }, { format: "webp" }, { width: "1280" }]
+      transformation: [
+        { quality: "auto" }, 
+        { format: "webp" }, 
+        { width: "1280" }
+      ]
     });
 
     // Create new product
@@ -71,8 +74,8 @@ exports.createProductMaster = async (req, res) => {
       imageFile: imageUrl
     });
 
-    // Clean up temporary file
-    fs.unlinkSync(imageFile.path);
+    // No need to unlink since we're using memory storage
+    // (file wasn't saved to disk)
     
     res.status(201).json({ 
       success: true, 
@@ -82,11 +85,7 @@ exports.createProductMaster = async (req, res) => {
   } catch (err) {
     console.error('Error creating Product Master:', err);
     
-    // Clean up temp file if error occurred
-    if (req.file) {
-      fs.unlinkSync(req.file.path).catch(console.error);
-    }
-    
+    // No file cleanup needed when using memory storage
     res.status(500).json({
       success: false,
       message: 'Server Error',
@@ -94,7 +93,6 @@ exports.createProductMaster = async (req, res) => {
     });
   }
 };
-
 // Other controller methods remain the same...
 
 // Create Design Master

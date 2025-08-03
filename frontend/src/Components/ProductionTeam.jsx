@@ -72,7 +72,7 @@ const ProductionDashboard = () => {
   const fetchAllCategories = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_BASE_URL}/api/category-size`);
+      const response = await axios.get(`${API_BASE_URL}/api/pdmaster/category-size`);
       setCategories(response.data.data);
     } catch (error) {
       alert('Failed to fetch categories');
@@ -254,7 +254,7 @@ const ProductionDashboard = () => {
     
     try {
       setLoading(true);
-      const response = await axios.post(`${API_BASE_URL}/api/category-size`, {
+      const response = await axios.post(`${API_BASE_URL}/api/pdmaster/category-size`, {
         name: newCategory.name,
         types: newCategory.types
       });

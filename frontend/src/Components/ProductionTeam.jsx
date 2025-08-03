@@ -1,137 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { FiMenu, FiX, FiHome, FiDatabase, FiShoppingBag, FiPlus, FiAward } from 'react-icons/fi';
+import { FiMenu, FiX, FiHome, FiDatabase, FiShoppingBag, FiPlus, FiAward, FiChevronDown, FiChevronUp, FiTrash2, FiEdit2 } from 'react-icons/fi';
 
 const API_BASE_URL = import.meta.env.VITE_BASE_URL || 'http://localhost:3000';
-
-const sizeData = {
-  'NECKLACE': {
-    types: ['Length'],
-    values: {
-      'Length': [
-        { value: '36cm', description: '14"' },
-        { value: '41cm', description: '16"' },
-        { value: '46cm', description: '18"' },
-        { value: '51cm', description: '20"' },
-        { value: '61cm', description: '24"' },
-        { value: '76cm', description: '30"' },
-        { value: '84cm', description: '33"' }
-      ]
-    }
-  },
-  'LADIES BRACELET': {
-    types: ['Size'],
-    values: {
-      'Size': [
-        { value: 'S', description: '14.0-15.4 cm / 5.51-6.06 inch' },
-        { value: 'M', description: '15.5-17.4 cm / 6.07-6.85 inch' },
-        { value: 'L', description: '17.5-19.4 cm / 6.86-7.64 inch' },
-        { value: 'XL', description: '19.5-21.4 cm / 7.65-8.43 inch' },
-        { value: 'XXL', description: '21.5-23.4 cm / 8.44-9.21 inch' }
-      ]
-    }
-  },
-  'LADIES BANGLE': {
-    types: ['Diameter', 'Circumference'],
-    values: {
-      'Diameter': [
-        { value: '2.2', description: '2.125 inches / 5.4 cm' },
-        { value: '2.4', description: '2.25 inches / 5.7 cm' },
-        { value: '2.6', description: '2.375 inches / 6 cm' },
-        { value: '2.8', description: '2.5 inches / 6.5 cm' },
-        { value: '2.10', description: '2.625 inches / 6.7 cm' },
-        { value: '2.12', description: '2.75 inches / 7 cm' }
-      ],
-      'Circumference': [
-        { value: '6.67', description: '6.67 inches' },
-        { value: '7.06', description: '7.06 inches' },
-        { value: '7.46', description: '7.46 inches' },
-        { value: '7.85', description: '7.85 inches' },
-        { value: '8.24', description: '8.24 inches' },
-        { value: '8.64', description: '8.64 inches' }
-      ]
-    }
-  },
-  'LADIES RING': {
-    types: ['Size'],
-    values: {
-      'Size': [
-        { value: '1', description: '13mm' },
-        { value: '2', description: '13.3mm' },
-        { value: '3', description: '13.6mm' },
-        { value: '4', description: '14mm' },
-        { value: '5', description: '14.3mm' },
-        { value: '6', description: '14.6mm' },
-        { value: '7', description: '14.9mm' },
-        { value: '8', description: '15.3mm' },
-        { value: '9', description: '15.6mm' },
-        { value: '10', description: '16mm' },
-        { value: '11', description: '16.2mm' },
-        { value: '12', description: '16.5mm' },
-        { value: '13', description: '16.8mm' },
-        { value: '14', description: '17.2mm' },
-        { value: '15', description: '17.4mm' },
-        { value: '16', description: '17.8mm' },
-        { value: '17', description: '18.1mm' },
-        { value: '18', description: '18.5mm' },
-        { value: '19', description: '18.8mm' },
-        { value: '20', description: '19.2mm' },
-        { value: '21', description: '19.5mm' },
-        { value: '22', description: '19.8mm' },
-        { value: '23', description: '20mm' },
-        { value: '24', description: '20.4mm' }
-      ]
-    }
-  },
-  'GENTS RING': {
-    types: ['Size'],
-    values: {
-      'Size': [
-        { value: '10', description: '16mm' },
-        { value: '11', description: '16.2mm' },
-        { value: '12', description: '16.5mm' },
-        { value: '13', description: '16.8mm' },
-        { value: '14', description: '17.2mm' },
-        { value: '15', description: '17.4mm' },
-        { value: '16', description: '17.8mm' },
-        { value: '17', description: '18.1mm' },
-        { value: '18', description: '18.5mm' },
-        { value: '19', description: '18.8mm' },
-        { value: '20', description: '19.2mm' },
-        { value: '21', description: '19.5mm' },
-        { value: '22', description: '19.8mm' },
-        { value: '23', description: '20mm' },
-        { value: '24', description: '20.4mm' },
-        { value: '25', description: '20.8mm' },
-        { value: '26', description: '21.2mm' },
-        { value: '27', description: '21.6mm' },
-        { value: '28', description: '22mm' }
-      ]
-    }
-  },
-  'EARRING': {
-    types: ['Size'],
-    values: {
-      'Size': [
-        { value: 'Small', description: 'Up to 10mm' },
-        { value: 'Medium', description: '10-15mm' },
-        { value: 'Large', description: '15-20mm' },
-        { value: 'Extra Large', description: '20mm+' }
-      ]
-    }
-  },
-  'PENDANT': {
-    types: ['Size'],
-    values: {
-      'Size': [
-        { value: 'Small', description: 'Up to 15mm' },
-        { value: 'Medium', description: '15-25mm' },
-        { value: 'Large', description: '25-35mm' },
-        { value: 'Extra Large', description: '35mm+' }
-      ]
-    }
-  }
-};
 
 const ProductionDashboard = () => {
   const [activeMenu, setActiveMenu] = useState(() => {
@@ -144,8 +15,8 @@ const ProductionDashboard = () => {
     return saved || null;
   });
   
-  const [categories] = useState(Object.keys(sizeData));
-  const [sizeTypes, setSizeTypes] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [categoryTypes, setCategoryTypes] = useState([]);
   const [sizeValues, setSizeValues] = useState([]);
   const [productMasters, setProductMasters] = useState([]);
   const [designMasters, setDesignMasters] = useState([]);
@@ -153,6 +24,11 @@ const ProductionDashboard = () => {
   const [productSerialNumbers, setProductSerialNumbers] = useState([]);
   const [previewImage, setPreviewImage] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showAddCategory, setShowAddCategory] = useState(false);
+  const [newCategory, setNewCategory] = useState({
+    name: '',
+    types: [{ name: '', values: [{ value: '', description: '' }] }]
+  });
 
   useEffect(() => {
     localStorage.setItem('activeMenu', activeMenu);
@@ -179,6 +55,7 @@ const ProductionDashboard = () => {
   useEffect(() => {
     fetchAllProductMasters();
     fetchAllDesignMasters();
+    fetchAllCategories();
   }, []);
 
   useEffect(() => {
@@ -191,6 +68,19 @@ const ProductionDashboard = () => {
       );
     }
   }, [productMasters]);
+
+  const fetchAllCategories = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get(`${API_BASE_URL}/api/category-size`);
+      setCategories(response.data.data);
+    } catch (error) {
+      alert('Failed to fetch categories');
+      console.error('Fetch error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchAllProductMasters = async () => {
     try {
@@ -219,8 +109,9 @@ const ProductionDashboard = () => {
   };
 
   const handleCategoryChange = (value) => {
-    const types = sizeData[value]?.types || [];
-    setSizeTypes(types);
+    const selectedCategory = categories.find(cat => cat.name === value);
+    const types = selectedCategory?.types || [];
+    setCategoryTypes(types);
     setProductForm({
       ...productForm,
       category: value,
@@ -231,7 +122,9 @@ const ProductionDashboard = () => {
   };
 
   const handleSizeTypeChange = (value, category) => {
-    const values = sizeData[category]?.values[value] || [];
+    const selectedCategory = categories.find(cat => cat.name === category);
+    const selectedType = selectedCategory?.types.find(type => type.name === value);
+    const values = selectedType?.values || [];
     setSizeValues(values);
     setProductForm({
       ...productForm,
@@ -356,6 +249,87 @@ const ProductionDashboard = () => {
     }
   };
 
+  const handleAddCategory = async (e) => {
+    e.preventDefault();
+    
+    try {
+      setLoading(true);
+      const response = await axios.post(`${API_BASE_URL}/api/category-size`, {
+        name: newCategory.name,
+        types: newCategory.types
+      });
+      
+      if (response.data.message === "Category added successfully") {
+        alert('Category added successfully!');
+        setNewCategory({
+          name: '',
+          types: [{ name: '', values: [{ value: '', description: '' }] }]
+        });
+        setShowAddCategory(false);
+        fetchAllCategories();
+      } else {
+        throw new Error(response.data.message || 'Failed to add category');
+      }
+    } catch (error) {
+      alert(`Error: ${error.response?.data?.message || error.message}`);
+      console.error('Add category error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const addType = () => {
+    setNewCategory({
+      ...newCategory,
+      types: [...newCategory.types, { name: '', values: [{ value: '', description: '' }] }]
+    });
+  };
+
+  const removeType = (index) => {
+    const updatedTypes = [...newCategory.types];
+    updatedTypes.splice(index, 1);
+    setNewCategory({
+      ...newCategory,
+      types: updatedTypes
+    });
+  };
+
+  const addValue = (typeIndex) => {
+    const updatedTypes = [...newCategory.types];
+    updatedTypes[typeIndex].values.push({ value: '', description: '' });
+    setNewCategory({
+      ...newCategory,
+      types: updatedTypes
+    });
+  };
+
+  const removeValue = (typeIndex, valueIndex) => {
+    const updatedTypes = [...newCategory.types];
+    updatedTypes[typeIndex].values.splice(valueIndex, 1);
+    setNewCategory({
+      ...newCategory,
+      types: updatedTypes
+    });
+  };
+
+  const handleTypeChange = (index, field, value) => {
+    const updatedTypes = [...newCategory.types];
+    updatedTypes[index][field] = value;
+    setNewCategory({
+      ...newCategory,
+      types: updatedTypes
+    });
+  };
+
+  const handleValueChange = (typeIndex, valueIndex, field, value) => {
+    const updatedTypes = [...newCategory.types];
+    updatedTypes[typeIndex].values[valueIndex][field] = value;
+    setNewCategory({
+      ...newCategory,
+      types: updatedTypes
+    });
+  };
+
   const renderDashboard = () => (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -451,7 +425,7 @@ const ProductionDashboard = () => {
             >
               <option value="">Select category</option>
               {categories.map(category => (
-                <option key={category} value={category}>{category}</option>
+                <option key={category._id} value={category.name}>{category.name}</option>
               ))}
             </select>
           </div>
@@ -466,8 +440,8 @@ const ProductionDashboard = () => {
               required
             >
               <option value="">Select size type</option>
-              {sizeTypes.map(type => (
-                <option key={type} value={type}>{type}</option>
+              {categoryTypes.map(type => (
+                <option key={type.name} value={type.name}>{type.name}</option>
               ))}
             </select>
           </div>
@@ -545,6 +519,186 @@ const ProductionDashboard = () => {
           </div>
         </div>
       </div>
+
+      {/* Add Category Section */}
+      <div className="mt-12 bg-white rounded-xl shadow-lg p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-semibold text-gray-800">Category Management</h2>
+          <button 
+            onClick={() => setShowAddCategory(!showAddCategory)}
+            className="flex items-center text-[#00072D] hover:text-blue-700"
+          >
+            {showAddCategory ? (
+              <>
+                <FiChevronUp className="mr-1" />
+                Hide Form
+              </>
+            ) : (
+              <>
+                <FiPlus className="mr-1" />
+                Add New Category
+              </>
+            )}
+          </button>
+        </div>
+
+        {showAddCategory && (
+          <form onSubmit={handleAddCategory} className="space-y-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Category Name</label>
+              <input
+                type="text"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                value={newCategory.name}
+                onChange={(e) => setNewCategory({...newCategory, name: e.target.value.toUpperCase()})}
+                placeholder="e.g., NECKLACE, BRACELET"
+                required
+              />
+            </div>
+
+            {newCategory.types.map((type, typeIndex) => (
+              <div key={typeIndex} className="border border-gray-200 rounded-lg p-4">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="font-medium">Size Type {typeIndex + 1}</h3>
+                  {newCategory.types.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeType(typeIndex)}
+                      className="text-red-500 hover:text-red-700"
+                    >
+                      <FiTrash2 />
+                    </button>
+                  )}
+                </div>
+
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Type Name</label>
+                  <input
+                    type="text"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                    value={type.name}
+                    onChange={(e) => handleTypeChange(typeIndex, 'name', e.target.value)}
+                    placeholder="e.g., Length, Size, Diameter"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <h4 className="text-sm font-medium text-gray-700">Size Values</h4>
+                    <button
+                      type="button"
+                      onClick={() => addValue(typeIndex)}
+                      className="flex items-center text-sm text-[#00072D] hover:text-blue-700"
+                    >
+                      <FiPlus className="mr-1" />
+                      Add Value
+                    </button>
+                  </div>
+
+                  {type.values.map((value, valueIndex) => (
+                    <div key={valueIndex} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">Value</label>
+                        <input
+                          type="text"
+                          className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                          value={value.value}
+                          onChange={(e) => handleValueChange(typeIndex, valueIndex, 'value', e.target.value)}
+                          placeholder="e.g., S, M, L or 36cm"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">Description</label>
+                        <div className="flex">
+                          <input
+                            type="text"
+                            className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                            value={value.description}
+                            onChange={(e) => handleValueChange(typeIndex, valueIndex, 'description', e.target.value)}
+                            placeholder="e.g., 14 inches, Small size"
+                            required
+                          />
+                          {type.values.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => removeValue(typeIndex, valueIndex)}
+                              className="ml-2 text-red-500 hover:text-red-700"
+                            >
+                              <FiTrash2 />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+
+            <div className="flex justify-between">
+              <button
+                type="button"
+                onClick={addType}
+                className="flex items-center text-[#00072D] hover:text-blue-700"
+              >
+                <FiPlus className="mr-1" />
+                Add Another Size Type
+              </button>
+              
+              <button 
+                type="submit" 
+                className="bg-[#00072D] text-white px-6 py-3 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition flex items-center"
+                disabled={loading}
+              >
+                {loading ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Processing...
+                  </>
+                ) : (
+                  'Save Category'
+                )}
+              </button>
+            </div>
+          </form>
+        )}
+
+        <div className="mt-8">
+          <h3 className="text-lg font-medium mb-4">Existing Categories</h3>
+          <div className="space-y-4">
+            {categories.map((category) => (
+              <div key={category._id} className="border border-gray-200 rounded-lg p-4">
+                <div className="flex justify-between items-center mb-2">
+                  <h4 className="font-bold text-lg">{category.name}</h4>
+                  <button className="text-gray-500 hover:text-gray-700">
+                    <FiEdit2 />
+                  </button>
+                </div>
+                
+                <div className="space-y-3">
+                  {category.types.map((type, typeIndex) => (
+                    <div key={typeIndex} className="ml-4">
+                      <h5 className="font-medium">{type.name}</h5>
+                      <ul className="list-disc ml-6 text-sm text-gray-600">
+                        {type.values.map((value, valueIndex) => (
+                          <li key={valueIndex}>
+                            <span className="font-medium">{value.value}</span>: {value.description}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   );
 
@@ -583,9 +737,7 @@ const ProductionDashboard = () => {
           </div>
         </div>
 
-     
-
-        <div className="grid grid-cols-1 mt-20 md:grid-cols-2 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Gross Weight</label>
             <div className="relative rounded-md shadow-sm">
@@ -680,8 +832,9 @@ const ProductionDashboard = () => {
             </select>
           </div>
         </div>
-           <div>
-          <label className="block mt-15 text-sm font-medium text-gray-700 mb-2">Design Image</label>
+        
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Design Image</label>
           <div className="flex items-center space-x-4">
             <div className="relative">
               <input
@@ -724,6 +877,7 @@ const ProductionDashboard = () => {
             Upload a high-quality image (JPEG, PNG, WebP) under 5MB
           </p>
         </div>
+        
         <div className="flex justify-end">
           <button 
             type="submit" 

@@ -3,6 +3,7 @@ const fs = require('fs');
 const ProductMaster = require('../models/ProductMaster');
 const DesignMaster = require('../models/DesignMaster');
 const imagekit = require('../config/imagekit');
+const CategorySize = require('../models/CategorySize');
 
 // Generate next Product Serial Number
 async function getNextProductSerialNumber() {
@@ -161,11 +162,9 @@ exports.getAllDesignMasters = async (req, res) => {
 
 
 
-// Add new category with size types and values
-exports.addCategorySize = require('../models/CategorySize');
 
 // POST /api/category-size
-const addCategorySize = async (req, res) => {
+exports.addCategorySize = async (req, res) => {
   try {
     const { name, types } = req.body;
 

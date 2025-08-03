@@ -173,7 +173,7 @@ const ProductionDashboard = () => {
     diaPcs: '',
     clarity: '',
     color: '',
-    designImage: null
+    imageFile: null
   });
 
   useEffect(() => {
@@ -257,7 +257,7 @@ const ProductionDashboard = () => {
 
       setDesignForm({
         ...designForm,
-        designImage: file
+        imageFile: file
       });
       setPreviewImage(URL.createObjectURL(file));
     }
@@ -307,7 +307,7 @@ const ProductionDashboard = () => {
     
     if (!designForm.serialNumber || !designForm.grossWt || !designForm.netWt || 
         !designForm.diaWt || !designForm.diaPcs || !designForm.clarity || 
-        !designForm.color || !designForm.designImage) {
+        !designForm.color || !designForm.imageFile) {
       alert('Please fill all fields and upload a design image');
       return;
     }
@@ -323,7 +323,7 @@ const ProductionDashboard = () => {
       formData.append('diaPcs', designForm.diaPcs);
       formData.append('clarity', designForm.clarity);
       formData.append('color', designForm.color);
-      formData.append('image', designForm.designImage);
+      formData.append('image', designForm.imageFile);
 
       const response = await axios.post(
         `${API_BASE_URL}/api/pdmaster/createDesignMaster`,
@@ -344,7 +344,7 @@ const ProductionDashboard = () => {
         diaPcs: '',
         clarity: '',
         color: '',
-        designImage: null
+        imageFile: null
       });
       setPreviewImage(null);
       fetchAllDesignMasters();
@@ -583,52 +583,9 @@ const ProductionDashboard = () => {
           </div>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Design Image</label>
-          <div className="flex items-center space-x-4">
-            <div className="relative">
-              <input
-                type="file"
-                onChange={handleDesignImageChange}
-                accept="image/*"
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                id="design-image-upload"
-                required
-              />
-              <label
-                htmlFor="design-image-upload"
-                className="inline-flex items-center px-4 py-3 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer transition"
-              >
-                <FiPlus className="mr-2" />
-                Choose Design Image
-              </label>
-            </div>
-            {previewImage && (
-              <div className="relative group">
-                <img 
-                  src={previewImage} 
-                  alt="Preview" 
-                  className="h-16 w-16 object-cover rounded-lg"
-                />
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPreviewImage(null);
-                    setDesignForm({...designForm, designImage: null});
-                  }}
-                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition"
-                >
-                  <FiX className="text-xs" />
-                </button>
-              </div>
-            )}
-          </div>
-          <p className="mt-1 text-xs text-gray-500">
-            Upload a high-quality image (JPEG, PNG, WebP) under 5MB
-          </p>
-        </div>
+     
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Gross Weight</label>
             <div className="relative rounded-md shadow-sm">
@@ -723,7 +680,50 @@ const ProductionDashboard = () => {
             </select>
           </div>
         </div>
-        
+           <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Design Image</label>
+          <div className="flex items-center space-x-4">
+            <div className="relative">
+              <input
+                type="file"
+                onChange={handleDesignImageChange}
+                accept="image/*"
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                id="design-image-upload"
+                required
+              />
+              <label
+                htmlFor="design-image-upload"
+                className="inline-flex items-center px-4 py-3 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer transition"
+              >
+                <FiPlus className="mr-2" />
+                Choose Design Image
+              </label>
+            </div>
+            {previewImage && (
+              <div className="relative group">
+                <img 
+                  src={previewImage} 
+                  alt="Preview" 
+                  className="h-16 w-16 object-cover rounded-lg"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPreviewImage(null);
+                    setDesignForm({...designForm, imageFile: null});
+                  }}
+                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition"
+                >
+                  <FiX className="text-xs" />
+                </button>
+              </div>
+            )}
+          </div>
+          <p className="mt-1 text-xs text-gray-500">
+            Upload a high-quality image (JPEG, PNG, WebP) under 5MB
+          </p>
+        </div>
         <div className="flex justify-end">
           <button 
             type="submit" 
@@ -772,9 +772,9 @@ const ProductionDashboard = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{design.serialNumber}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{design.styleNumber}</td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        {design.designImage ? (
+                        {design.imageFile ? (
                           <img 
-                            src={design.designImage} 
+                            src={design.imageFile} 
                             alt="Design" 
                             className="h-10 w-10 object-cover rounded-lg"
                             onError={(e) => {

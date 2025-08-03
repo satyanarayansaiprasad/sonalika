@@ -159,3 +159,30 @@ exports.getAllDesignMasters = async (req, res) => {
 
 
 
+
+
+// Add new category with size types and values
+exports.addCategorySize = async (req, res) => {
+  try {
+    const { name, types } = req.body;
+
+    // Check if the category already exists
+    const existingCategory = await CategorySize.findOne({ name: name.toUpperCase() });
+    if (existingCategory) {
+      return res.status(400).json({ message: 'Category already exists' });
+    }
+
+    const newCategory = new CategorySize({
+      name: name.toUpperCase(),
+      types
+    });
+
+    await newCategory.save();
+    return res.status(201).json({ message: 'Category added successfully', data: newCategory });
+  } catch (error) {
+    console.error('Error adding category size:', error);
+    return res.status(500).json({ message: 'Internal Server Error' });
+  }
+};
+
+

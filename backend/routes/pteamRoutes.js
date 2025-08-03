@@ -5,7 +5,8 @@ const {
   createProductMaster,
   createDesignMaster,
   getAllProductMasters,
-  getAllDesignMasters
+  getAllDesignMasters,
+  addCategorySize
 } = require('../controllers/PDmaster');
 
 const upload = require('../middleware/multer');
@@ -15,4 +16,6 @@ router.post('/createDesignMaster', upload.single('image'),createDesignMaster);
 router.get('/getAllProductMasters', getAllProductMasters);
 router.get('/getAllDesignMasters', getAllDesignMasters);
 
+
+router.post('/category-size', addCategorySize);
 module.exports = router;

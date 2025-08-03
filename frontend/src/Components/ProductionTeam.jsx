@@ -585,7 +585,7 @@ const ProductionDashboard = () => {
 
      
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-1 mt-20 md:grid-cols-2 lg:grid-cols-6 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Gross Weight</label>
             <div className="relative rounded-md shadow-sm">
@@ -681,7 +681,7 @@ const ProductionDashboard = () => {
           </div>
         </div>
            <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Design Image</label>
+          <label className="block mt-15 text-sm font-medium text-gray-700 mb-2">Design Image</label>
           <div className="flex items-center space-x-4">
             <div className="relative">
               <input

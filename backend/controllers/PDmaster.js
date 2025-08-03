@@ -2,7 +2,6 @@ const path = require('path');
 const fs = require('fs');
 const ProductMaster = require('../models/ProductMaster');
 const DesignMaster = require('../models/DesignMaster');
-
 const imagekit = require('../config/imagekit');
 
 // Generate next Product Serial Number
@@ -160,76 +159,3 @@ exports.getAllDesignMasters = async (req, res) => {
 
 
 
-
-exports.getAllCategories = async (req, res) => {
-  try {
-    const categories = await SizeCategory.find();
-    res.json({ success: true, data: categories });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
-
-exports.createCategory = async (req, res) => {
-  try {
-    const { name, types } = req.body;
-    
-    const existingCategory = await SizeCategory.findOne({ name });
-    if (existingCategory) {
-      return res.status(400).json({ success: false, message: 'Category already exists' });
-    }
-
-    const newCategory = new SizeCategory({ name, types });
-    await newCategory.save();
-
-    res.status(201).json({ success: true, data: newCategory });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
-
-exports.addSizeType = async (req, res) => {
-  try {
-    const { categoryId, typeName } = req.body;
-    
-    const category = await SizeCategory.findById(categoryId);
-    if (!category) {
-      return res.status(404).json({ success: false, message: 'Category not found' });
-    }
-
-    const typeExists = category.types.some(t => t.name === typeName);
-    if (typeExists) {
-      return res.status(400).json({ success: false, message: 'Size type already exists' });
-    }
-
-    category.types.push({ name: typeName, values: [] });
-    await category.save();
-
-    res.json({ success: true, data: category });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
-
-exports.addSizeValue = async (req, res) => {
-  try {
-    const { categoryId, typeName, value, description } = req.body;
-    
-    const category = await SizeCategory.findById(categoryId);
-    if (!category) {
-      return res.status(404).json({ success: false, message: 'Category not found' });
-    }
-
-    const type = category.types.find(t => t.name === typeName);
-    if (!type) {
-      return res.status(404).json({ success: false, message: 'Size type not found' });
-    }
-
-    type.values.push({ value, description });
-    await category.save();
-
-    res.json({ success: true, data: category });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};

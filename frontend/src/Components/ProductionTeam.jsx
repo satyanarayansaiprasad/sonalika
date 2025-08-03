@@ -399,7 +399,7 @@ const ProductionDashboard = () => {
   );
 
   const renderProductMasterForm = () => (
-    <div className="bg-white rounded-xl shadow-lg p-6">
+    <div className="bg-white h-screen rounded-xl shadow-lg p-6">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-semibold text-gray-800">Create Product Master</h2>
         <button 
@@ -486,39 +486,7 @@ const ProductionDashboard = () => {
         </div>
       </form>
 
-      <div className="mt-12">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold text-gray-800">Product Master Records</h2>
-          <span className="text-sm text-gray-500">{productMasters.length} records</span>
-        </div>
-        
-        <div className="overflow-x-auto">
-          <div className="inline-block min-w-full align-middle">
-            <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 rounded-lg">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Serial</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Size</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {productMasters.map((product) => (
-                    <tr key={product._id} className="hover:bg-gray-50 transition">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{product.serialNumber}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{product.category}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {product.sizeType}: {product.sizeValue}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
+  
 
       {/* Add Category Section */}
       <div className="mt-12 bg-white rounded-xl shadow-lg p-6">

@@ -12,7 +12,6 @@ import {
   Typography,
   Spin,
   Row,
-  
   Col,
   Statistic,
   Divider,
@@ -106,14 +105,7 @@ const SalesDashboard = () => {
       description: "",
     },
   ]);
-  const [design, setDesign] = useState({
-  styleNo: '',
-  grossWt: 0,
-  netWt: 0,
-  diaWt: 0,
-  diaPcs: 1,
-});
-
+  const [designMasters, setDesignMasters] = useState([]);
   const [orderHistory, setOrderHistory] = useState([]);
   const [selectedClientId, setSelectedClientId] = useState(null);
   const [stats, setStats] = useState({
@@ -130,85 +122,90 @@ const SalesDashboard = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [dateRange, setDateRange] = useState([]);
 
-
-
-
-
-
- 
-
-
+  // Fetch design masters
+  const fetchAllDesignMasters = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get(`${API_BASE_URL}/api/pdmaster/getAllDesignMasters`);
+      setDesignMasters(response.data.data);
+    } catch (error) {
+      message.error('Failed to fetch design masters');
+      console.error('Fetch error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // KYC Form Submit Handler
- const handleKYCSubmit = async (values) => {
-  try {
-    setLoading(true);
+  const handleKYCSubmit = async (values) => {
+    try {
+      setLoading(true);
 
-    // Create FormData
-    const formData = new FormData();
+      // Create FormData
+      const formData = new FormData();
 
-    // Append text fields
-    formData.append("name", values.name);
-    formData.append("companyName", values.companyName || "");
-    formData.append("phone", values.phone);
-    formData.append("mobile", values.mobile || "");
-    formData.append("officePhone", values.officePhone || "");
-    formData.append("landline", values.landline || "");
-    formData.append("email", values.email || "");
-    formData.append("address", values.address);
-    formData.append("gstNo", values.gstNo || "");
-    formData.append("companyPAN", values.companyPAN || "");
-    formData.append("ownerPAN", values.ownerPAN || "");
-    formData.append("aadharNumber", values.aadharNumber || "");
-    formData.append("importExportCode", values.importExportCode || "");
-    formData.append("msmeNumber", values.msmeNumber || "");
+      // Append text fields
+      formData.append("name", values.name);
+      formData.append("companyName", values.companyName || "");
+      formData.append("phone", values.phone);
+      formData.append("mobile", values.mobile || "");
+      formData.append("officePhone", values.officePhone || "");
+      formData.append("landline", values.landline || "");
+      formData.append("email", values.email || "");
+      formData.append("address", values.address);
+      formData.append("gstNo", values.gstNo || "");
+      formData.append("companyPAN", values.companyPAN || "");
+      formData.append("ownerPAN", values.ownerPAN || "");
+      formData.append("aadharNumber", values.aadharNumber || "");
+      formData.append("importExportCode", values.importExportCode || "");
+      formData.append("msmeNumber", values.msmeNumber || "");
 
-    // Append files (from AntD's Upload or normal <input type="file">)
-    const fileFields = [
-      "gstCertificate",
-      "companyPanDoc",
-      "aadharDoc",
-      "importExportDoc",
-      "msmeCertificate",
-      "visitingCard",
-    ];
+      // Append files (from AntD's Upload or normal <input type="file">)
+      const fileFields = [
+        "gstCertificate",
+        "companyPanDoc",
+        "aadharDoc",
+        "importExportDoc",
+        "msmeCertificate",
+        "visitingCard",
+      ];
 
-    fileFields.forEach((field) => {
-      const file = values[field]?.file?.originFileObj;
-      if (file) {
-        formData.append(field, file);
+      fileFields.forEach((field) => {
+        const file = values[field]?.file?.originFileObj;
+        if (file) {
+          formData.append(field, file);
+        }
+      });
+
+      const response = await axios.post(
+        `${API_BASE_URL}/api/team/create-client`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      if (response.data.success) {
+        message.success("Client KYC submitted successfully");
+        kycForm.resetFields();
+        fetchClients();
+      } else {
+        message.error(response.data.message || "Failed to submit KYC");
       }
-    });
+    } catch (error) {
+      console.error("KYC Submission Error:", error);
 
-    const response = await axios.post(
-      `${API_BASE_URL}/api/team/create-client`,
-      formData,
-      {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
+      if (error.response) {
+        message.error(error.response.data.message || error.response.data.error);
+      } else {
+        message.error(error.message || "An error occurred");
       }
-    );
-
-    if (response.data.success) {
-      message.success("Client KYC submitted successfully");
-      kycForm.resetFields();
-      fetchClients();
-    } else {
-      message.error(response.data.message || "Failed to submit KYC");
+    } finally {
+      setLoading(false);
     }
-  } catch (error) {
-    console.error("KYC Submission Error:", error);
-
-    if (error.response) {
-      message.error(error.response.data.message || error.response.data.error);
-    } else {
-      message.error(error.message || "An error occurred");
-    }
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   // Validate Aadhar Number
   const validateAadhar = (_, value) => {
@@ -329,7 +326,7 @@ const SalesDashboard = () => {
     setSelectedOrder(null);
   };
 
-   const handleOrderSubmit = async () => {
+  const handleOrderSubmit = async () => {
     try {
       setLoading(true);
 
@@ -446,6 +443,7 @@ const SalesDashboard = () => {
       setLoading(false);
     }
   };
+
   const fetchOrderHistory = async (uniqueId) => {
     setLoading(true);
     try {
@@ -541,6 +539,21 @@ const SalesDashboard = () => {
     setOrderItems((prev) => {
       const newItems = [...prev];
       newItems[index] = { ...newItems[index], [field]: value };
+      
+      // If updating styleNo, try to find matching design and auto-fill weights
+      if (field === 'styleNo' && value) {
+        const selectedDesign = designMasters.find(d => d.styleNumber === value);
+        if (selectedDesign) {
+          newItems[index] = { 
+            ...newItems[index],
+            grossWeight: selectedDesign.grossWt || 0,
+            netWeight: selectedDesign.netWt || 0,
+            diaWeight: selectedDesign.diaWt || 0,
+            pcs: selectedDesign.diaPcs || 1
+          };
+        }
+      }
+      
       return newItems;
     });
   };
@@ -553,42 +566,44 @@ const SalesDashboard = () => {
   };
 
   // Filter orders based on search term, status filter, and date range
-const getFilteredOrders = () => {
-  // Get all orders from all clients
-  const allOrders = clients.flatMap(client => 
-    (client.orders || []).map(order => ({
-      ...order,
-      client: {
-        uniqueId: client.uniqueId,
-        name: client.name,
-        gstNo: client.gstNo,
-        address: client.address
-      }
-    }))
-  );
+  const getFilteredOrders = () => {
+    // Get all orders from all clients
+    const allOrders = clients.flatMap(client => 
+      (client.orders || []).map(order => ({
+        ...order,
+        client: {
+          uniqueId: client.uniqueId,
+          name: client.name,
+          gstNo: client.gstNo,
+          address: client.address
+        }
+      }))
+    );
 
-  return allOrders.filter(order => {
-    // Filter by search term (matches unique ID or name)
-    const matchesSearch = searchTerm === '' || 
-      (order.client?.uniqueId && order.client.uniqueId.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (order.client?.name && order.client.name.toLowerCase().includes(searchTerm.toLowerCase()));
-    
-    // Filter by status
-    const matchesStatus = statusFilter === 'all' || 
-      order.status.toLowerCase() === statusFilter.toLowerCase();
-    
-    // Filter by date range
-    let matchesDate = true;
-    if (dateRange && dateRange.length === 2) {
-      const orderDate = dayjs(order.orderDate);
-      matchesDate = orderDate.isAfter(dateRange[0]) && orderDate.isBefore(dateRange[1]);
-    }
-    
-    return matchesSearch && matchesStatus && matchesDate;
-  });
-};
+    return allOrders.filter(order => {
+      // Filter by search term (matches unique ID or name)
+      const matchesSearch = searchTerm === '' || 
+        (order.client?.uniqueId && order.client.uniqueId.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (order.client?.name && order.client.name.toLowerCase().includes(searchTerm.toLowerCase()));
+      
+      // Filter by status
+      const matchesStatus = statusFilter === 'all' || 
+        order.status.toLowerCase() === statusFilter.toLowerCase();
+      
+      // Filter by date range
+      let matchesDate = true;
+      if (dateRange && dateRange.length === 2) {
+        const orderDate = dayjs(order.orderDate);
+        matchesDate = orderDate.isAfter(dateRange[0]) && orderDate.isBefore(dateRange[1]);
+      }
+      
+      return matchesSearch && matchesStatus && matchesDate;
+    });
+  };
+
   useEffect(() => {
     fetchClients();
+    fetchAllDesignMasters();
   }, []);
 
   const ClientModal = ({ client, onClose }) => {
@@ -746,322 +761,322 @@ const getFilteredOrders = () => {
     );
   };
 
-const OngoingOrderModal = ({ order, visible, onClose }) => {
-  if (!order || !visible) return null;
+  const OngoingOrderModal = ({ order, visible, onClose }) => {
+    if (!order || !visible) return null;
 
-  const getColorBadgeClass = (color) => {
-    const map = {
-      White: "bg-gray-100 text-gray-800 border-gray-200",
-      Yellow: "bg-yellow-50 text-yellow-700 border-yellow-200",
-      Pink: "bg-pink-50 text-pink-700 border-pink-200",
-      Blue: "bg-blue-50 text-blue-700 border-blue-200",
-      Green: "bg-green-50 text-green-700 border-green-200",
+    const getColorBadgeClass = (color) => {
+      const map = {
+        White: "bg-gray-100 text-gray-800 border-gray-200",
+        Yellow: "bg-yellow-50 text-yellow-700 border-yellow-200",
+        Pink: "bg-pink-50 text-pink-700 border-pink-200",
+        Blue: "bg-blue-50 text-blue-700 border-blue-200",
+        Green: "bg-green-50 text-green-700 border-green-200",
+      };
+      return map[color] || "bg-gray-50 text-gray-500 border-gray-200";
     };
-    return map[color] || "bg-gray-50 text-gray-500 border-gray-200";
-  };
 
-  const columns = [
-    { 
-      title: "SR No", 
-      dataIndex: "srNo", 
-      key: "srNo",
-      className: "font-medium text-gray-600 bg-gray-50"
-    },
-    { 
-      title: "Style No", 
-      dataIndex: "styleNo", 
-      key: "styleNo",
-      className: "font-medium text-gray-600 bg-gray-50" 
-    },
-    {
-      title: "Diamond Clarity",
-      dataIndex: "diamondClarity",
-      key: "diamondClarity",
-      className: "font-medium text-gray-600 bg-gray-50",
-      render: (text) => <span className="text-gray-700">{text || "-"}</span>,
-    },
-    {
-      title: "Diamond Color",
-      dataIndex: "diamondColor",
-      key: "diamondColor",
-      className: "font-medium text-gray-600 bg-gray-50",
-      render: (text) =>
-        text ? (
-          <span
-            className={`px-2.5 py-1 text-xs font-medium rounded-full border ${getColorBadgeClass(
-              text
-            )}`}
-          >
-            {text}
-          </span>
-        ) : (
-          "-"
-        ),
-    },
-    { 
-      title: "Quantity", 
-      dataIndex: "quantity", 
-      key: "quantity",
-      className: "font-medium text-gray-600 bg-gray-50",
-    },
-    {
-      title: "Gross WT",
-      dataIndex: "grossWeight",
-      key: "grossWeight",
-      className: "font-medium text-gray-600 bg-gray-50",
-      render: (val) => <span className="text-gray-700">{val?.toFixed(2) || "-"}</span>,
-    },
-    {
-      title: "Net WT",
-      dataIndex: "netWeight",
-      key: "netWeight",
-      className: "font-medium text-gray-600 bg-gray-50",
-      render: (val) => <span className="text-gray-700">{val?.toFixed(2) || "-"}</span>,
-    },
-    {
-      title: "DIA WT",
-      dataIndex: "diaWeight",
-      key: "diaWeight",
-      className: "font-medium text-gray-600 bg-gray-50",
-      render: (val) => <span className="text-gray-700">{val?.toFixed(2) || "-"}</span>,
-    },
-    { 
-      title: "DIA PCS", 
-      dataIndex: "pcs", 
-      key: "pcs",
-      className: "font-medium text-gray-600 bg-gray-50",
-      render: (text) => <span className="text-gray-700">{text}</span>,
-    },
-     { 
-      title: "GOLD PURITY", 
-      dataIndex: "goldPurity", 
-      key: "goldPurity",
-      className: "font-medium text-gray-600 bg-gray-50",
-      render: (text) => <span className="text-gray-700">{text}</span>,
-    },
-    { 
-      title: "GOLD COLOR", 
-      dataIndex: "goldColor", 
-      key: "goldColor",
-      className: "font-medium text-gray-600 bg-gray-50",
-      render: (text) => <span className="text-gray-700">{text}</span>,
-    },
-    {
-      title: "Amount (₹)",
-      dataIndex: "amount",
-      key: "amount",
-      className: "font-medium text-gray-600 bg-gray-50",
-      render: (val) => <span className="font-medium text-gray-800">{val?.toFixed(2) || "0.00"}</span>,
-    },
-    {
-      title: "Description",
-      dataIndex: "description",
-      key: "description",
-      className: "font-medium text-gray-600 bg-gray-50",
-      render: (val) => <span className="text-gray-700">{val || "-"}</span>,
-    },
-  ];
+    const columns = [
+      { 
+        title: "SR No", 
+        dataIndex: "srNo", 
+        key: "srNo",
+        className: "font-medium text-gray-600 bg-gray-50"
+      },
+      { 
+        title: "Style No", 
+        dataIndex: "styleNo", 
+        key: "styleNo",
+        className: "font-medium text-gray-600 bg-gray-50" 
+      },
+      {
+        title: "Diamond Clarity",
+        dataIndex: "diamondClarity",
+        key: "diamondClarity",
+        className: "font-medium text-gray-600 bg-gray-50",
+        render: (text) => <span className="text-gray-700">{text || "-"}</span>,
+      },
+      {
+        title: "Diamond Color",
+        dataIndex: "diamondColor",
+        key: "diamondColor",
+        className: "font-medium text-gray-600 bg-gray-50",
+        render: (text) =>
+          text ? (
+            <span
+              className={`px-2.5 py-1 text-xs font-medium rounded-full border ${getColorBadgeClass(
+                text
+              )}`}
+            >
+              {text}
+            </span>
+          ) : (
+            "-"
+          ),
+      },
+      { 
+        title: "Quantity", 
+        dataIndex: "quantity", 
+        key: "quantity",
+        className: "font-medium text-gray-600 bg-gray-50",
+      },
+      {
+        title: "Gross WT",
+        dataIndex: "grossWeight",
+        key: "grossWeight",
+        className: "font-medium text-gray-600 bg-gray-50",
+        render: (val) => <span className="text-gray-700">{val?.toFixed(2) || "-"}</span>,
+      },
+      {
+        title: "Net WT",
+        dataIndex: "netWeight",
+        key: "netWeight",
+        className: "font-medium text-gray-600 bg-gray-50",
+        render: (val) => <span className="text-gray-700">{val?.toFixed(2) || "-"}</span>,
+      },
+      {
+        title: "DIA WT",
+        dataIndex: "diaWeight",
+        key: "diaWeight",
+        className: "font-medium text-gray-600 bg-gray-50",
+        render: (val) => <span className="text-gray-700">{val?.toFixed(2) || "-"}</span>,
+      },
+      { 
+        title: "DIA PCS", 
+        dataIndex: "pcs", 
+        key: "pcs",
+        className: "font-medium text-gray-600 bg-gray-50",
+        render: (text) => <span className="text-gray-700">{text}</span>,
+      },
+       { 
+        title: "GOLD PURITY", 
+        dataIndex: "goldPurity", 
+        key: "goldPurity",
+        className: "font-medium text-gray-600 bg-gray-50",
+        render: (text) => <span className="text-gray-700">{text}</span>,
+      },
+      { 
+        title: "GOLD COLOR", 
+        dataIndex: "goldColor", 
+        key: "goldColor",
+        className: "font-medium text-gray-600 bg-gray-50",
+        render: (text) => <span className="text-gray-700">{text}</span>,
+      },
+      {
+        title: "Amount (₹)",
+        dataIndex: "amount",
+        key: "amount",
+        className: "font-medium text-gray-600 bg-gray-50",
+        render: (val) => <span className="font-medium text-gray-800">{val?.toFixed(2) || "0.00"}</span>,
+      },
+      {
+        title: "Description",
+        dataIndex: "description",
+        key: "description",
+        className: "font-medium text-gray-600 bg-gray-50",
+        render: (val) => <span className="text-gray-700">{val || "-"}</span>,
+      },
+    ];
 
-  return (
-    <Modal
-      title={null}
-      open={visible}
-      onCancel={onClose}
-      footer={null}
-      width={isMobile ? "95%" : "80%"}
-      style={{ top: 20 }}
-      className="rounded-2xl overflow-hidden border-0"
-      closable={false}
-    >
-      {/* Custom header with decorative elements */}
-      <div className="relative">
-        <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-purple-500 via-pink-500 to-amber-500"></div>
-        <div className="absolute top-2 right-2">
-          <button 
-            onClick={onClose}
-            className="p-2 rounded-full hover:bg-gray-100 transition-colors group"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-500 group-hover:text-gray-700 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+    return (
+      <Modal
+        title={null}
+        open={visible}
+        onCancel={onClose}
+        footer={null}
+        width={isMobile ? "95%" : "80%"}
+        style={{ top: 20 }}
+        className="rounded-2xl overflow-hidden border-0"
+        closable={false}
+      >
+        {/* Custom header with decorative elements */}
+        <div className="relative">
+          <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-purple-500 via-pink-500 to-amber-500"></div>
+          <div className="absolute top-2 right-2">
+            <button 
+              onClick={onClose}
+              className="p-2 rounded-full hover:bg-gray-100 transition-colors group"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-500 group-hover:text-gray-700 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
         </div>
-      </div>
 
-      <div className="px-6 pb-6">
-        {/* Client Details First */}
-        {order.client ? (
-          <div className="mt-8 mb-6 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="px-6 pb-6">
+          {/* Client Details First */}
+          {order.client ? (
+            <div className="mt-8 mb-6 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+              <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-5 py-4 border-b border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-800 flex items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-purple-600 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                  </svg>
+                  Client Information
+                </h3>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-0 divide-y md:divide-y-0 md:divide-x divide-gray-200">
+                <div className="p-4">
+                  <div className="flex items-center space-x-3">
+                    <div className="p-2 rounded-lg bg-purple-50">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Client Name</p>
+                      <p className="text-base font-medium text-gray-800 mt-1">{order.client.name}</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="p-4">
+                  <div className="flex items-center space-x-3">
+                    <div className="p-2 rounded-lg bg-blue-50">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Unique ID</p>
+                      <p className="text-base font-medium text-gray-800 mt-1">{order.client.uniqueId}</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="p-4">
+                  <div className="flex items-center space-x-3">
+                    <div className="p-2 rounded-lg bg-green-50">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">GST Number</p>
+                      <p className="text-base font-medium text-gray-800 mt-1">{order.client.gstNo || "-"}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="mt-8 mb-6 bg-yellow-50 border border-yellow-100 rounded-xl p-4 text-yellow-800 flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+              <span>Client information not available</span>
+            </div>
+          )}
+
+          {/* Order Details Section */}
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden mb-6">
             <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-5 py-4 border-b border-gray-200">
               <h3 className="text-lg font-semibold text-gray-800 flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-purple-600 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-amber-600 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
                 </svg>
-                Client Information
+                Order Summary
               </h3>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-0 divide-y md:divide-y-0 md:divide-x divide-gray-200">
-              <div className="p-4">
-                <div className="flex items-center space-x-3">
-                  <div className="p-2 rounded-lg bg-purple-50">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                  </div>
-                  <div>
-                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Client Name</p>
-                    <p className="text-base font-medium text-gray-800 mt-1">{order.client.name}</p>
-                  </div>
+            <div className="p-5">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
+                <div className="mb-4 md:mb-0">
+                  <h2 className="text-xl font-bold text-gray-800">
+                    Order #{order.orderId || "N/A"}
+                  </h2>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Created on {dayjs(order.orderDate).format("DD MMM YYYY, hh:mm A")}
+                  </p>
+                </div>
+                <div className={`px-4 py-2 rounded-full ${order.status === "completed" ? "bg-green-100 text-green-800" : "bg-amber-100 text-amber-800"} font-medium`}>
+                  {order.status?.charAt(0).toUpperCase() + order.status?.slice(1) || "Unknown"}
                 </div>
               </div>
-              <div className="p-4">
-                <div className="flex items-center space-x-3">
-                  <div className="p-2 rounded-lg bg-blue-50">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />
-                    </svg>
-                  </div>
-                  <div>
-                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Unique ID</p>
-                    <p className="text-base font-medium text-gray-800 mt-1">{order.client.uniqueId}</p>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+                <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-500">Total Amount</p>
+                      <p className="text-2xl font-bold text-gray-800 mt-1">
+                        ₹{order.totalAmount?.toFixed(2) || "0.00"}
+                      </p>
+                    </div>
+                    <div className="p-2 rounded-lg bg-blue-50">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="p-4">
-                <div className="flex items-center space-x-3">
-                  <div className="p-2 rounded-lg bg-green-50">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z" />
-                    </svg>
+
+                <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-500">Total Items</p>
+                      <p className="text-2xl font-bold text-gray-800 mt-1">
+                        {order.orderItems?.length || 0}
+                      </p>
+                    </div>
+                    <div className="p-2 rounded-lg bg-purple-50">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                      </svg>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">GST Number</p>
-                    <p className="text-base font-medium text-gray-800 mt-1">{order.client.gstNo || "-"}</p>
+                </div>
+
+                <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-500">Order Date</p>
+                      <p className="text-lg font-medium text-gray-800 mt-1">
+                        {dayjs(order.orderDate).format("DD MMM YYYY")}
+                      </p>
+                    </div>
+                    <div className="p-2 rounded-lg bg-green-50">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        ) : (
-          <div className="mt-8 mb-6 bg-yellow-50 border border-yellow-100 rounded-xl p-4 text-yellow-800 flex items-center">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-            </svg>
-            <span>Client information not available</span>
-          </div>
-        )}
 
-        {/* Order Details Section */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden mb-6">
-          <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-5 py-4 border-b border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-800 flex items-center">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-amber-600 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
-              </svg>
-              Order Summary
-            </h3>
-          </div>
-          <div className="p-5">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
-              <div className="mb-4 md:mb-0">
-                <h2 className="text-xl font-bold text-gray-800">
-                  Order #{order.orderId || "N/A"}
-                </h2>
-                <p className="text-sm text-gray-500 mt-1">
-                  Created on {dayjs(order.orderDate).format("DD MMM YYYY, hh:mm A")}
-                </p>
-              </div>
-              <div className={`px-4 py-2 rounded-full ${order.status === "completed" ? "bg-green-100 text-green-800" : "bg-amber-100 text-amber-800"} font-medium`}>
-                {order.status?.charAt(0).toUpperCase() + order.status?.slice(1) || "Unknown"}
+          {/* Order Items Table */}
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="bg-gradient-to-r from-gray-100 to-gray-200 px-5 py-4 border-2 border-gray-400">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+                <h3 className="text-lg font-semibold text-gray-800 flex items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
+                    <path fillRule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clipRule="evenodd" />
+                  </svg>
+                  Order Items
+                </h3>
+                <span className="text-sm text-gray-500 mt-1 md:mt-0">
+                  Showing {order.orderItems?.length || 0} items
+                </span>
               </div>
             </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-              <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-500">Total Amount</p>
-                    <p className="text-2xl font-bold text-gray-800 mt-1">
-                      ₹{order.totalAmount?.toFixed(2) || "0.00"}
-                    </p>
-                  </div>
-                  <div className="p-2 rounded-lg bg-blue-50">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-500">Total Items</p>
-                    <p className="text-2xl font-bold text-gray-800 mt-1">
-                      {order.orderItems?.length || 0}
-                    </p>
-                  </div>
-                  <div className="p-2 rounded-lg bg-purple-50">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                    </svg>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-500">Order Date</p>
-                    <p className="text-lg font-medium text-gray-800 mt-1">
-                      {dayjs(order.orderDate).format("DD MMM YYYY")}
-                    </p>
-                  </div>
-                  <div className="p-2 rounded-lg bg-green-50">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                  </div>
-                </div>
-              </div>
+            
+            <div className="overflow-x-auto">
+              <Table
+                dataSource={order.orderItems}
+                columns={columns}
+                rowKey="srNo"
+                pagination={false}
+                size="middle"
+                scroll={{ x: true }}
+                className="rounded-none border-0"
+                rowClassName="hover:bg-gray-50 transition-colors border-b border-gray-400 last:border-b-0"
+              />
             </div>
           </div>
         </div>
-
-        {/* Order Items Table */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-          <div className="bg-gradient-to-r from-gray-100 to-gray-200 px-5 py-4 border-2 border-gray-400">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-              <h3 className="text-lg font-semibold text-gray-800 flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                  <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
-                  <path fillRule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clipRule="evenodd" />
-                </svg>
-                Order Items
-              </h3>
-              <span className="text-sm text-gray-500 mt-1 md:mt-0">
-                Showing {order.orderItems?.length || 0} items
-              </span>
-            </div>
-          </div>
-          
-          <div className="overflow-x-auto">
-            <Table
-              dataSource={order.orderItems}
-              columns={columns}
-              rowKey="srNo"
-              pagination={false}
-              size="middle"
-              scroll={{ x: true }}
-              className="rounded-none border-0"
-              rowClassName="hover:bg-gray-50 transition-colors border-b border-gray-400 last:border-b-0"
-            />
-          </div>
-        </div>
-      </div>
-    </Modal>
-  );
-};
+      </Modal>
+    );
+  };
 
   const renderDashboard = () => (
     <div className="space-y-6">
@@ -1381,365 +1396,6 @@ const OngoingOrderModal = ({ order, visible, onClose }) => {
       />
     </div>
   );
-const renderKYCForm = () => (
-  <Form
-    form={kycForm}
-    onFinish={handleKYCSubmit}
-    layout="vertical"
-    className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
-  >
-    {/* Header */}
-    <div className="text-center mb-12">
-      <h1 className="text-3xl font-extrabold text-gray-900 sm:text-4xl">
-        Client <span className="text-[#050d3f]">KYC</span> Form
-      </h1>
-      <p className="mt-3 text-xl text-gray-500 max-w-2xl mx-auto">
-        Complete the form below to verify your client information
-      </p>
-    </div>
-
-    {/* Form Container */}
-    <div className="bg-white shadow-xl rounded-2xl overflow-hidden">
-      {/* Form Sections */}
-      <div className="divide-y divide-gray-200">
-        {/* Personal Information Section */}
-<div className="py-8 px-6 sm:p-10">
-  <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
-    <span className="bg-blue-100 text-[#050d3f] p-2 rounded-full mr-3">
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-      </svg>
-    </span>
-    Personal Information
-  </h2>
-
-  <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-3">
-    <Form.Item
-      name="name"
-      label="Full Name"
-      rules={[{ required: true, message: 'Please enter full name' }]}
-      className="block text-sm font-medium text-gray-700 mb-1"
-    >
-      <Input
-        placeholder="John Doe"
-        className="py-3 px-4 block w-full border-2 border-gray-700 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-      />
-    </Form.Item>
-
-    <Form.Item
-      name="companyName"
-      label="Company Name"
-      className="block text-sm font-medium text-gray-700 mb-1"
-    >
-      <Input
-        placeholder="Acme Inc."
-        className="py-3 px-4 block w-full border-2 border-gray-700 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-      />
-    </Form.Item>
-
-    <Form.Item
-      name="phone"
-      label="Mobile Number"
-      rules={[
-        { required: true, message: 'Please enter mobile number' },
-        { pattern: /^[0-9]{10}$/, message: 'Please enter valid 10 digit mobile number' }
-      ]}
-      className="block text-sm font-medium text-gray-700 mb-1"
-    >
-      <Input
-        type="tel"
-        placeholder="9876543210"
-        className="py-3 px-4 block w-full border-2 border-gray-700 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-      />
-    </Form.Item>
-
-    <Form.Item
-      name="mobile"
-      label="Alternate Phone"
-      rules={[
-        { pattern: /^[0-9]{10}$/, message: 'Please enter valid 10 digit mobile number' }
-      ]}
-      className="block text-sm font-medium text-gray-700 mb-1"
-    >
-      <Input
-        type="tel"
-        placeholder="9876543210"
-        className="py-3 px-4 block w-full border-2 border-gray-700 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-      />
-    </Form.Item>
-
-    <Form.Item
-      name="officePhone"
-      label="Office Phone"
-      className="block text-sm font-medium text-gray-700 mb-1"
-    >
-      <Input
-        type="tel"
-        placeholder="022-1234567"
-        className="py-3 px-4 block w-full border-2 border-gray-700 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-      />
-    </Form.Item>
-
-    <Form.Item
-      name="landline"
-      label="Landline"
-      className="block text-sm font-medium text-gray-700 mb-1"
-    >
-      <Input
-        type="tel"
-        placeholder="022-1234567"
-        className="py-3 px-4 block w-full border-2 border-gray-700 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-      />
-    </Form.Item>
-
-    {/* Email Field - 1/3 width */}
-    <Form.Item
-      name="email"
-      label="Email Address"
-      rules={[
-        { type: 'email', message: 'Please enter valid email' }
-      ]}
-      className="block text-sm font-medium text-gray-700 mb-1"
-    >
-      <Input
-        type="email"
-        placeholder="john@example.com"
-        className="py-3 px-4 block w-full border-2 border-gray-700 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-      />
-    </Form.Item>
-
-    {/* Address Field - 2/3 width */}
-    <Form.Item
-      name="address"
-      label="Complete Address"
-      rules={[{ required: true, message: 'Please enter address' }]}
-      className="sm:col-span-2 block text-sm font-medium text-gray-700 mb-1"
-    >
-      <Input.TextArea
-        rows={3}
-        placeholder="123 Main St, City, State, PIN Code"
-        className="py-3 px-4 block w-full border-2 border-gray-700 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-      />
-    </Form.Item>
-  </div>
-</div>
-
-
-       {/* Business Information Section */}
-<div className="py-8 px-6 sm:p-10 bg-white rounded-2xl border border-gray-200 shadow-sm">
-  <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
-    <span className="bg-blue-100 text-[#050d3f] p-2 rounded-full mr-3">
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-      </svg>
-    </span>
-    Business Information
-  </h2>
-
-  {/* Row 1: GST, Company PAN, Owner PAN */}
-  <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-3 mb-6">
-    <Form.Item
-      name="gstNo"
-      label="GST Number"
-      rules={[{ validator: validateGST }]}
-      className="block text-sm font-medium text-gray-700 mb-1"
-    >
-      <Input
-        placeholder="22AAAAA0000A1Z5"
-        className="py-3 px-4 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 uppercase"
-      />
-    </Form.Item>
-
-    <Form.Item
-      name="companyPAN"
-      label="Company PAN"
-      rules={[{ validator: validatePAN }]}
-      className="block text-sm font-medium text-gray-700 mb-1"
-    >
-      <Input
-        maxLength={10}
-        placeholder="ABCDE1234F"
-        className="py-3 px-4 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 uppercase"
-      />
-    </Form.Item>
-
-    <Form.Item
-      name="ownerPAN"
-      label="Owner PAN"
-      rules={[{ validator: validatePAN }]}
-      className="block text-sm font-medium text-gray-700 mb-1"
-    >
-      <Input
-        maxLength={10}
-        placeholder="ABCDE1234F"
-        className="py-3 px-4 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 uppercase"
-      />
-    </Form.Item>
-  </div>
-
-  {/* Row 2: Aadhar, MSME, IEC */}
-  <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-3">
-    <Form.Item
-      name="aadharNumber"
-      label="Aadhar Number"
-      rules={[{ validator: validateAadhar }]}
-      className="block text-sm font-medium text-gray-700 mb-1"
-    >
-      <Input
-        maxLength={12}
-        placeholder="1234 5678 9012"
-        className="py-3 px-4 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-      />
-    </Form.Item>
-
-    <Form.Item
-      name="msmeNumber"
-      label="MSME Registration"
-      className="block text-sm font-medium text-gray-700 mb-1"
-    >
-      <Input
-        placeholder="UDYAM-XX-XX-XXXXXX"
-        className="py-3 px-4 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-      />
-    </Form.Item>
-
-    <Form.Item
-      name="importExportCode"
-      label="Import/Export Code"
-      className="block text-sm font-medium text-gray-700 mb-1"
-    >
-      <Input
-        placeholder="IEC-XXXXXXXXXX"
-        className="py-3 px-4 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-      />
-    </Form.Item>
-  </div>
-</div>
-
-
-   {/* Document Upload Section */}
-<div className="py-8 px-6 sm:p-10 border border-gray-200 rounded-lg bg-white">
-  <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
-    <span className="bg-blue-100 text-[#050d3f] p-2 rounded-full mr-3">
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-      </svg>
-    </span>
-    Document Upload
-  </h2>
-
-  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-    {/* GST Certificate */}
-    <div className="border border-gray-300 rounded-md p-4">
-      <label className="block text-sm font-medium text-gray-700 mb-2">
-        GST Certificate <span className="text-red-500">*</span>
-      </label>
-      <div className="flex items-center">
-        <label className="px-4 py-2 bg-[#2b3153] border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-100 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer">
-          Choose File
-          <input type="file" className="sr-only" />
-        </label>
-        <span className="ml-2 text-sm text-gray-500">No file chosen</span>
-      </div>
-    </div>
-
-    {/* Company PAN */}
-    <div className="border border-gray-300 rounded-md p-4">
-      <label className="block text-sm font-medium text-gray-700 mb-2">
-        Company PAN <span className="text-red-500">*</span>
-      </label>
-      <div className="flex items-center">
-        <label className="px-4 py-2 bg-[#2b3153] border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-100 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer">
-          Choose File
-          <input type="file" className="sr-only" />
-        </label>
-        <span className="ml-2 text-sm text-gray-500">No file chosen</span>
-      </div>
-    </div>
-
-    {/* Aadhar Document */}
-    <div className="border border-gray-300 rounded-md p-4">
-      <label className="block text-sm font-medium text-gray-700 mb-2">
-        Aadhar Document <span className="text-red-500">*</span>
-      </label>
-      <div className="flex items-center">
-        <label className="px-4 py-2 bg-[#2b3153] border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-100 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer">
-          Choose File
-          <input type="file" className="sr-only" />
-        </label>
-        <span className="ml-2 text-sm text-gray-500">No file chosen</span>
-      </div>
-    </div>
-
-    {/* Import/Export Doc */}
-    <div className="border border-gray-300 rounded-md p-4">
-      <label className="block text-sm font-medium text-gray-700 mb-2">
-        Import/Export Doc
-      </label>
-      <div className="flex items-center">
-        <label className="px-4 py-2 bg-[#2b3153] border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-100 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer">
-          Choose File
-          <input type="file" className="sr-only" />
-        </label>
-        <span className="ml-2 text-sm text-gray-500">No file chosen</span>
-      </div>
-    </div>
-
-    {/* MSME Certificate */}
-    <div className="border border-gray-300 rounded-md p-4">
-      <label className="block text-sm font-medium text-gray-700 mb-2">
-        MSME Certificate
-      </label>
-      <div className="flex items-center">
-        <label className="px-4 py-2 bg-[#2b3153] border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-100 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer">
-          Choose File
-          <input type="file" className="sr-only" />
-        </label>
-        <span className="ml-2 text-sm text-gray-500">No file chosen</span>
-      </div>
-    </div>
-
-    {/* Visiting Card */}
-    <div className="border border-gray-300 rounded-md p-4">
-      <label className="block text-sm font-medium text-gray-700 mb-2">
-        Visiting Card
-      </label>
-      <div className="flex items-center">
-        <label className="px-4 py-2 bg-[#2b3153] border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-100 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer">
-          Choose File
-          <input type="file" className="sr-only" />
-        </label>
-        <span className="ml-2 text-sm text-gray-500">No file chosen</span>
-      </div>
-    </div>
-  </div>
-
-  <div className="mt-6 text-sm text-gray-500">
-    <p><span className="text-red-500">*</span> indicates required documents</p>
-    <p className="mt-1">All documents should be clear and legible. Blurry or incomplete documents will be rejected.</p>
-  </div>
-</div>
-
-        {/* Submit Button */}
-        <div className="py-6 px-6 sm:px-10 bg-gray-50 text-right">
-          <Button
-            type="primary"
-            htmlType="submit"
-            loading={loading}
-            className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-[#050d3f] hover:bg-[#050d3f] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
-          >
-            Submit KYC
-            <svg xmlns="http://www.w3.org/2000/svg" className="ml-2 -mr-1 h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
-            </svg>
-          </Button>
-        </div>
-      </div>
-    </div>
-  </Form>
-);
-
-
 
   const diamondClarityOptions = [
     "vvs",
@@ -1747,7 +1403,6 @@ const renderKYCForm = () => (
     "vs",
     "vs-si",
     "si",
-    
   ];
 
   const diamondColorOptions = [
@@ -1757,536 +1412,217 @@ const renderKYCForm = () => (
     "h-i",
     "i-j",
     "I",
-    
-   
   ];
 
-
-  
   const goldPuritOptions = [
     "18K",
     "22K",
     "24K",
-    
-    
   ];
 
   const goldColorOptions = [
     "White",
     "Yellow",
     "Rose",
-   
-    
-    
-   
   ];
 
-
-const renderOrderForm = () => (
-  <div>
-    <h3 className="text-2xl font-semibold" style={{ color: colors.velvet }}>
-      Create New Order
-    </h3>
-    <div
-      className="rounded-lg "
-      style={{
-        backgroundColor: colors.diamond,
-        borderColor: colors.darkGold,
-      }}
-    >
-      <div className="mb-6">
-        <label
-          className="block font-medium mb-2"
-          style={{ color: colors.velvet }}
-        >
-          Client
-        </label>
-        <Select
-          showSearch
-          placeholder="Select client"
-          optionFilterProp="children"
-          onChange={handleClientSelect}
-          value={selectedClientId}
-          filterOption={(input, option) =>
-            option.children.toLowerCase().includes(input.toLowerCase())
-          }
-          style={{
-            width: "100%",
-            borderColor: colors.darkGold,
-          }}
-          suffixIcon={
-            <ChevronDown
-              className="h-4 w-4"
-              style={{ color: colors.darkGold }}
-            />
-          }
-        >
-          {clients.map((client) => (
-            <Option key={client.uniqueId} value={client.uniqueId}>
-              {client.uniqueId}
-            </Option>
-          ))}
-        </Select>
-      </div>
-
-      {selectedClientId && (
-        <div
-          className="rounded-lg p-4 mb-6"
-          style={{
-            backgroundColor: colors.platinum,
-            borderColor: colors.darkGold,
-          }}
-        >
-          {isMobile ? (
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <span className="font-medium" style={{ color: colors.velvet }}>
-                  Client:
-                </span>
-                <span style={{ color: colors.deepNavy }}>
-                  {clients.find(c => c.uniqueId === selectedClientId)?.name || 'N/A'}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="font-medium" style={{ color: colors.velvet }}>
-                  Phone:
-                </span>
-                <span style={{ color: colors.deepNavy }}>
-                  {clients.find(c => c.uniqueId === selectedClientId)?.phone || 'N/A'}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="font-medium" style={{ color: colors.velvet }}>
-                  GST:
-                </span>
-                <span style={{ color: colors.deepNavy }}>
-                  {clients.find(c => c.uniqueId === selectedClientId)?.gstNo || 'N/A'}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="font-medium" style={{ color: colors.velvet }}>
-                  Address:
-                </span>
-                <span style={{ color: colors.deepNavy }}>
-                  {clients.find(c => c.uniqueId === selectedClientId)?.address || 'N/A'}
-                </span>
-              </div>
-            </div>
-          ) : (
-            <table className="w-full">
-              <tbody>
-                <tr>
-                  <td className="font-medium p-1" style={{ color: colors.velvet }}>
-                    Client:
-                  </td>
-                  <td className="p-1" style={{ color: colors.deepNavy }}>
-                    {clients.find(c => c.uniqueId === selectedClientId)?.name || 'N/A'}
-                  </td>
-                </tr>
-                <tr>
-                  <td className="font-medium p-1" style={{ color: colors.velvet }}>
-                    Phone:
-                  </td>
-                  <td className="p-1" style={{ color: colors.deepNavy }}>
-                    {clients.find(c => c.uniqueId === selectedClientId)?.phone || 'N/A'}
-                  </td>
-                </tr>
-                <tr>
-                  <td className="font-medium p-1" style={{ color: colors.velvet }}>
-                    GST:
-                  </td>
-                  <td className="p-1" style={{ color: colors.deepNavy }}>
-                    {clients.find(c => c.uniqueId === selectedClientId)?.gstNo || 'N/A'}
-                  </td>
-                </tr>
-                <tr>
-                  <td className="font-medium p-1" style={{ color: colors.velvet }}>
-                    Address:
-                  </td>
-                  <td className="p-1" style={{ color: colors.deepNavy }}>
-                    {clients.find(c => c.uniqueId === selectedClientId)?.address || 'N/A'}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          )}
-        </div>
-      )}
-
-      <h4
-        className="text-lg font-medium mb-4 pb-2"
+  const renderOrderForm = () => (
+    <div>
+      <h3 className="text-2xl font-semibold" style={{ color: colors.velvet }}>
+        Create New Order
+      </h3>
+      <div
+        className="rounded-lg "
         style={{
-          color: colors.velvet,
-          borderBottom: `1px solid ${colors.darkGold}`,
+          backgroundColor: colors.diamond,
+          borderColor: colors.darkGold,
         }}
       >
-        Order Items
-      </h4>
+     <div className="mb-6">
+    <label
+      className="block font-medium mb-2"
+      style={{ color: colors.velvet }}
+    >
+      Client
+    </label>
+    <div className="w-full md:w-1/5">
+      <Select
+        showSearch
+        placeholder="Select client"
+        optionFilterProp="children"
+        onChange={handleClientSelect}
+        value={selectedClientId}
+        filterOption={(input, option) =>
+          option.children.toLowerCase().includes(input.toLowerCase())
+        }
+        className="w-full"
+        style={{
+          borderColor: colors.darkGold,
+        }}
+        suffixIcon={
+          <ChevronDown
+            className="h-4 w-4"
+            style={{ color: colors.darkGold }}
+          />
+        }
+      >
+        {clients.map((client) => (
+          <Option key={client.uniqueId} value={client.uniqueId}>
+            {client.uniqueId}
+          </Option>
+        ))}
+      </Select>
+    </div>
+  </div>
 
-      {isMobile ? (
-        <div className="space-y-4">
-          {orderItems.map((item, index) => (
-            <div
-              key={index}
-              className="rounded-lg p-4"
-              style={{ borderColor: colors.darkGold }}
-            >
-              <div className="grid grid-cols-1 gap-3">
-                <div>
-                  <label className="block text-sm font-medium" style={{ color: colors.velvet }}>
-                    SR No
-                  </label>
-                  <InputNumber
-                    value={item.srNo}
-                    onChange={(val) => updateOrderItem(index, "srNo", val)}
-                    style={{ width: "100%", borderColor: colors.darkGold }}
-                    min={1}
-                  />
-                </div>
 
-                <div>
-                  <label className="block text-sm font-medium" style={{ color: colors.velvet }}>
-                    Style No*
-                  </label>
-                  <Input
-                    value={item.styleNo}
-                    onChange={(e) =>
-                      updateOrderItem(index, "styleNo", e.target.value)
-                    }
-                    placeholder="Style number"
-                    style={{ width: "100%", borderColor: colors.darkGold }}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium" style={{ color: colors.velvet }}>
-                    Diamond Clarity
-                  </label>
-                  <Select
-                    value={item.diamondClarity}
-                    onChange={(val) =>
-                      updateOrderItem(index, "diamondClarity", val)
-                    }
-                    style={{ width: "100%", borderColor: colors.darkGold }}
-                    placeholder="Select clarity"
-                  >
-                    {diamondClarityOptions.map((option) => (
-                      <Option key={option} value={option}>
-                        {option}
-                      </Option>
-                    ))}
-                  </Select>
-                </div>
-
-                <div>
-                  <label className="block font-medium" style={{ color: colors.velvet }}>
-                    Diamond Color
-                  </label>
-                  <Select
-                    value={item.diamondColor}
-                    onChange={(val) =>
-                      updateOrderItem(index, "diamondColor", val)
-                    }
-                    style={{ width: "100%", borderColor: colors.darkGold }}
-                    placeholder="Select color"
-                  >
-                    {diamondColorOptions.map((option) => (
-                      <Option key={option} value={option}>
-                        {option}
-                      </Option>
-                    ))}
-                  </Select>
-                </div>
-                
-                <div>
-                  <label className="block font-medium" style={{ color: colors.velvet }}>
-                    Gold Purity
-                  </label>
-                  <Select
-                    value={item.goldPurity}
-                    onChange={(val) =>
-                      updateOrderItem(index, "goldPurity", val)
-                    }
-                    style={{ width: "100%", borderColor: colors.darkGold }}
-                    placeholder="Select purity"
-                  >
-                    {goldPuritOptions.map((option) => (
-                      <Option key={option} value={option}>
-                        {option}
-                      </Option>
-                    ))}
-                  </Select>
-                </div>
-                
-                <div>
-                  <label className="block font-medium" style={{ color: colors.velvet }}>
-                    Gold Color
-                  </label>
-                  <Select
-                    value={item.goldColor}
-                    onChange={(val) =>
-                      updateOrderItem(index, "goldColor", val)
-                    }
-                    style={{ width: "100%", borderColor: colors.darkGold }}
-                    placeholder="Select color"
-                  >
-                    {goldColorOptions.map((option) => (
-                      <Option key={option} value={option}>
-                        {option}
-                      </Option>
-                    ))}
-                  </Select>
-                </div>
-
-                <div>
-                  <label className="block font-medium" style={{ color: colors.velvet }}>
-                    Gross WT
-                  </label>
-                  <InputNumber
-                    value={item.grossWeight ?? 0.0}
-                    onChange={(val) =>
-                      updateOrderItem(index, "grossWeight", val)
-                    }
-                    style={{ width: "100%", borderColor: colors.darkGold }}
-                    min={0}
-                    step={0.01}
-                    formatter={(value) => parseFloat(value || 0).toFixed(2)}
-                    parser={(value) =>
-                      parseFloat(value.replace(/[^\d.]/g, ""))
-                    }
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-medium" style={{ color: colors.velvet }}>
-                    Net WT
-                  </label>
-                  <InputNumber
-                    value={item.netWeight ?? 0.0}
-                    onChange={(val) =>
-                      updateOrderItem(index, "netWeight", val)
-                    }
-                    style={{ width: "100%", borderColor: colors.darkGold }}
-                    min={0}
-                    step={0.01}
-                    formatter={(value) => parseFloat(value || 0).toFixed(2)}
-                    parser={(value) =>
-                      parseFloat(value.replace(/[^\d.]/g, ""))
-                    }
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium" style={{ color: colors.velvet }}>
-                    DIA WT
-                  </label>
-                  <InputNumber
-                    value={item.diaWeight ?? 0.0}
-                    onChange={(val) =>
-                      updateOrderItem(index, "diaWeight", val)
-                    }
-                    style={{ width: "100%", borderColor: colors.darkGold }}
-                    min={0}
-                    step={0.01}
-                    formatter={(value) => parseFloat(value || 0).toFixed(2)}
-                    parser={(value) =>
-                      parseFloat(value.replace(/[^\d.]/g, ""))
-                    }
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium" style={{ color: colors.velvet }}>
-                    DIA PCS*
-                  </label>
-                  <InputNumber
-                    value={item.pcs}
-                    onChange={(val) => updateOrderItem(index, "pcs", val)}
-                    style={{
-                      width: "100%",
-                      borderColor:
-                        !item.pcs || item.pcs < 1
-                          ? colors.roseGold
-                          : colors.darkGold,
-                    }}
-                    min={1}
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium" style={{ color: colors.velvet }}>
-                    Quantity
-                  </label>
-                  <InputNumber
-                    value={item.quantity}
-                    onChange={(val) =>
-                      updateOrderItem(index, "quantity", val)
-                    }
-                    style={{ width: "100%", borderColor: colors.darkGold }}
-                    min={1}
-                  />
-                </div>
-              </div>
-              
-              {/* Moved Amount and Description fields below for mobile */}
-              <div className="grid grid-cols-1 gap-3 mt-3">
-                <div>
-                  <label className="block text-sm font-medium" style={{ color: colors.velvet }}>
-                    Amount*
-                  </label>
-                  <InputNumber
-                    value={item.amount}
-                    onChange={(val) => updateOrderItem(index, "amount", val)}
-                    style={{
-                      width: "100%",
-                      borderColor:
-                        !item.amount || item.amount <= 0
-                          ? colors.roseGold
-                          : colors.darkGold,
-                    }}
-                    min={0}
-                    step={0.01}
-                  />
-                </div>
-
-                <div className="mb-2">
-                  <label className="block text-sm font-medium" style={{ color: colors.velvet }}>
-                    Description
-                  </label>
-                  <Input.TextArea
-                    value={item.description}
-                    onChange={(e) =>
-                      updateOrderItem(index, "description", e.target.value)
-                    }
-                    rows={2}
-                    style={{ width: "100%", borderColor: colors.darkGold }}
-                    placeholder={`Description for item ${index + 1}`}
-                  />
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <>
-          <table
-            className="w-full mb-4"
-            style={{ border: `1px solid ${colors.darkGold}` }}
+        {selectedClientId && (
+          <div
+            className="rounded-lg p-4 mb-6"
+            style={{
+              backgroundColor: colors.platinum,
+              borderColor: colors.darkGold,
+            }}
           >
-            <thead>
-              <tr style={{ backgroundColor: colors.platinum }}>
-                <th
-                  className="p-2 text-left font-medium border"
-                  style={{ borderColor: colors.darkGold, color: colors.velvet, width: '80px' }}
-                >
-                  SR No
-                </th>
-                <th
-                  className="p-2 text-left border"
-                  style={{ borderColor: colors.darkGold, color: colors.velvet, width: '120px' }}
-                >
-                  Style No*
-                </th>
-                <th
-                  className="p-2 text-left font-medium border"
-                  style={{ borderColor: colors.darkGold, color: colors.velvet, width: '120px' }}
-                >
-                  Diamond Clarity
-                </th>
-                <th
-                  className="p-2 text-left font-medium border"
-                  style={{ borderColor: colors.darkGold, color: colors.velvet, width: '120px' }}
-                >
-                  Diamond Color
-                </th>
-                <th
-                  className="p-2 text-left font-medium border"
-                  style={{ borderColor: colors.darkGold, color: colors.velvet, width: '90px' }}
-                >
-                  Gold Purity
-                </th>
-                <th
-                  className="p-2 text-left font-medium border"
-                  style={{ borderColor: colors.darkGold, color: colors.velvet, width: '120px' }}
-                >
-                  Gold Color
-                </th>
-                <th
-                  className="p-2 text-left font-medium border"
-                  style={{ borderColor: colors.darkGold, color: colors.velvet, width: '100px' }}
-                >
-                  Gross WT
-                </th>
-                <th
-                  className="p-2 text-left font-medium border"
-                  style={{ borderColor: colors.darkGold, color: colors.velvet, width: '100px' }}
-                >
-                  Net WT
-                </th>
-                <th
-                  className="p-2 text-left font-medium border"
-                  style={{ borderColor: colors.darkGold, color: colors.velvet, width: '100px' }}
-                >
-                  DIA WT
-                </th>
-                <th
-                  className="p-2 text-left font-medium border"
-                  style={{ borderColor: colors.darkGold, color: colors.velvet, width: '100px' }}
-                >
-                  DIA PCS*
-                </th>
-                <th
-                  className="p-2 text-left font-medium border"
-                  style={{ borderColor: colors.darkGold, color: colors.velvet, width: '80px' }}
-                >
-                  Quantity
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {orderItems.map((item, index) => (
-                <tr
-                  key={index}
-                  className="border"
-                  style={{
-                    borderColor: colors.darkGold,
-                    backgroundColor: colors.light,
-                  }}
-                >
-                  <td className="p-2 border" style={{ borderColor: colors.darkGold, width: '80px' }}>
+            {isMobile ? (
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="font-medium" style={{ color: colors.velvet }}>
+                    Client:
+                  </span>
+                  <span style={{ color: colors.deepNavy }}>
+                    {clients.find(c => c.uniqueId === selectedClientId)?.name || 'N/A'}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-medium" style={{ color: colors.velvet }}>
+                    Phone:
+                  </span>
+                  <span style={{ color: colors.deepNavy }}>
+                    {clients.find(c => c.uniqueId === selectedClientId)?.phone || 'N/A'}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-medium" style={{ color: colors.velvet }}>
+                    GST:
+                  </span>
+                  <span style={{ color: colors.deepNavy }}>
+                    {clients.find(c => c.uniqueId === selectedClientId)?.gstNo || 'N/A'}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-medium" style={{ color: colors.velvet }}>
+                    Address:
+                  </span>
+                  <span style={{ color: colors.deepNavy }}>
+                    {clients.find(c => c.uniqueId === selectedClientId)?.address || 'N/A'}
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <table className="w-full">
+                <tbody>
+                  <tr>
+                    <td className="font-medium p-1" style={{ color: colors.velvet }}>
+                      Client:
+                    </td>
+                    <td className="p-1" style={{ color: colors.deepNavy }}>
+                      {clients.find(c => c.uniqueId === selectedClientId)?.name || 'N/A'}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="font-medium p-1" style={{ color: colors.velvet }}>
+                      Phone:
+                    </td>
+                    <td className="p-1" style={{ color: colors.deepNavy }}>
+                      {clients.find(c => c.uniqueId === selectedClientId)?.phone || 'N/A'}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="font-medium p-1" style={{ color: colors.velvet }}>
+                      GST:
+                    </td>
+                    <td className="p-1" style={{ color: colors.deepNavy }}>
+                      {clients.find(c => c.uniqueId === selectedClientId)?.gstNo || 'N/A'}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="font-medium p-1" style={{ color: colors.velvet }}>
+                      Address:
+                    </td>
+                    <td className="p-1" style={{ color: colors.deepNavy }}>
+                      {clients.find(c => c.uniqueId === selectedClientId)?.address || 'N/A'}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            )}
+          </div>
+        )}
+
+        <h4
+          className="text-lg font-medium mb-4 pb-2"
+          style={{
+            color: colors.velvet,
+            borderBottom: `1px solid ${colors.darkGold}`,
+          }}
+        >
+          Order Items
+        </h4>
+
+        {isMobile ? (
+          <div className="space-y-4">
+            {orderItems.map((item, index) => (
+              <div
+                key={index}
+                className="rounded-lg p-4"
+                style={{ borderColor: colors.darkGold }}
+              >
+                <div className="grid grid-cols-1 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium" style={{ color: colors.velvet }}>
+                      SR No
+                    </label>
                     <InputNumber
                       value={item.srNo}
                       onChange={(val) => updateOrderItem(index, "srNo", val)}
-                      style={{
-                        width: "100%",
-                        borderColor: colors.darkGold,
-                      }}
+                      style={{ width: "100%", borderColor: colors.darkGold }}
                       min={1}
                     />
-                  </td>
-                  <td className="p-2 border" style={{ borderColor: colors.darkGold, width: '120px' }}>
-                    <Input
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium" style={{ color: colors.velvet }}>
+                      Style No*
+                    </label>
+                    <Select
+                      showSearch
                       value={item.styleNo}
-                      onChange={(e) =>
-                        updateOrderItem(index, "styleNo", e.target.value)
+                      onChange={(val) => updateOrderItem(index, "styleNo", val)}
+                      placeholder="Select style number"
+                      style={{ width: "100%", borderColor: colors.darkGold }}
+                      filterOption={(input, option) =>
+                        option.children.toLowerCase().includes(input.toLowerCase())
                       }
-                      placeholder="Style number"
-                      style={{
-                        width: "100%",
-                        borderColor: colors.darkGold,
-                      }}
-                    />
-                  </td>
-                  <td className="p-2 border" style={{ borderColor: colors.darkGold, width: '120px' }}>
+                    >
+                      {designMasters.map((design) => (
+                        <Option key={design.styleNumber} value={design.styleNumber}>
+                          {design.styleNumber}
+                        </Option>
+                      ))}
+                    </Select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium" style={{ color: colors.velvet }}>
+                      Diamond Clarity
+                    </label>
                     <Select
                       value={item.diamondClarity}
                       onChange={(val) =>
                         updateOrderItem(index, "diamondClarity", val)
                       }
-                      style={{
-                        width: "100%",
-                        borderColor: colors.darkGold,
-                      }}
+                      style={{ width: "100%", borderColor: colors.darkGold }}
                       placeholder="Select clarity"
                     >
                       {diamondClarityOptions.map((option) => (
@@ -2295,17 +1631,18 @@ const renderOrderForm = () => (
                         </Option>
                       ))}
                     </Select>
-                  </td>
-                  <td className="p-2 border" style={{ borderColor: colors.darkGold, width: '120px' }}>
+                  </div>
+
+                  <div>
+                    <label className="block font-medium" style={{ color: colors.velvet }}>
+                      Diamond Color
+                    </label>
                     <Select
                       value={item.diamondColor}
                       onChange={(val) =>
                         updateOrderItem(index, "diamondColor", val)
                       }
-                      style={{
-                        width: "100%",
-                        borderColor: colors.darkGold,
-                      }}
+                      style={{ width: "100%", borderColor: colors.darkGold }}
                       placeholder="Select color"
                     >
                       {diamondColorOptions.map((option) => (
@@ -2314,17 +1651,18 @@ const renderOrderForm = () => (
                         </Option>
                       ))}
                     </Select>
-                  </td>
-                  <td className="p-2 border" style={{ borderColor: colors.darkGold, width: '120px' }}>
+                  </div>
+                  
+                  <div>
+                    <label className="block font-medium" style={{ color: colors.velvet }}>
+                      Gold Purity
+                    </label>
                     <Select
                       value={item.goldPurity}
                       onChange={(val) =>
                         updateOrderItem(index, "goldPurity", val)
                       }
-                      style={{
-                        width: "100%",
-                        borderColor: colors.darkGold,
-                      }}
+                      style={{ width: "100%", borderColor: colors.darkGold }}
                       placeholder="Select purity"
                     >
                       {goldPuritOptions.map((option) => (
@@ -2333,17 +1671,18 @@ const renderOrderForm = () => (
                         </Option>
                       ))}
                     </Select>
-                  </td>
-                  <td className="p-2 border" style={{ borderColor: colors.darkGold, width: '120px' }}>
+                  </div>
+                  
+                  <div>
+                    <label className="block font-medium" style={{ color: colors.velvet }}>
+                      Gold Color
+                    </label>
                     <Select
                       value={item.goldColor}
                       onChange={(val) =>
                         updateOrderItem(index, "goldColor", val)
                       }
-                      style={{
-                        width: "100%",
-                        borderColor: colors.darkGold,
-                      }}
+                      style={{ width: "100%", borderColor: colors.darkGold }}
                       placeholder="Select color"
                     >
                       {goldColorOptions.map((option) => (
@@ -2352,17 +1691,18 @@ const renderOrderForm = () => (
                         </Option>
                       ))}
                     </Select>
-                  </td>
-                  <td className="p-2 border" style={{ borderColor: colors.darkGold, width: '100px' }}>
+                  </div>
+
+                  <div>
+                    <label className="block font-medium" style={{ color: colors.velvet }}>
+                      Gross WT
+                    </label>
                     <InputNumber
                       value={item.grossWeight ?? 0.0}
                       onChange={(val) =>
                         updateOrderItem(index, "grossWeight", val)
                       }
-                      style={{
-                        width: "100%",
-                        borderColor: colors.darkGold,
-                      }}
+                      style={{ width: "100%", borderColor: colors.darkGold }}
                       min={0}
                       step={0.01}
                       formatter={(value) => parseFloat(value || 0).toFixed(2)}
@@ -2370,17 +1710,18 @@ const renderOrderForm = () => (
                         parseFloat(value.replace(/[^\d.]/g, ""))
                       }
                     />
-                  </td>
-                  <td className="p-2 border" style={{ borderColor: colors.darkGold, width: '100px' }}>
+                  </div>
+
+                  <div>
+                    <label className="block font-medium" style={{ color: colors.velvet }}>
+                      Net WT
+                    </label>
                     <InputNumber
                       value={item.netWeight ?? 0.0}
                       onChange={(val) =>
                         updateOrderItem(index, "netWeight", val)
                       }
-                      style={{
-                        width: "100%",
-                        borderColor: colors.darkGold,
-                      }}
+                      style={{ width: "100%", borderColor: colors.darkGold }}
                       min={0}
                       step={0.01}
                       formatter={(value) => parseFloat(value || 0).toFixed(2)}
@@ -2388,17 +1729,18 @@ const renderOrderForm = () => (
                         parseFloat(value.replace(/[^\d.]/g, ""))
                       }
                     />
-                  </td>
-                  <td className="p-2 border" style={{ borderColor: colors.darkGold, width: '100px' }}>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium" style={{ color: colors.velvet }}>
+                      DIA WT
+                    </label>
                     <InputNumber
                       value={item.diaWeight ?? 0.0}
                       onChange={(val) =>
                         updateOrderItem(index, "diaWeight", val)
                       }
-                      style={{
-                        width: "100%",
-                        borderColor: colors.darkGold,
-                      }}
+                      style={{ width: "100%", borderColor: colors.darkGold }}
                       min={0}
                       step={0.01}
                       formatter={(value) => parseFloat(value || 0).toFixed(2)}
@@ -2406,8 +1748,12 @@ const renderOrderForm = () => (
                         parseFloat(value.replace(/[^\d.]/g, ""))
                       }
                     />
-                  </td>
-                  <td className="p-2 border" style={{ borderColor: colors.darkGold, width: '100px' }}>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium" style={{ color: colors.velvet }}>
+                      DIA PCS*
+                    </label>
                     <InputNumber
                       value={item.pcs}
                       onChange={(val) => updateOrderItem(index, "pcs", val)}
@@ -2420,379 +1766,447 @@ const renderOrderForm = () => (
                       }}
                       min={1}
                     />
-                  </td>
-                  <td className="p-2 border" style={{ borderColor: colors.darkGold, width: '80px' }}>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium" style={{ color: colors.velvet }}>
+                      Quantity
+                    </label>
                     <InputNumber
                       value={item.quantity}
                       onChange={(val) =>
                         updateOrderItem(index, "quantity", val)
                       }
-                      style={{
-                        width: "100%",
-                        borderColor: colors.darkGold,
-                      }}
+                      style={{ width: "100%", borderColor: colors.darkGold }}
                       min={1}
                     />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-          {/* Moved Amount and Description fields below the table */}
-          <div className="flex flex-wrap mb-4 gap-4">
-            <div className="flex-1 min-w-[30%]">
-              <label className="block font-medium mb-2" style={{ color: colors.velvet }}>
-                Amount*
-              </label>
-              {orderItems.map((item, index) => (
-                <div key={index} className="mb-2">
-                  <InputNumber
-                    value={item.amount}
-                    onChange={(val) => updateOrderItem(index, "amount", val)}
-                    style={{
-                      width: "100%",
-                      borderColor:
-                        !item.amount || item.amount <= 0
-                          ? colors.roseGold
-                          : colors.darkGold,
-                    }}
-                    min={0}
-                    step={0.01}
-                  />
+                  </div>
                 </div>
-              ))}
-            </div>
+                
+                {/* Moved Amount and Description fields below for mobile */}
+                <div className="grid grid-cols-1 gap-3 mt-3">
+                  <div>
+                    <label className="block text-sm font-medium" style={{ color: colors.velvet }}>
+                      Amount*
+                    </label>
+                    <InputNumber
+                      value={item.amount}
+                      onChange={(val) => updateOrderItem(index, "amount", val)}
+                      style={{
+                        width: "100%",
+                        borderColor:
+                          !item.amount || item.amount <= 0
+                            ? colors.roseGold
+                            : colors.darkGold,
+                      }}
+                      min={0}
+                      step={0.01}
+                    />
+                  </div>
 
-            <div className="flex-1 min-w-[60%]">
-              <label className="block font-medium mb-2" style={{ color: colors.velvet }}>
-                Description
-              </label>
-              {orderItems.map((item, index) => (
-                <div key={index} className="mb-2">
-                  <Input.TextArea
-                    value={item.description}
-                    onChange={(e) =>
-                      updateOrderItem(index, "description", e.target.value)
-                    }
-                    rows={2}
-                    style={{ width: "100%", borderColor: colors.darkGold }}
-                    placeholder={`Description for item ${index + 1}`}
-                  />
+                  <div className="mb-2">
+                    <label className="block text-sm font-medium" style={{ color: colors.velvet }}>
+                      Description
+                    </label>
+                    <Input.TextArea
+                      value={item.description}
+                      onChange={(e) =>
+                        updateOrderItem(index, "description", e.target.value)
+                      }
+                      rows={2}
+                      style={{ width: "100%", borderColor: colors.darkGold }}
+                      placeholder={`Description for item ${index + 1}`}
+                    />
+                  </div>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
           </div>
-        </>
-      )}
+        ) : (
+          <>
+            <table
+              className="w-full mb-4"
+              style={{ border: `1px solid ${colors.darkGold}` }}
+            >
+              <thead>
+                <tr style={{ backgroundColor: colors.platinum }}>
+                  <th
+                    className="p-2 text-left font-medium border"
+                    style={{ borderColor: colors.darkGold, color: colors.velvet, width: '80px' }}
+                  >
+                    SR No
+                  </th>
+                  <th
+                    className="p-2 text-left border"
+                    style={{ borderColor: colors.darkGold, color: colors.velvet, width: '120px' }}
+                  >
+                    Style No*
+                  </th>
+                  <th
+                    className="p-2 text-left font-medium border"
+                    style={{ borderColor: colors.darkGold, color: colors.velvet, width: '120px' }}
+                  >
+                    Diamond Clarity
+                  </th>
+                  <th
+                    className="p-2 text-left font-medium border"
+                    style={{ borderColor: colors.darkGold, color: colors.velvet, width: '120px' }}
+                  >
+                    Diamond Color
+                  </th>
+                  <th
+                    className="p-2 text-left font-medium border"
+                    style={{ borderColor: colors.darkGold, color: colors.velvet, width: '90px' }}
+                  >
+                    Gold Purity
+                  </th>
+                  <th
+                    className="p-2 text-left font-medium border"
+                    style={{ borderColor: colors.darkGold, color: colors.velvet, width: '120px' }}
+                  >
+                    Gold Color
+                  </th>
+                  <th
+                    className="p-2 text-left font-medium border"
+                    style={{ borderColor: colors.darkGold, color: colors.velvet, width: '100px' }}
+                  >
+                    Gross WT
+                  </th>
+                  <th
+                    className="p-2 text-left font-medium border"
+                    style={{ borderColor: colors.darkGold, color: colors.velvet, width: '100px' }}
+                  >
+                    Net WT
+                  </th>
+                  <th
+                    className="p-2 text-left font-medium border"
+                    style={{ borderColor: colors.darkGold, color: colors.velvet, width: '100px' }}
+                  >
+                    DIA WT
+                  </th>
+                  <th
+                    className="p-2 text-left font-medium border"
+                    style={{ borderColor: colors.darkGold, color: colors.velvet, width: '100px' }}
+                  >
+                    DIA PCS*
+                  </th>
+                  <th
+                    className="p-2 text-left font-medium border"
+                    style={{ borderColor: colors.darkGold, color: colors.velvet, width: '80px' }}
+                  >
+                    Quantity
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {orderItems.map((item, index) => (
+                  <tr
+                    key={index}
+                    className="border"
+                    style={{
+                      borderColor: colors.darkGold,
+                      backgroundColor: colors.light,
+                    }}
+                  >
+                    <td className="p-2 border" style={{ borderColor: colors.darkGold, width: '80px' }}>
+                      <InputNumber
+                        value={item.srNo}
+                        onChange={(val) => updateOrderItem(index, "srNo", val)}
+                        style={{
+                          width: "100%",
+                          borderColor: colors.darkGold,
+                        }}
+                        min={1}
+                      />
+                    </td>
+                    <td className="p-2 border" style={{ borderColor: colors.darkGold, width: '120px' }}>
+                      <Select
+                        showSearch
+                        value={item.styleNo}
+                        onChange={(val) => updateOrderItem(index, "styleNo", val)}
+                        placeholder="Select style number"
+                        style={{
+                          width: "100%",
+                          borderColor: colors.darkGold,
+                        }}
+                        filterOption={(input, option) =>
+                          option.children.toLowerCase().includes(input.toLowerCase())
+                        }
+                      >
+                        {designMasters.map((design) => (
+                          <Option key={design.styleNumber} value={design.styleNumber}>
+                            {design.styleNumber}
+                          </Option>
+                        ))}
+                      </Select>
+                    </td>
+                    <td className="p-2 border" style={{ borderColor: colors.darkGold, width: '120px' }}>
+                      <Select
+                        value={item.diamondClarity}
+                        onChange={(val) =>
+                          updateOrderItem(index, "diamondClarity", val)
+                        }
+                        style={{
+                          width: "100%",
+                          borderColor: colors.darkGold,
+                        }}
+                        placeholder="Select clarity"
+                      >
+                        {diamondClarityOptions.map((option) => (
+                          <Option key={option} value={option}>
+                            {option}
+                          </Option>
+                        ))}
+                      </Select>
+                    </td>
+                    <td className="p-2 border" style={{ borderColor: colors.darkGold, width: '120px' }}>
+                      <Select
+                        value={item.diamondColor}
+                        onChange={(val) =>
+                          updateOrderItem(index, "diamondColor", val)
+                        }
+                        style={{
+                          width: "100%",
+                          borderColor: colors.darkGold,
+                        }}
+                        placeholder="Select color"
+                      >
+                        {diamondColorOptions.map((option) => (
+                          <Option key={option} value={option}>
+                            {option}
+                          </Option>
+                        ))}
+                      </Select>
+                    </td>
+                    <td className="p-2 border" style={{ borderColor: colors.darkGold, width: '120px' }}>
+                      <Select
+                        value={item.goldPurity}
+                        onChange={(val) =>
+                          updateOrderItem(index, "goldPurity", val)
+                        }
+                        style={{
+                          width: "100%",
+                          borderColor: colors.darkGold,
+                        }}
+                        placeholder="Select purity"
+                      >
+                        {goldPuritOptions.map((option) => (
+                          <Option key={option} value={option}>
+                            {option}
+                          </Option>
+                        ))}
+                      </Select>
+                    </td>
+                    <td className="p-2 border" style={{ borderColor: colors.darkGold, width: '120px' }}>
+                      <Select
+                        value={item.goldColor}
+                        onChange={(val) =>
+                          updateOrderItem(index, "goldColor", val)
+                        }
+                        style={{
+                          width: "100%",
+                          borderColor: colors.darkGold,
+                        }}
+                        placeholder="Select color"
+                      >
+                        {goldColorOptions.map((option) => (
+                          <Option key={option} value={option}>
+                            {option}
+                          </Option>
+                        ))}
+                      </Select>
+                    </td>
+                    <td className="p-2 border" style={{ borderColor: colors.darkGold, width: '100px' }}>
+                      <InputNumber
+                        value={item.grossWeight ?? 0.0}
+                        onChange={(val) =>
+                          updateOrderItem(index, "grossWeight", val)
+                        }
+                        style={{
+                          width: "100%",
+                          borderColor: colors.darkGold,
+                        }}
+                        min={0}
+                        step={0.01}
+                        formatter={(value) => parseFloat(value || 0).toFixed(2)}
+                        parser={(value) =>
+                          parseFloat(value.replace(/[^\d.]/g, ""))
+                        }
+                      />
+                    </td>
+                    <td className="p-2 border" style={{ borderColor: colors.darkGold, width: '100px' }}>
+                      <InputNumber
+                        value={item.netWeight ?? 0.0}
+                        onChange={(val) =>
+                          updateOrderItem(index, "netWeight", val)
+                        }
+                        style={{
+                          width: "100%",
+                          borderColor: colors.darkGold,
+                        }}
+                        min={0}
+                        step={0.01}
+                        formatter={(value) => parseFloat(value || 0).toFixed(2)}
+                        parser={(value) =>
+                          parseFloat(value.replace(/[^\d.]/g, ""))
+                        }
+                      />
+                    </td>
+                    <td className="p-2 border" style={{ borderColor: colors.darkGold, width: '100px' }}>
+                      <InputNumber
+                        value={item.diaWeight ?? 0.0}
+                        onChange={(val) =>
+                          updateOrderItem(index, "diaWeight", val)
+                        }
+                        style={{
+                          width: "100%",
+                          borderColor: colors.darkGold,
+                        }}
+                        min={0}
+                        step={0.01}
+                        formatter={(value) => parseFloat(value || 0).toFixed(2)}
+                        parser={(value) =>
+                          parseFloat(value.replace(/[^\d.]/g, ""))
+                        }
+                      />
+                    </td>
+                    <td className="p-2 border" style={{ borderColor: colors.darkGold, width: '100px' }}>
+                      <InputNumber
+                        value={item.pcs}
+                        onChange={(val) => updateOrderItem(index, "pcs", val)}
+                        style={{
+                          width: "100%",
+                          borderColor:
+                            !item.pcs || item.pcs < 1
+                              ? colors.roseGold
+                              : colors.darkGold,
+                        }}
+                        min={1}
+                      />
+                    </td>
+                    <td className="p-2 border" style={{ borderColor: colors.darkGold, width: '80px' }}>
+                      <InputNumber
+                        value={item.quantity}
+                        onChange={(val) =>
+                          updateOrderItem(index, "quantity", val)
+                        }
+                        style={{
+                          width: "100%",
+                          borderColor: colors.darkGold,
+                        }}
+                        min={1}
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
 
-      <div className="flex justify-between items-center mt-4">
-        <div className="flex space-x-2">
-          <Button
-            type="dashed"
-            onClick={addOrderItem}
-            icon={<Plus className="h-4 w-4" />}
-            style={{
-              borderColor: colors.darkGold,
-              color: colors.darkGold,
-              borderStyle: "dashed",
-            }}
-          >
-            Add Item
-          </Button>
-          
-          {orderItems.length > 0 && (
+            {/* Moved Amount and Description fields below the table */}
+            <div className="flex flex-wrap mb-4 gap-4">
+              <div className="flex-1 min-w-[30%]">
+                <label className="block font-medium mb-2" style={{ color: colors.velvet }}>
+                  Amount*
+                </label>
+                {orderItems.map((item, index) => (
+                  <div key={index} className="mb-2">
+                    <InputNumber
+                      value={item.amount}
+                      onChange={(val) => updateOrderItem(index, "amount", val)}
+                      style={{
+                        width: "100%",
+                        borderColor:
+                          !item.amount || item.amount <= 0
+                            ? colors.roseGold
+                            : colors.darkGold,
+                      }}
+                      min={0}
+                      step={0.01}
+                    />
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex-1 min-w-[60%]">
+                <label className="block font-medium mb-2" style={{ color: colors.velvet }}>
+                  Description
+                </label>
+                {orderItems.map((item, index) => (
+                  <div key={index} className="mb-2">
+                    <Input.TextArea
+                      value={item.description}
+                      onChange={(e) =>
+                        updateOrderItem(index, "description", e.target.value)
+                      }
+                      rows={2}
+                      style={{ width: "100%", borderColor: colors.darkGold }}
+                      placeholder={`Description for item ${index + 1}`}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+
+        <div className="flex justify-between items-center mt-4">
+          <div className="flex space-x-2">
             <Button
-              danger
-              onClick={() => removeOrderItem(orderItems.length - 1)}
-              icon={<Minus className="h-4 w-4" />}
+              type="dashed"
+              onClick={addOrderItem}
+              icon={<Plus className="h-4 w-4" />}
               style={{
-                backgroundColor: colors.platinum,
-                color: colors.roseGold,
-                borderColor: colors.roseGold,
+                borderColor: colors.darkGold,
+                color: colors.darkGold,
+                borderStyle: "dashed",
               }}
             >
-              Remove Item
+              Add Item
             </Button>
-          )}
-        </div>
+            
+            {orderItems.length > 0 && (
+              <Button
+                danger
+                onClick={() => removeOrderItem(orderItems.length - 1)}
+                icon={<Minus className="h-4 w-4" />}
+                style={{
+                  backgroundColor: colors.platinum,
+                  color: colors.roseGold,
+                  borderColor: colors.roseGold,
+                }}
+              >
+                Remove Item
+              </Button>
+            )}
+          </div>
 
-        
-      </div>
-      <div style={{ display: 'flex', justifyContent: 'center', marginTop: '24px', marginBottom: '24px' }}>
-  <Button
-    type="primary"
-    onClick={handleOrderSubmit}
-    loading={loading}
-    style={{
-      backgroundColor: colors.darkGold,
-      color: colors.light,
-      border: "none",
-      fontWeight: "500", // correct value
-      padding: "8px 24px",
-      borderRadius: "6px",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-    }}
-  >
-    Create Order
-  </Button>
-</div>
-
-    </div>
-  </div>
-);
-
-const renderOrderHistory = () => (
-  <div className="space-y-6">
-    <h3 className="text-2xl font-semibold" style={{ color: colors.velvet }}>
-      Order History
-    </h3>
-    
-    <div
-      className="rounded-lg shadow p-6 border"
-      style={{
-        backgroundColor: colors.diamond,
-        borderColor: colors.darkGold,
-      }}
-    >
-      {/* Search and Filter Section */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <Select
-          showSearch
-          placeholder="Search by Client ID or Name"
-          value={searchTerm}
-          onChange={(value) => setSearchTerm(value)}
-          onSearch={(value) => setSearchTerm(value)}
-          filterOption={(input, option) =>
-            (option?.children ?? '').toLowerCase().includes(input.toLowerCase()) ||
-            (option?.value ?? '').toLowerCase().includes(input.toLowerCase())
-          }
-          style={{ width: '100%' }}
-          allowClear
-          notFoundContent={null}
-        >
-          {clients.map(client => (
-            <Option 
-              key={client.uniqueId} 
-              value={client.uniqueId}
-            >
-              <div className="flex justify-between">
-                <span>{client.uniqueId}</span>
-                <span className="text-gray-500 ml-2">{client.name}</span>
-              </div>
-            </Option>
-          ))}
-        </Select>
-
-        <Select
-          placeholder="Filter by status"
-          value={statusFilter}
-          onChange={setStatusFilter}
-          style={{ width: '100%' }}
-          allowClear
-        >
-          <Option value="all">All Statuses</Option>
-          <Option value="ongoing">Ongoing</Option>
-          <Option value="completed">Completed</Option>
-          <Option value="cancelled">Cancelled</Option>
-        </Select>
-
-        <RangePicker
-          style={{ width: '100%' }}
-          onChange={(dates) => setDateRange(dates)}
-          placeholder={['Start Date', 'End Date']}
-        />
-      </div>
-
-      {/* Orders Table */}
-      <div className="grid grid-cols-1 gap-6">
-        {/* All Orders */}
-        <div
-          className="rounded-2xl shadow-sm border"
-          style={{
-            backgroundColor: colors.diamond,
-            borderColor: colors.darkGold,
-          }}
-        >
-          <h2
-            className="text-lg font-semibold mb-3 border-b p-4 pb-2"
-            style={{ color: colors.velvet }}
-          >
-            All Orders
-          </h2>
           
-          {isMobile ? (
-            <div className="space-y-4 p-4">
-              {getFilteredOrders().length > 0 ? (
-                getFilteredOrders().map((order) => (
-                  <div
-                    key={order.id}
-                    className="border rounded-lg p-4"
-                    style={{ borderColor: colors.darkGold }}
-                    onClick={() => handleOrderClick(order)}
-                  >
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <span className="font-medium">Order ID:</span>
-                        <span style={{ color: colors.darkGold }}>{order.orderId}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="font-medium">Client ID:</span>
-                        <span>{order.client?.uniqueId || 'N/A'}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="font-medium">Client Name:</span>
-                        <span>{order.client?.name || 'N/A'}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="font-medium">Date:</span>
-                        <span>{dayjs(order.orderDate).format('DD MMM YYYY')}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="font-medium">Status:</span>
-                        <Tag
-                          style={{
-                            backgroundColor:
-                              order.status === 'completed' ? '#e6f7ee' : '#e6f4ff',
-                            color:
-                              order.status === 'completed' ? '#08965b' : colors.darkGold,
-                          }}
-                        >
-                          {order.status?.toUpperCase() || 'UNKNOWN'}
-                        </Tag>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="font-medium">Items:</span>
-                        <span>{order.orderItems?.length || 0}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="font-medium">Amount:</span>
-                        <span>₹{order.totalAmount?.toFixed(2) || '0.00'}</span>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="text-center py-4">
-                  <p>No orders found matching your criteria</p>
-                </div>
-              )}
-            </div>
-          ) : (
-            <Table
-              dataSource={getFilteredOrders()}
-              columns={[
-                {
-                  title: 'Order ID',
-                  dataIndex: 'orderId',
-                  key: 'orderId',
-                  render: (text) => (
-                    <span className="font-medium" style={{ color: colors.darkGold }}>
-                      {text}
-                    </span>
-                  ),
-                },
-                {
-                  title: 'Client ID',
-                  dataIndex: ['client', 'uniqueId'],
-                  key: 'clientId',
-                  render: (text) => (
-                    <span className="text-gray-600">{text || 'N/A'}</span>
-                  ),
-                },
-                {
-                  title: 'Client Name',
-                  dataIndex: ['client', 'name'],
-                  key: 'clientName',
-                  render: (text) => (
-                    <span className="text-gray-600">{text || 'N/A'}</span>
-                  ),
-                },
-                {
-                  title: 'Date',
-                  dataIndex: 'orderDate',
-                  key: 'date',
-                  render: (date) => dayjs(date).format('DD MMM YYYY'),
-                },
-                {
-                  title: 'Status',
-                  key: 'status',
-                  render: (_, record) => {
-                    let statusColor = colors.darkGold;
-                    let backgroundColor = '#e6f4ff';
-
-                    if (record.status === 'completed') {
-                      statusColor = '#08965b';
-                      backgroundColor = '#e6f7ee';
-                    } else if (record.status === 'cancelled') {
-                      statusColor = '#cf1322';
-                      backgroundColor = '#fff2f0';
-                    }
-
-                    return (
-                      <Tag
-                        style={{
-                          backgroundColor,
-                          color: statusColor,
-                          borderColor: statusColor,
-                        }}
-                      >
-                        {record.status?.toUpperCase() || 'UNKNOWN'}
-                      </Tag>
-                    );
-                  },
-                },
-                {
-                  title: 'Items',
-                  dataIndex: 'orderItems',
-                  key: 'items',
-                  render: (items) => items?.length || 0,
-                },
-                
-                {
-                  title: 'Action',
-                  key: 'action',
-                  render: (_, record) => (
-                    <Button
-                      size="small"
-                      style={{
-                        backgroundColor: colors.platinum,
-                        color: colors.darkGold,
-                        borderColor: colors.darkGold,
-                      }}
-                      onClick={() => handleOrderClick(record)}
-                    >
-                      View Details
-                    </Button>
-                  ),
-                },
-              ]}
-              rowKey="id"
-              loading={loading}
-              pagination={{ pageSize: 10 }}
-              scroll={{ y: 400 }}
-              size="small"
-              bordered
-              className="custom-table"
-              onRow={(record) => ({
-                onClick: () => handleOrderClick(record),
-                style: { cursor: 'pointer', backgroundColor: colors.light },
-              })}
-            />
-          )}
         </div>
-      </div>
+        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '24px', marginBottom: '24px' }}>
+      <Button
+        type="primary"
+        onClick={handleOrderSubmit}
+        loading={loading}
+        style={{
+          backgroundColor: colors.darkGold,
+          color: colors.light,
+          border: "none",
+          fontWeight: "500", // correct value
+          padding: "8px 24px",
+          borderRadius: "6px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        Create Order
+      </Button>
     </div>
 
-    <OngoingOrderModal
-      order={selectedOrder}
-      visible={ongoingOrderModalVisible}
-      onClose={closeOrderModal}
-    />
-  </div>
-);
+      </div>
+    </div>
+  );
+
   const renderContent = () => {
     switch (selectedMenu) {
       case "dashboard":
@@ -3111,49 +2525,6 @@ const renderOrderHistory = () => (
         visible={ongoingOrderModalVisible}
         onClose={closeOrderModal}
       />
-
-      {/* Custom Table Styling */}
-      {/* <style jsx global>{`
-        .custom-table .ant-table-thead > tr > th {
-          background-color: ${colors.platinum} !important;
-          color: ${colors.velvet} !important;
-          font-weight: 600 !important;
-          border-bottom: 1px solid ${colors.darkGold} !important;
-        }
-        .custom-table .ant-table-tbody > tr > td {
-          border-bottom: 1px solid ${colors.darkGold} !important;
-          background-color: ${colors.light};
-        }
-        .custom-table .ant-table-tbody > tr:hover > td {
-          background-color: ${colors.platinum} !important;
-        }
-        .ant-table-expanded-row .custom-table .ant-table-thead > tr > th {
-          background-color: ${colors.platinum} !important;
-        }
-        .ant-table-expanded-row .custom-table .ant-table-tbody > tr > td {
-          background-color: ${colors.platinum} !important;
-        }
-        .ant-picker,
-        .ant-input,
-        .ant-input-number,
-        .ant-select-selector {
-          border-color: ${colors.darkGold} !important;
-        }
-        .ant-picker:hover,
-        .ant-input:hover,
-        .ant-input-number:hover,
-        .ant-select-selector:hover {
-          border-color: ${colors.roseGold} !important;
-        }
-        .ant-btn-primary {
-          background-color: ${colors.darkGold} !important;
-          border-color: ${colors.darkGold} !important;
-        }
-        .ant-btn-primary:hover {
-          background-color: ${colors.roseGold} !important;
-          border-color: ${colors.roseGold} !important;
-        }
-      `}</style> */}
     </div>
   );
 };

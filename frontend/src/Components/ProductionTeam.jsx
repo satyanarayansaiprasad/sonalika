@@ -692,24 +692,32 @@ const ProductionDashboard = () => {
       </div>
       
       <form onSubmit={handleDesignSubmit} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Product Serial Number</label>
-            <select
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-              value={designForm.serialNumber}
-              onChange={(e) => setDesignForm({...designForm, serialNumber: e.target.value})}
-              required
-            >
-              <option value="">Select product serial number</option>
-              {productMasters.map((product) => (
-                <option key={product.serialNumber} value={product.serialNumber}>
-                  {product.serialNumber} - {product.category}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
+       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+  <div>
+    <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+    <select
+      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+      value={designForm.category || ''}
+      onChange={(e) => {
+        const selectedCategory = e.target.value;
+        const matchedProduct = productMasters.find(p => p.category === selectedCategory);
+        setDesignForm({
+          ...designForm,
+          category: selectedCategory,
+          serialNumber: matchedProduct?.serialNumber || ''
+        });
+      }}
+      required
+    >
+      <option value="">Select category</option>
+      {[...new Set(productMasters.map((p) => p.category))].map((category) => (
+        <option key={category} value={category}>
+          {category}
+        </option>
+      ))}
+    </select>
+  </div>
+</div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
           <div>
@@ -885,7 +893,7 @@ const ProductionDashboard = () => {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product Serial</th>
+                    {/* <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product Serial</th> */}
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Style Number</th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Design Image</th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Gross Wt (g)</th>
@@ -897,7 +905,7 @@ const ProductionDashboard = () => {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {designMasters.map((design) => (
                     <tr key={design._id} className="hover:bg-gray-50 transition">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{design.serialNumber}</td>
+                      {/* <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{design.serialNumber}</td> */}
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{design.styleNumber}</td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         {design.imageFile ? (

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { FiMenu, FiX, FiHome, FiDatabase, FiShoppingBag, FiPlus, FiAward, FiChevronDown, FiChevronUp, FiTrash2, FiEdit2, FiCheckCircle } from 'react-icons/fi';
 
-const API_BASE_URL = import.meta.env.VITE_BASE_URL || 'http://localhost:3000';
+const API_BASE_URL = 'http://localhost:3001';
 
 const ProductionDashboard = () => {
   const [activeMenu, setActiveMenu] = useState(() => {
@@ -44,6 +44,7 @@ const ProductionDashboard = () => {
   
   const [designForm, setDesignForm] = useState({
     serialNumber: '',
+    category: '',
     grossWt: '',
     netWt: '',
     diaWt: '',
@@ -206,7 +207,7 @@ const ProductionDashboard = () => {
   const handleDesignSubmit = async (e) => {
     e.preventDefault();
     
-    if (!designForm.serialNumber || !designForm.grossWt || !designForm.netWt || 
+    if (!designForm.serialNumber || !designForm.category || !designForm.grossWt || !designForm.netWt || 
         !designForm.diaWt || !designForm.diaPcs || !designForm.clarity || 
         !designForm.color || !designForm.imageFile) {
       showNotification('Please fill all fields and upload a design image', true);
@@ -218,6 +219,7 @@ const ProductionDashboard = () => {
       
       const formData = new FormData();
       formData.append('serialNumber', designForm.serialNumber);
+      formData.append('category', designForm.category);
       formData.append('grossWt', designForm.grossWt);
       formData.append('netWt', designForm.netWt);
       formData.append('diaWt', designForm.diaWt);
@@ -239,6 +241,7 @@ const ProductionDashboard = () => {
       showNotification('Design Master created successfully!');
       setDesignForm({
         serialNumber: '',
+        category: '',
         grossWt: '',
         netWt: '',
         diaWt: '',
@@ -694,7 +697,7 @@ const ProductionDashboard = () => {
       <form onSubmit={handleDesignSubmit} className="space-y-6">
        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
   <div>
-    <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+    <label className="block text-sm font-medium text-gray-700 mb-1">Category *</label>
     <select
       className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
       value={designForm.category || ''}
@@ -710,10 +713,8 @@ const ProductionDashboard = () => {
       required
     >
       <option value="">Select category</option>
-      {[...new Set(productMasters.map((p) => p.category))].map((category) => (
-        <option key={category} value={category}>
-          {category}
-        </option>
+      {categories.map(category => (
+        <option key={category._id} value={category.name}>{category.name}</option>
       ))}
     </select>
   </div>
@@ -915,7 +916,7 @@ const ProductionDashboard = () => {
                             className="h-10 w-10 object-cover rounded-lg"
                             onError={(e) => {
                               e.target.onerror = null;
-                              e.target.src = 'https://via.placeholder.com/40?text=No+Image';
+                              e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0yMCAyMEMyMi4yMDkxIDIwIDI0IDE4LjIwOTEgMjQgMTZDMjQgMTMuNzkwOSAyMi4yMDkxIDEyIDIwIDEyQzE3Ljc5MDkgMTIgMTYgMTMuNzkwOSAxNiAxNkMxNiAxOC4yMDkxIDE3Ljc5MDkgMjAgMjAgMjBaIiBmaWxsPSIjOUNBM0FGIi8+CjxwYXRoIGQ9Ik0yMCAyNkMxNi42ODYzIDI2IDE0IDIzLjMxMzcgMTQgMjBIMTZDMTYgMjIuMjA5MSAxNy43OTA5IDI0IDIwIDI0QzIyLjIwOTEgMjQgMjQgMjIuMjA5MSAyNCAyMEgyNkMyNiAyMy4zMTM3IDIzLjMxMzcgMjYgMjAgMjZaIiBmaWxsPSIjOUNBM0FGIi8+Cjwvc3ZnPgo=';
                             }}
                           />
                         ) : (
@@ -1013,7 +1014,7 @@ const ProductionDashboard = () => {
           <div className="p-4 border-b border-white/10">
             <div className="flex items-center justify-center mb-2">
               <img 
-                src="https://via.placeholder.com/40x40?text=SJ" 
+                src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBmaWxsPSIjRjNGNEY2Ii8+Cjx0ZXh0IHg9IjIwIiB5PSIyNSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjE0IiBmaWxsPSIjOUNBM0FGIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5TSjwvdGV4dD4KPC9zdmc+Cg==" 
                 alt="Sonalika Jewellers" 
                 className="h-10 w-10 rounded-full"
               />

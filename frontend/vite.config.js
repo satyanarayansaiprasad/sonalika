@@ -8,9 +8,9 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'https://sonalikaj.onrender.com',
+        target: 'http://localhost:3001',
         changeOrigin: true,
-        secure: true,
+        secure: false,
       },
     },
   },

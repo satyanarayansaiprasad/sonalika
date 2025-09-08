@@ -23,7 +23,7 @@ app.use(express.urlencoded({ extended: true }));
 
 const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',')
-  : ['http://localhost:5173'];
+  : ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:3001'];
 
 app.use(cors({
   origin: allowedOrigins,
@@ -60,9 +60,9 @@ app.use((err, req, res, next) => {
 });
 
 // Start Server
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
-  console.log(`✅ Server running on ${process.env.VITE_BASE_URL}`);
+  console.log(`✅ Server running on http://localhost:${PORT}`);
 });
 
 

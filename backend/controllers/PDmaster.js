@@ -14,13 +14,35 @@ async function getNextProductSerialNumber() {
   return `SJPROD${nextNumber}`;
 }
 
-// Generate next Style Number
-async function getNextStyleNumber() {
-  const last = await DesignMaster.findOne().sort({ styleNumber: -1 });
-  if (!last) return 'SJSTYLE0001';
-  const lastNumber = parseInt(last.styleNumber.replace('SJSTYLE', ''));
-  const nextNumber = (lastNumber + 1).toString().padStart(4, '0');
-  return `SJSTYLE${nextNumber}`;
+// Generate next Style Number based on category
+async function getNextStyleNumber(category) {
+  // Category mapping
+  const categoryMap = {
+    'NECKLACE': 'NK',
+    'RING': 'RG', 
+    'EARRING': 'ER',
+    'EARRINGS': 'ER',
+    'BRACELET': 'BR',
+    'PENDANT': 'PD',
+    'CHAIN': 'CH',
+    'BANGLE': 'BG'
+  };
+  
+  const prefix = categoryMap[category?.toUpperCase()] || 'SJ';
+  
+  // Find the last design with the same category prefix
+  const last = await DesignMaster.findOne({
+    styleNumber: { $regex: `^${prefix}` }
+  }).sort({ styleNumber: -1 });
+  
+  if (!last) {
+    return `${prefix}001`;
+  }
+  
+  // Extract the number part and increment
+  const lastNumber = parseInt(last.styleNumber.replace(prefix, ''));
+  const nextNumber = (lastNumber + 1).toString().padStart(3, '0');
+  return `${prefix}${nextNumber}`;
 }
 
 // Create Product Master (simplified without image and description)
@@ -70,13 +92,14 @@ exports.createDesignMaster = async (req, res) => {
       diaWt, 
       diaPcs, 
       clarity, 
-      color 
+      color,
+      category
     } = req.body;
 
     const imageFile = req.file;
 
     // Validate required fields
-    if (!serialNumber || !grossWt || !netWt || !diaWt || !diaPcs || !clarity || !color) {
+    if (!serialNumber || !grossWt || !netWt || !diaWt || !diaPcs || !clarity || !color || !category) {
       return res.status(400).json({ 
         success: false,
         message: "All fields are required" 
@@ -107,7 +130,7 @@ exports.createDesignMaster = async (req, res) => {
       ]
     });
 
-    const styleNumber = await getNextStyleNumber();
+    const styleNumber = await getNextStyleNumber(category);
 
     const newDesign = await DesignMaster.create({
       serialNumber,

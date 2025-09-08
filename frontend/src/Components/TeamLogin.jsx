@@ -133,7 +133,7 @@ const TeamLogin = () => {
     }
 
     const res = await axios.post(
-      `${import.meta.env.VITE_BASE_URL}${endpoint}`,
+      `http://localhost:3001${endpoint}`,
       requestData,
       { withCredentials: true }
     );

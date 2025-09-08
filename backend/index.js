@@ -43,9 +43,6 @@ const corsOptions = {
 // Apply CORS middleware globally
 app.use(cors(corsOptions));
 
-// Handle preflight requests (OPTIONS) with same CORS options
-app.options('*', cors(corsOptions));
-
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json({ limit: '10mb' })); // Increase payload size limit for file uploads
 

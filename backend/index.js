@@ -92,10 +92,7 @@ app.get('/', (req, res) => {
   res.send('Sonalika Backend is working! 🚀');
 });
 
-// 404 handler
-app.all('*', (req, res) => {
-  res.status(404).json({ message: 'Route not found' });
-});
+// 404 handler - Express will handle this automatically
 
 // Error handling middleware
 app.use((err, req, res, next) => {

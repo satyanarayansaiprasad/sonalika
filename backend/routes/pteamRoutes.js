@@ -24,7 +24,6 @@ router.get('/getAllDesignMasters', getAllDesignMasters);
 router.post('/category-size', addCategorySize);
 router.get('/category-size', getAllCategorySizes);
 router.get('/category-size/:name', getCategorySize);
-router.post('/category-size', addCategorySize);
 router.put('/category-size/:name', updateCategorySize);
 router.delete('/category-size/:name', deleteCategorySize);
 module.exports = router;

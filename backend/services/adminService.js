@@ -49,7 +49,7 @@ exports.loginAdmin = async ({ email, password, role }, req) => {
        
         role: admin.role,
       },
-      process.env.SECRET_KEY,
+      process.env.JWT_SECRET || 'your-fallback-secret-key',
       { expiresIn: '1d' }
     );
 
@@ -98,7 +98,7 @@ exports.loginAdmin = async ({ email, password, role }, req) => {
 
 
 
-exports.loginTeam = async ({ email, password, role }) => {
+exports.loginTeam = async ({ email, password, role }, req) => {
   const team = await Team.findOne({ email, role });
   
   if (!team) {
@@ -110,7 +110,40 @@ exports.loginTeam = async ({ email, password, role }) => {
     throw new Error('Invalid password');
   }
 
-  return team;
+  // Generate JWT token
+  const token = jwt.sign(
+    {
+      id: team._id,
+      email: team.email,
+      role: team.role,
+    },
+    process.env.JWT_SECRET || 'your-fallback-secret-key',
+    { expiresIn: '1d' }
+  );
+
+  // If request object is provided, handle session
+  if (req) {
+    req.session.userType = "team";
+    req.session.team = {
+      id: team._id,
+      email: team.email,
+      role: team.role,
+    };
+
+    // Save session
+    await new Promise((resolve, reject) => {
+      req.session.save(err => {
+        if (err) reject(err);
+        else resolve();
+      });
+    });
+  }
+
+  return {
+    team,
+    token,
+    session: req ? req.session.team : null
+  };
 };
 
 

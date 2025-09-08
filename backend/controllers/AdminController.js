@@ -3,12 +3,12 @@ const adminService = require('../services/adminService');
 
 exports.login = async (req, res) => {
   try {
-    const {  user } = await adminService.loginAdmin(req.body);
+    const { admin, token } = await adminService.loginAdmin(req.body, req);
     
     res.status(200).json({ 
       success: true,
-      
-      user,
+      user: admin,
+      token,
       message: 'Login successful' 
     });
   } catch (err) {
@@ -23,10 +23,11 @@ exports.login = async (req, res) => {
 
 exports.loginteam = async (req, res) => {
   try {
-    const { user } = await adminService.loginTeam(req.body);
+    const { team, token } = await adminService.loginTeam(req.body, req);
     res.status(200).json({ 
       success: true,
-      user,
+      user: team,
+      token,
       message: 'Login successful' 
     });
   } catch (err) {

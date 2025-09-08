@@ -1,55 +1,76 @@
 const express = require('express');
+require('dotenv').config();
 const session = require('express-session');
 const cors = require('cors');
-require('dotenv').config();
+const mongoose = require('mongoose');
 const path = require('path');
-const connectDB = require('./config/db');
+const app = express();
+const port = process.env.PORT || 3001;
+
+// MongoDB connection (using URI from .env)
+mongoose
+  .connect(process.env.MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => console.log('MongoDB connected successfully'))
+  .catch((err) => console.error('MongoDB connection error:', err));
+
+// Load allowed origins from .env and split into an array
+const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'https://sonalika.vercel.app',
+  'https://sonalika.onrender.com'
+];
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    console.log('Request Origin:', origin); // Debugging log
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.error(`Blocked by CORS: ${origin}`);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  methods: 'GET,POST,PUT,DELETE,PATCH',
+  allowedHeaders: 'Content-Type,Authorization',
+  credentials: true, // Allow credentials (cookies, authorization headers)
+};
+
+// Apply CORS middleware globally
+app.use(cors(corsOptions));
+
+// Handle preflight requests (OPTIONS) with same CORS options
+app.options('*', cors(corsOptions));
+
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '10mb' })); // Increase payload size limit for file uploads
+
+// Session Middleware
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || 'yourSecretKey',
+    resave: false,
+    saveUninitialized: true,
+    cookie: { 
+      secure: false, // Set to true if using HTTPS
+      httpOnly: true,
+      maxAge: 1000 * 60 * 60 * 24 // 1 day
+    },
+  })
+);
+
+// Routes
 const adminRoutes = require('./routes/adminRoutes');
 const teamRoutes = require('./routes/teamRoutes');
 const pteamRoutes = require('./routes/pteamRoutes');
-const multer = require('multer');
-const fs = require('fs');
 
-const app = express();
-
-// Connect MongoDB
-connectDB();
-app.use(express.json());
-// Increase payload size limit for file uploads
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true }));
-// CORS Configuration
-
-
-const allowedOrigins = process.env.ALLOWED_ORIGINS.split(',');
-
-app.use(cors({
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl)
-    if (!origin) return callback(null, true);
-
-    if (allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('CORS policy violation'));
-    }
-  },
-  credentials: true
-}));
-
-
-app.use(session({
-  secret: process.env.SESSION_SECRET || 'yourSecretKey',
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    secure: false, // Set true in production with HTTPS
-    httpOnly: true,
-    maxAge: 1000 * 60 * 60 * 24 // 1 day
-  }
-}));
-
-// CORS middleware will handle preflight requests automatically
+app.use('/api/admin', adminRoutes);
+app.use('/api/team', teamRoutes);
+app.use('/api/pdmaster', pteamRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -69,10 +90,15 @@ app.get('/cors-test', (req, res) => {
   });
 });
 
-// Routes
-app.use('/api/admin', adminRoutes);
-app.use('/api/team', teamRoutes);
-app.use('/api/pdmaster', pteamRoutes);
+// Home route
+app.get('/', (req, res) => {
+  res.send('Sonalika Backend is working! 🚀');
+});
+
+// 404 handler
+app.all('*', (req, res) => {
+  res.status(404).json({ message: 'Route not found' });
+});
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -84,51 +110,10 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Start Server
-const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => {
-  console.log(`✅ Server running on http://localhost:${PORT}`);
+// Start server
+app.listen(port, () => {
+  console.log(`✅ Server is running on http://localhost:${port}`);
 });
 
-
-
-
-
-
-
-
-
-
-
-// const express = require('express');
-// const session = require('express-session');
-// const connectDB = require('./config/db');
-// const adminRoutes = require('./routes/adminRoutes');
-// const userRoutes =require('./routes/userRoutes')
-// const cors = require('cors');
-// require('dotenv').config();
-
-// const app = express();
-// connectDB();
-
-// app.use(cors({
-//   origin: 'ALLOWED_ORIGINS',
-//   credentials: true
-// }));
-// app.use(express.json());
-
-// app.use(session({
-//   secret: 'yourSecretKey',
-//   resave: false,
-//   saveUninitialized: false
-// }));
-
-// app.use('/api/admin', adminRoutes);
-// app.use('/api/user',userRoutes);
-
-// // ====== START THE SERVER IN SAME FILE ======
-// const PORT = process.env.PORT || 5000;
-
-// app.listen(PORT, () => {
-//   console.log(`Server running on port ${PORT}`);
-// });
+// For Vercel deployments (optional)
+module.exports = app;

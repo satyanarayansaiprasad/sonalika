@@ -110,7 +110,8 @@ const express = require('express');
 const session = require('express-session');
 const connectDB = require('./config/db');
 const adminRoutes = require('./routes/adminRoutes');
-const userRoutes =require('./routes/userRoutes')
+const teamRoutes = require('./routes/teamRoutes');
+const pteamRoutes = require('./routes/pteamRoutes');
 const cors = require('cors');
 require('dotenv').config();
 
@@ -130,7 +131,8 @@ app.use(session({
 }));
 
 app.use('/api/admin', adminRoutes);
-app.use('/api/user',userRoutes);
+app.use('/api/team', teamRoutes);
+app.use('/api/pdmaster', pteamRoutes);
 
 // ====== START THE SERVER IN SAME FILE ======
 const PORT = process.env.PORT || 5000;

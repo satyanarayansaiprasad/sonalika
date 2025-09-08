@@ -23,7 +23,7 @@ app.use(express.urlencoded({ extended: true }));
 
 const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',')
-  : ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:3001', 'https://sonalika.vercel.app'];
+  : ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:3001', 'https://sonalika.vercel.app', 'https://sonalika.onrender.com'];
 
 app.use(cors({
   origin: allowedOrigins,

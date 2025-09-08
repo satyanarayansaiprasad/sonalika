@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { FiMenu, FiX, FiHome, FiDatabase, FiShoppingBag, FiPlus, FiAward, FiChevronDown, FiChevronUp, FiTrash2, FiEdit2, FiCheckCircle } from 'react-icons/fi';
 
-const API_BASE_URL = 'http://localhost:3001';
+const API_BASE_URL = 'https://sonalika.onrender.com';
 
 const ProductionDashboard = () => {
   const [activeMenu, setActiveMenu] = useState(() => {

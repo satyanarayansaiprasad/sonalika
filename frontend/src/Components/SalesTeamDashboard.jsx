@@ -47,7 +47,7 @@ const { Sider, Header, Content } = Layout;
 const { Title, Text } = Typography;
 const { Option } = Select;
 
-const API_BASE_URL = 'http://localhost:3001';
+const API_BASE_URL = 'https://sonalika.onrender.com';
 
 // Color palette
 const colors = {

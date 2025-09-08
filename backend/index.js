@@ -43,6 +43,8 @@ const corsOptions = {
 // Apply CORS middleware globally
 app.use(cors(corsOptions));
 
+// CORS middleware handles preflight requests automatically - no need for app.options('*')
+
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json({ limit: '10mb' })); // Increase payload size limit for file uploads
 
@@ -92,7 +94,7 @@ app.get('/', (req, res) => {
   res.send('Sonalika Backend is working! 🚀');
 });
 
-// 404 handler - Express will handle this automatically
+// Express handles 404s automatically - no need for app.all('*')
 
 // Error handling middleware
 app.use((err, req, res, next) => {

@@ -23,7 +23,7 @@ app.use(express.urlencoded({ extended: true }));
 
 const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',')
-  : ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:3001'];
+  : ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:3001', 'https://sonalika.vercel.app'];
 
 app.use(cors({
   origin: allowedOrigins,
@@ -43,6 +43,15 @@ app.use(session({
     maxAge: 1000 * 60 * 60 * 24 // 1 day
   }
 }));
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({ 
+    status: 'OK', 
+    message: 'Sonalika Backend is running',
+    timestamp: new Date().toISOString()
+  });
+});
 
 // Routes
 app.use('/api/admin', adminRoutes);

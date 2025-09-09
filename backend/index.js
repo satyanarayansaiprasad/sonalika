@@ -5,7 +5,7 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 const path = require('path');
 const app = express();
-const port = process.env.PORT || 5174;
+const port = process.env.PORT || 3001;
 
 // MongoDB connection (using URI from .env)
 mongoose
@@ -19,17 +19,21 @@ mongoose
 // Load allowed origins from .env and split into an array
 const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [
   'http://localhost:5173',
-  'http://localhost:5174',
+  'http://localhost:3000',
+  'http://localhost:3001',
   'https://sonalika.vercel.app',
   'https://sonalika.onrender.com'
 ];
 
-console.log('Allowed Origins:', allowedOrigins);
+// Normalize origins by removing trailing slashes and ensuring proper format
+const normalizedOrigins = allowedOrigins.map(origin => origin.trim().replace(/\/$/, ''));
+
+console.log('Allowed Origins:', normalizedOrigins);
 
 const corsOptions = {
   origin: function (origin, callback) {
     console.log('CORS Request from origin:', origin);
-    console.log('Allowed origins:', allowedOrigins);
+    console.log('Normalized allowed origins:', normalizedOrigins);
     
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) {
@@ -37,11 +41,15 @@ const corsOptions = {
       return callback(null, true);
     }
     
-    if (allowedOrigins.includes(origin)) {
-      console.log('Origin allowed:', origin);
+    // Normalize the incoming origin by removing trailing slash
+    const normalizedOrigin = origin.replace(/\/$/, '');
+    
+    if (normalizedOrigins.includes(normalizedOrigin)) {
+      console.log('Origin allowed:', normalizedOrigin);
       callback(null, true);
     } else {
-      console.log('Origin blocked:', origin);
+      console.log('Origin blocked:', origin, '(normalized:', normalizedOrigin, ')');
+      console.log('Available origins:', normalizedOrigins);
       callback(new Error(`CORS: Origin ${origin} not allowed`));
     }
   },

@@ -25,11 +25,31 @@ const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [
   'https://sonalika.onrender.com'
 ];
 
+console.log('Allowed Origins:', allowedOrigins);
+
 const corsOptions = {
-  origin: allowedOrigins,
-  methods: 'GET,POST,PUT,DELETE,PATCH',
-  allowedHeaders: 'Content-Type,Authorization',
-  credentials: true, // Allow credentials (cookies, authorization headers)
+  origin: function (origin, callback) {
+    console.log('CORS Request from origin:', origin);
+    console.log('Allowed origins:', allowedOrigins);
+    
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) {
+      console.log('No origin provided - allowing request');
+      return callback(null, true);
+    }
+    
+    if (allowedOrigins.includes(origin)) {
+      console.log('Origin allowed:', origin);
+      callback(null, true);
+    } else {
+      console.log('Origin blocked:', origin);
+      callback(new Error(`CORS: Origin ${origin} not allowed`));
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+  credentials: true,
+  optionsSuccessStatus: 200
 };
 
 // Apply CORS middleware globally

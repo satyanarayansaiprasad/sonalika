@@ -5,7 +5,7 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 const path = require('path');
 const app = express();
-const port = process.env.PORT || 3001;
+const port = process.env.PORT || 5174;
 
 // MongoDB connection (using URI from .env)
 mongoose
@@ -19,8 +19,7 @@ mongoose
 // Load allowed origins from .env and split into an array
 const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [
   'http://localhost:5173',
-  'http://localhost:3000',
-  'http://localhost:3001',
+  'http://localhost:5174',
   'https://sonalika.vercel.app',
   'https://sonalika.onrender.com'
 ];

@@ -117,6 +117,7 @@ const SalesDashboard = () => {
 
   const [orderHistory, setOrderHistory] = useState([]);
   const [selectedClientId, setSelectedClientId] = useState(null);
+  const [styleNumbers, setStyleNumbers] = useState([]);
   const [stats, setStats] = useState({
     totalClients: 0,
     activeClients: 0,
@@ -130,6 +131,9 @@ const SalesDashboard = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [dateRange, setDateRange] = useState([]);
+  const [orderQRCode, setOrderQRCode] = useState(null);
+  const [loadingQR, setLoadingQR] = useState(false);
+  const [qrError, setQrError] = useState(false);
 
 
 
@@ -316,9 +320,42 @@ const SalesDashboard = () => {
     setModalClient(client);
   };
 
-  const handleOrderClick = (order) => {
+  const handleOrderClick = async (order) => {
     setSelectedOrder(order);
     setOngoingOrderModalVisible(true);
+    setOrderQRCode(null);
+    
+    // Fetch QR code for the order
+    if (order.orderId && selectedClientId) {
+      try {
+        setLoadingQR(true);
+        console.log('Fetching QR code for order:', order.orderId, 'client:', selectedClientId);
+        
+        const response = await axios.get(
+          `${API_BASE_URL}/api/team/order-qr/${selectedClientId}/${order.orderId}`
+        );
+        
+        console.log('QR code response:', response.data);
+        
+        if (response.data.success) {
+          setOrderQRCode(response.data.data.qrCode);
+          console.log('QR code set successfully');
+        } else {
+          console.error('QR code generation failed:', response.data.message);
+          message.error('Failed to generate QR code');
+        }
+      } catch (error) {
+        console.error('Error fetching QR code:', error);
+        if (error.response) {
+          console.error('Error response:', error.response.data);
+        }
+        message.error('Failed to load QR code: ' + (error.response?.data?.message || error.message));
+      } finally {
+        setLoadingQR(false);
+      }
+    } else {
+      console.log('Missing orderId or selectedClientId:', { orderId: order.orderId, selectedClientId });
+    }
   };
 
   const closeModal = () => {
@@ -588,8 +625,21 @@ const getFilteredOrders = () => {
     return matchesSearch && matchesStatus && matchesDate;
   });
 };
+  const fetchStyleNumbers = async () => {
+    try {
+      const res = await axios.get(`${API_BASE_URL}/api/pdmaster/getStyleNumbers`);
+      if (res.data.success) {
+        setStyleNumbers(res.data.data);
+      }
+    } catch (err) {
+      console.error("Fetch style numbers error:", err);
+      message.error("Failed to fetch style numbers");
+    }
+  };
+
   useEffect(() => {
     fetchClients();
+    fetchStyleNumbers();
   }, []);
 
   const ClientModal = ({ client, onClose }) => {
@@ -964,13 +1014,44 @@ const OngoingOrderModal = ({ order, visible, onClose }) => {
           </div>
           <div className="p-5">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
-              <div className="mb-4 md:mb-0">
-                <h2 className="text-xl font-bold text-gray-800">
-                  Order #{order.orderId || "N/A"}
-                </h2>
-                <p className="text-sm text-gray-500 mt-1">
-                  Created on {dayjs(order.orderDate).format("DD MMM YYYY, hh:mm A")}
-                </p>
+              <div className="mb-4 md:mb-0 flex items-start space-x-4">
+                <div>
+                  <h2 className="text-xl font-bold text-gray-800">
+                    Order #{order.orderId || "N/A"}
+                  </h2>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Created on {dayjs(order.orderDate).format("DD MMM YYYY, hh:mm A")}
+                  </p>
+                </div>
+                
+                {/* QR Code Display */}
+                <div className="flex flex-col items-center">
+                  {loadingQR ? (
+                    <div className="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center">
+                      <Spin size="small" />
+                    </div>
+                  ) : orderQRCode ? (
+                    <div className="text-center">
+                      <img 
+                        src={orderQRCode} 
+                        alt="Order QR Code" 
+                        className="w-20 h-20 border border-gray-200 rounded-lg shadow-sm"
+                        onError={(e) => {
+                          console.error('QR code image failed to load');
+                          e.target.style.display = 'none';
+                        }}
+                      />
+                      <p className="text-xs text-gray-500 mt-1">Scan for details</p>
+                    </div>
+                  ) : (
+                    <div className="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-300">
+                      <div className="text-center">
+                        <div className="text-xs text-gray-400 mb-1">QR Code</div>
+                        <div className="text-xs text-gray-300">Not Available</div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
               <div className={`px-4 py-2 rounded-full ${order.status === "completed" ? "bg-green-100 text-green-800" : "bg-amber-100 text-amber-800"} font-medium`}>
                 {order.status?.charAt(0).toUpperCase() + order.status?.slice(1) || "Unknown"}
@@ -1952,14 +2033,37 @@ const renderOrderForm = () => (
                   <label className="block text-sm font-medium" style={{ color: colors.velvet }}>
                     Style No*
                   </label>
-                  <Input
+                  <Select
                     value={item.styleNo}
-                    onChange={(e) =>
-                      updateOrderItem(index, "styleNo", e.target.value)
-                    }
-                    placeholder="Style number"
+                    onChange={(value) => {
+                      updateOrderItem(index, "styleNo", value);
+                      // Auto-fill other fields when style number is selected
+                      if (value) {
+                        const selectedStyle = styleNumbers.find(style => style.styleNumber === value);
+                        if (selectedStyle) {
+                          updateOrderItem(index, "diamondClarity", selectedStyle.clarity || "");
+                          updateOrderItem(index, "diamondColor", selectedStyle.color || "");
+                          updateOrderItem(index, "grossWeight", selectedStyle.grossWt || 0);
+                          updateOrderItem(index, "netWeight", selectedStyle.netWt || 0);
+                          updateOrderItem(index, "diaWeight", selectedStyle.diaWt || 0);
+                          updateOrderItem(index, "pcs", selectedStyle.diaPcs || 1);
+                        }
+                      }
+                    }}
+                    placeholder="Select style number"
                     style={{ width: "100%", borderColor: colors.darkGold }}
-                  />
+                    showSearch
+                    filterOption={(input, option) =>
+                      option?.children?.toLowerCase().includes(input.toLowerCase())
+                    }
+                    allowClear
+                  >
+                    {styleNumbers.map((style) => (
+                      <Option key={style.styleNumber} value={style.styleNumber}>
+                        {style.styleNumber} - {style.serialNumber}
+                      </Option>
+                    ))}
+                  </Select>
                 </div>
 
                 <div>

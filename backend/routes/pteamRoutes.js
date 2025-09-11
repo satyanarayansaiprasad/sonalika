@@ -6,6 +6,7 @@ const {
   createDesignMaster,
   getAllProductMasters,
   getAllDesignMasters,
+  getStyleNumbers,
   addCategorySize,
   getAllCategorySizes,
   getCategorySize,
@@ -19,6 +20,7 @@ router.post('/createProductMaster', createProductMaster);
 router.post('/createDesignMaster', upload.single('image'),createDesignMaster);
 router.get('/getAllProductMasters', getAllProductMasters);
 router.get('/getAllDesignMasters', getAllDesignMasters);
+router.get('/getStyleNumbers', getStyleNumbers);
 
 
 router.post('/category-size', addCategorySize);

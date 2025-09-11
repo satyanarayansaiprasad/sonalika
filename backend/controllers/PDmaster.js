@@ -181,6 +181,17 @@ exports.getAllDesignMasters = async (req, res) => {
   }
 };
 
+// Get all style numbers for dropdown
+exports.getStyleNumbers = async (req, res) => {
+  try {
+    const designs = await DesignMaster.find({}, 'styleNumber serialNumber grossWt netWt diaWt diaPcs clarity color').sort({ styleNumber: 1 });
+    res.status(200).json({ success: true, data: designs });
+  } catch (err) {
+    console.error('Error fetching Style Numbers:', err);
+    res.status(500).json({ success: false, message: 'Server Error' });
+  }
+};
+
 
 
 

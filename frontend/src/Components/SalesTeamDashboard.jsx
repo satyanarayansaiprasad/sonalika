@@ -164,6 +164,11 @@ const SalesDashboard = () => {
     formData.append("aadharNumber", values.aadharNumber || "");
     formData.append("importExportCode", values.importExportCode || "");
     formData.append("msmeNumber", values.msmeNumber || "");
+    
+    // New KYC fields
+    formData.append("igi", values.igi || "");
+    formData.append("huid", values.huid || "");
+    formData.append("diamondWeightLazerMarking", values.diamondWeightLazerMarking || "");
 
     // Append files (from AntD's Upload or normal <input type="file">)
     const fileFields = [
@@ -1617,6 +1622,42 @@ const renderKYCForm = () => (
     >
       <Input
         placeholder="UDYAM-XX-XX-XXXXXX"
+        className="py-3 px-4 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"                                                                                   
+      />
+    </Form.Item>
+  </div>
+
+  {/* Row 3: IGI, HUID, Diamond Weight Lazer Marking */}
+  <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-3">
+    <Form.Item
+      name="igi"
+      label="IGI"
+      className="block text-sm font-medium text-gray-700 mb-1"
+    >
+      <Input
+        placeholder="IGI Certificate Number"
+        className="py-3 px-4 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+      />
+    </Form.Item>
+
+    <Form.Item
+      name="huid"
+      label="HUID"
+      className="block text-sm font-medium text-gray-700 mb-1"
+    >
+      <Input
+        placeholder="Hallmark Unique Identification"
+        className="py-3 px-4 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+      />
+    </Form.Item>
+
+    <Form.Item
+      name="diamondWeightLazerMarking"
+      label="Diamond Weight Lazer Marking"
+      className="block text-sm font-medium text-gray-700 mb-1"
+    >
+      <Input
+        placeholder="Diamond Weight Lazer Marking"
         className="py-3 px-4 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
       />
     </Form.Item>

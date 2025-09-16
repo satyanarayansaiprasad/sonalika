@@ -2709,10 +2709,10 @@ const renderOrderHistory = () => (
                         <span className="font-medium">Client ID:</span>
                         <span>{order.client?.uniqueId || 'N/A'}</span>
                       </div>
-                      <div className="flex justify-between">
+                      {/* <div className="flex justify-between">
                         <span className="font-medium">Client Name:</span>
                         <span>{order.client?.name || 'N/A'}</span>
-                      </div>
+                      </div> */}
                       <div className="flex justify-between">
                         <span className="font-medium">Date:</span>
                         <span>{dayjs(order.orderDate).format('DD MMM YYYY')}</span>
@@ -2769,14 +2769,14 @@ const renderOrderHistory = () => (
                     <span className="text-gray-600">{text || 'N/A'}</span>
                   ),
                 },
-                {
+                /* {
                   title: 'Client Name',
                   dataIndex: ['client', 'name'],
                   key: 'clientName',
                   render: (text) => (
                     <span className="text-gray-600">{text || 'N/A'}</span>
                   ),
-                },
+                }, */
                 {
                   title: 'Date',
                   dataIndex: 'orderDate',

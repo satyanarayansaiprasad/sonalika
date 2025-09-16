@@ -2309,17 +2309,40 @@ const renderOrderForm = () => (
                     />
                   </td>
                   <td className="p-2 border" style={{ borderColor: colors.darkGold, width: '120px' }}>
-                    <Input
+                    <Select
                       value={item.styleNo}
-                      onChange={(e) =>
-                        updateOrderItem(index, "styleNo", e.target.value)
+                      onChange={(value) => {
+                        updateOrderItem(index, "styleNo", value);
+                        // Auto-fill other fields when style number is selected
+                        if (value) {
+                          const selectedStyle = styleNumbers.find(style => style.styleNumber === value);
+                          if (selectedStyle) {
+                            updateOrderItem(index, "diamondClarity", selectedStyle.clarity || "");
+                            updateOrderItem(index, "diamondColor", selectedStyle.color || "");
+                            updateOrderItem(index, "grossWeight", selectedStyle.grossWt || 0);
+                            updateOrderItem(index, "netWeight", selectedStyle.netWt || 0);
+                            updateOrderItem(index, "diaWeight", selectedStyle.diaWt || 0);
+                            updateOrderItem(index, "pcs", selectedStyle.diaPcs || 1);
+                          }
+                        }
+                      }}
+                      placeholder="Select style"
+                      showSearch
+                      filterOption={(input, option) =>
+                        option?.children?.toLowerCase().includes(input.toLowerCase())
                       }
-                      placeholder="Style number"
+                      allowClear
                       style={{
                         width: "100%",
                         borderColor: colors.darkGold,
                       }}
-                    />
+                    >
+                      {styleNumbers.map((style) => (
+                        <Option key={style.styleNumber} value={style.styleNumber}>
+                          {style.styleNumber} - {style.serialNumber}
+                        </Option>
+                      ))}
+                    </Select>
                   </td>
                   <td className="p-2 border" style={{ borderColor: colors.darkGold, width: '120px' }}>
                     <Select

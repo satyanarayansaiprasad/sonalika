@@ -105,6 +105,7 @@ const SalesDashboard = () => {
       pcs: 1,
       amount: 0,
       description: "",
+      remark: "",
     },
   ]);
   const [design, setDesign] = useState({
@@ -400,6 +401,7 @@ const SalesDashboard = () => {
           pcs: item.pcs,
           amount: item.amount,
           description: item.description?.trim() || "",
+          remark: item.remark?.trim() || "",
         })),
       };
 
@@ -426,6 +428,7 @@ const SalesDashboard = () => {
             pcs: 1,
             amount: 0,
             description: "",
+            remark: "",
           },
         ]);
         fetchClients();
@@ -526,6 +529,7 @@ const SalesDashboard = () => {
         pcs: 1,
         amount: 0,
         description: "",
+        remark: "",
       },
     ]);
   };

@@ -43,7 +43,8 @@ const clientSchema = new mongoose.Schema({
           goldColor: String,
           pcs: Number,
           amount: Number,
-          description: String
+          description: String,
+          remark: String
         }
       ]
     },

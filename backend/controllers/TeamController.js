@@ -641,7 +641,8 @@ exports.addClientOrder = async (req, res) => {
         pcs: item.pcs || 0,
         amount: item.amount,
         // total: item.total || (item.amount * (item.quantity || 1)),
-        description: item.description?.trim() || ""
+        description: item.description?.trim() || "",
+        remark: item.remark?.trim() || ""
       }))
     };
 

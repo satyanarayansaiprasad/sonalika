@@ -2240,16 +2240,47 @@ const renderOrderForm = () => (
 
                 <div className="mb-2">
                   <label className="block text-sm font-medium" style={{ color: colors.velvet }}>
-                    Description
+                    Amount & Description
+                  </label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <InputNumber
+                      value={item.amount}
+                      onChange={(val) => updateOrderItem(index, "amount", val)}
+                      style={{
+                        width: "100%",
+                        borderColor:
+                          !item.amount || item.amount <= 0
+                            ? colors.roseGold
+                            : colors.darkGold,
+                      }}
+                      min={0}
+                      step={0.01}
+                      placeholder="Amount"
+                    />
+                    <Input.TextArea
+                      value={item.description}
+                      onChange={(e) =>
+                        updateOrderItem(index, "description", e.target.value)
+                      }
+                      rows={2}
+                      style={{ width: "100%", borderColor: colors.darkGold }}
+                      placeholder={`Description for item ${index + 1}`}
+                    />
+                  </div>
+                </div>
+
+                <div className="mb-2">
+                  <label className="block text-sm font-medium" style={{ color: colors.velvet }}>
+                    Remark
                   </label>
                   <Input.TextArea
-                    value={item.description}
+                    value={item.remark}
                     onChange={(e) =>
-                      updateOrderItem(index, "description", e.target.value)
+                      updateOrderItem(index, "remark", e.target.value)
                     }
                     rows={2}
                     style={{ width: "100%", borderColor: colors.darkGold }}
-                    placeholder={`Description for item ${index + 1}`}
+                    placeholder={`Remark for item ${index + 1}`}
                   />
                 </div>
               </div>
@@ -2578,18 +2609,43 @@ const renderOrderForm = () => (
 
             <div className="flex-1 min-w-[60%]">
               <label className="block font-medium mb-2" style={{ color: colors.velvet }}>
-                Description
+                Amount & Description
               </label>
               {orderItems.map((item, index) => (
                 <div key={index} className="mb-2">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
+                    <InputNumber
+                      value={item.amount}
+                      onChange={(val) => updateOrderItem(index, "amount", val)}
+                      style={{
+                        width: "100%",
+                        borderColor:
+                          !item.amount || item.amount <= 0
+                            ? colors.roseGold
+                            : colors.darkGold,
+                      }}
+                      min={0}
+                      step={0.01}
+                      placeholder="Amount"
+                    />
+                    <Input.TextArea
+                      value={item.description}
+                      onChange={(e) =>
+                        updateOrderItem(index, "description", e.target.value)
+                      }
+                      rows={2}
+                      style={{ width: "100%", borderColor: colors.darkGold }}
+                      placeholder={`Description for item ${index + 1}`}
+                    />
+                  </div>
                   <Input.TextArea
-                    value={item.description}
+                    value={item.remark}
                     onChange={(e) =>
-                      updateOrderItem(index, "description", e.target.value)
+                      updateOrderItem(index, "remark", e.target.value)
                     }
                     rows={2}
                     style={{ width: "100%", borderColor: colors.darkGold }}
-                    placeholder={`Description for item ${index + 1}`}
+                    placeholder={`Remark for item ${index + 1}`}
                   />
                 </div>
               ))}

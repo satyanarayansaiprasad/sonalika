@@ -388,6 +388,8 @@ const SalesDashboard = () => {
 
       const payload = {
         uniqueId: selectedClientId,
+        totalAmount: orderAmount,
+        orderDescription: orderDescription?.trim() || "",
         orderItems: orderItems.map((item) => ({
           srNo: item.srNo || 0,
           styleNo: item.styleNo.trim(),
@@ -401,7 +403,6 @@ const SalesDashboard = () => {
           diaWeight: item.diaWeight || 0,
           pcs: item.pcs,
           amount: item.amount,
-          description: item.description?.trim() || "",
           remark: item.remark?.trim() || "",
         })),
       };

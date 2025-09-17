@@ -9,7 +9,10 @@ const productionteamSchema = new mongoose.Schema({
     enum: ["admin", "salesteam", "productionteam", "team"],
     default: "productionteam"
   }
-}); // ✅ Closing this was missing
+}, { timestamps: true });
+
+// Add compound index for faster login queries
+productionteamSchema.index({ email: 1, role: 1 });
 
 const ProductionTeam = mongoose.model('ProductionTeam', productionteamSchema);
 module.exports = ProductionTeam;

@@ -1,7 +1,8 @@
 const ProductionTeam = require('../models/ProductionTeam');
 const SalesTeam = require('../models/SalesTeam');
-exports.loginProduction = async ({ email, password,role }) => {
-  const productionteams = await ProductionTeam.findOne({ email,role });
+exports.loginProduction = async ({ email, password, role }) => {
+  // Use lean() for faster queries - returns plain JavaScript object instead of Mongoose document
+  const productionteams = await ProductionTeam.findOne({ email, role }).lean();
   if (!productionteams) throw new Error('Invalid email or role');
 
   // Direct plain-text comparison
@@ -11,8 +12,9 @@ exports.loginProduction = async ({ email, password,role }) => {
 };
 
 
-exports.loginSalesteam = async ({ email, password,role }) => {
-  const salesteams = await SalesTeam.findOne({ email,role });
+exports.loginSalesteam = async ({ email, password, role }) => {
+  // Use lean() for faster queries - returns plain JavaScript object instead of Mongoose document
+  const salesteams = await SalesTeam.findOne({ email, role }).lean();
   if (!salesteams) throw new Error('Invalid email or role');
 
   // Direct plain-text comparison

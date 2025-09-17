@@ -2376,6 +2376,12 @@ const renderOrderForm = () => (
                 >
                   Quantity
                 </th>
+                <th
+                  className="p-2 text-left font-medium border"
+                  style={{ borderColor: colors.darkGold, color: colors.velvet, width: '120px' }}
+                >
+                  Remark
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -2590,6 +2596,17 @@ const renderOrderForm = () => (
                         borderColor: colors.darkGold,
                       }}
                       min={1}
+                    />
+                  </td>
+                  <td className="p-2 border" style={{ borderColor: colors.darkGold, width: '120px' }}>
+                    <Input.TextArea
+                      value={item.remark}
+                      onChange={(e) =>
+                        updateOrderItem(index, "remark", e.target.value)
+                      }
+                      rows={2}
+                      style={{ width: "100%", borderColor: colors.darkGold }}
+                      placeholder={`Remark ${index + 1}`}
                     />
                   </td>
                 </tr>

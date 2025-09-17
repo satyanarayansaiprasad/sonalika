@@ -2215,6 +2215,21 @@ const renderOrderForm = () => (
                     min={1}
                   />
                 </div>
+
+                <div>
+                  <label className="block text-sm font-medium" style={{ color: colors.velvet }}>
+                    Remark
+                  </label>
+                  <Input.TextArea
+                    value={item.remark}
+                    onChange={(e) =>
+                      updateOrderItem(index, "remark", e.target.value)
+                    }
+                    rows={2}
+                    style={{ width: "100%", borderColor: colors.darkGold }}
+                    placeholder={`Remark for item ${index + 1}`}
+                  />
+                </div>
               </div>
               
               {/* Moved Amount and Description fields below for mobile */}

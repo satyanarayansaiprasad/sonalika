@@ -1997,9 +1997,27 @@ const renderOrderForm = () => (
           {orderItems.map((item, index) => (
             <div
               key={index}
-              className="rounded-lg p-4"
+              className="rounded-lg p-4 border"
               style={{ borderColor: colors.darkGold }}
             >
+              <div className="flex justify-between items-center mb-3">
+                <h5 className="font-medium" style={{ color: colors.velvet }}>
+                  Item {index + 1}
+                </h5>
+                <Button
+                  size="small"
+                  danger
+                  icon={<Minus className="h-4 w-4" />}
+                  onClick={() => removeOrderItem(index)}
+                  style={{
+                    backgroundColor: colors.roseGold,
+                    borderColor: colors.roseGold,
+                    color: 'white'
+                  }}
+                >
+                  Remove
+                </Button>
+              </div>
               <div className="grid grid-cols-1 gap-3">
                 <div>
                   <label className="block text-sm font-medium" style={{ color: colors.velvet }}>
@@ -2318,6 +2336,12 @@ const renderOrderForm = () => (
                 >
                   Remark
                 </th>
+                <th
+                  className="p-2 text-left font-medium border"
+                  style={{ borderColor: colors.darkGold, color: colors.velvet, width: '80px' }}
+                >
+                  Action
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -2545,6 +2569,21 @@ const renderOrderForm = () => (
                       placeholder={`Remark ${index + 1}`}
                     />
                   </td>
+                  <td className="p-2 border text-center" style={{ borderColor: colors.darkGold, width: '80px' }}>
+                    <Button
+                      size="small"
+                      danger
+                      icon={<Minus className="h-4 w-4" />}
+                      onClick={() => removeOrderItem(index)}
+                      style={{
+                        backgroundColor: colors.roseGold,
+                        borderColor: colors.roseGold,
+                        color: 'white'
+                      }}
+                    >
+                      Remove
+                    </Button>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -2568,7 +2607,7 @@ const renderOrderForm = () => (
             Add Item
           </Button>
           
-          {orderItems.length > 0 && (
+          {orderItems.length > 1 && (
             <Button
               danger
               onClick={() => removeOrderItem(orderItems.length - 1)}
@@ -2579,7 +2618,7 @@ const renderOrderForm = () => (
                 borderColor: colors.roseGold,
               }}
             >
-              Remove Item
+              Remove Last Item
             </Button>
           )}
         </div>

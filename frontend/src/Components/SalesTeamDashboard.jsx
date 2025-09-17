@@ -104,7 +104,6 @@ const SalesDashboard = () => {
       diaWeight: 0,
       pcs: 1,
       amount: 0,
-      description: "",
       remark: "",
     },
   ]);
@@ -119,6 +118,8 @@ const SalesDashboard = () => {
   const [orderHistory, setOrderHistory] = useState([]);
   const [selectedClientId, setSelectedClientId] = useState(null);
   const [styleNumbers, setStyleNumbers] = useState([]);
+  const [orderAmount, setOrderAmount] = useState(0);
+  const [orderDescription, setOrderDescription] = useState("");
   const [stats, setStats] = useState({
     totalClients: 0,
     activeClients: 0,
@@ -2232,73 +2233,6 @@ const renderOrderForm = () => (
                 </div>
               </div>
               
-              {/* Moved Amount and Description fields below for mobile */}
-              <div className="grid grid-cols-1 gap-3 mt-3">
-                <div>
-                  <label className="block text-sm font-medium" style={{ color: colors.velvet }}>
-                    Amount*
-                  </label>
-                  <InputNumber
-                    value={item.amount}
-                    onChange={(val) => updateOrderItem(index, "amount", val)}
-                    style={{
-                      width: "100%",
-                      borderColor:
-                        !item.amount || item.amount <= 0
-                          ? colors.roseGold
-                          : colors.darkGold,
-                    }}
-                    min={0}
-                    step={0.01}
-                  />
-                </div>
-
-                <div className="mb-2">
-                  <label className="block text-sm font-medium" style={{ color: colors.velvet }}>
-                    Amount & Description
-                  </label>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <InputNumber
-                      value={item.amount}
-                      onChange={(val) => updateOrderItem(index, "amount", val)}
-                      style={{
-                        width: "100%",
-                        borderColor:
-                          !item.amount || item.amount <= 0
-                            ? colors.roseGold
-                            : colors.darkGold,
-                      }}
-                      min={0}
-                      step={0.01}
-                      placeholder="Amount"
-                    />
-                    <Input.TextArea
-                      value={item.description}
-                      onChange={(e) =>
-                        updateOrderItem(index, "description", e.target.value)
-                      }
-                      rows={2}
-                      style={{ width: "100%", borderColor: colors.darkGold }}
-                      placeholder={`Description for item ${index + 1}`}
-                    />
-                  </div>
-                </div>
-
-                <div className="mb-2">
-                  <label className="block text-sm font-medium" style={{ color: colors.velvet }}>
-                    Remark
-                  </label>
-                  <Input.TextArea
-                    value={item.remark}
-                    onChange={(e) =>
-                      updateOrderItem(index, "remark", e.target.value)
-                    }
-                    rows={2}
-                    style={{ width: "100%", borderColor: colors.darkGold }}
-                    placeholder={`Remark for item ${index + 1}`}
-                  />
-                </div>
-              </div>
             </div>
           ))}
         </div>
@@ -2717,7 +2651,42 @@ const renderOrderForm = () => (
           )}
         </div>
 
-        
+        {/* Order-level Amount and Description (appears only once) */}
+        <div className="mt-6 p-4 bg-gray-50 rounded-lg border" style={{ borderColor: colors.darkGold }}>
+          <h4 className="text-lg font-medium mb-4" style={{ color: colors.velvet }}>
+            Order Details
+          </h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-2" style={{ color: colors.velvet }}>
+                Total Amount*
+              </label>
+              <InputNumber
+                value={orderAmount}
+                onChange={(val) => setOrderAmount(val)}
+                style={{
+                  width: "100%",
+                  borderColor: !orderAmount || orderAmount <= 0 ? colors.roseGold : colors.darkGold,
+                }}
+                min={0}
+                step={0.01}
+                placeholder="Enter total order amount"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2" style={{ color: colors.velvet }}>
+                Order Description
+              </label>
+              <Input.TextArea
+                value={orderDescription}
+                onChange={(e) => setOrderDescription(e.target.value)}
+                rows={3}
+                style={{ width: "100%", borderColor: colors.darkGold }}
+                placeholder="Enter order description"
+              />
+            </div>
+          </div>
+        </div>
       </div>
       <div style={{ display: 'flex', justifyContent: 'center', marginTop: '24px', marginBottom: '24px' }}>
   <Button

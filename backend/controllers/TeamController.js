@@ -582,7 +582,7 @@ exports.getAllClients = async (req, res) => {
 // Add order items to existing client by uniqueId or _id
 exports.addClientOrder = async (req, res) => {
   try {
-    const { uniqueId, orderItems, totalAmount, orderDescription } = req.body;
+    const { uniqueId, orderItems, totalAmount, orderDescription, expectedCompletionDate } = req.body;
 
     // 1. Validate input
     if (!uniqueId || !Array.isArray(orderItems) || orderItems.length === 0) {
@@ -627,6 +627,7 @@ exports.addClientOrder = async (req, res) => {
     const newOrder = {
       orderDate: new Date(),
       status: 'ongoing',
+      expectedCompletionDate: expectedCompletionDate ? new Date(expectedCompletionDate) : null,
       totalAmount: totalAmount || 0,
       orderDescription: orderDescription?.trim() || "",
       orderItems: orderItems.map(item => ({

@@ -120,6 +120,7 @@ const SalesDashboard = () => {
   const [styleNumbers, setStyleNumbers] = useState([]);
   const [orderAmount, setOrderAmount] = useState(0);
   const [orderDescription, setOrderDescription] = useState("");
+  const [expectedCompletionDate, setExpectedCompletionDate] = useState(null);
   const [stats, setStats] = useState({
     totalClients: 0,
     activeClients: 0,
@@ -347,6 +348,11 @@ const SalesDashboard = () => {
         return;
       }
 
+      if (!expectedCompletionDate) {
+        message.error("Please select expected completion date");
+        return;
+      }
+
       if (!orderItems || orderItems.length === 0) {
         message.error("Please add at least one order item");
         return;
@@ -388,6 +394,7 @@ const SalesDashboard = () => {
 
       const payload = {
         uniqueId: selectedClientId,
+        expectedCompletionDate: expectedCompletionDate?.toISOString(),
         totalAmount: orderAmount,
         orderDescription: orderDescription?.trim() || "",
         orderItems: orderItems.map((item) => ({
@@ -434,6 +441,7 @@ const SalesDashboard = () => {
         ]);
         setOrderAmount(0);
         setOrderDescription("");
+        setExpectedCompletionDate(null);
         fetchClients();
       } else {
         message.error(response.data.message || "Failed to create order");
@@ -1861,39 +1869,61 @@ const renderOrderForm = () => (
       }}
     >
    <div className="mb-6">
-  <label
-    className="block font-medium mb-2"
-    style={{ color: colors.velvet }}
-  >
-    Client
-  </label>
-  <div className="w-full md:w-1/5">
-    <Select
-      showSearch
-      placeholder="Select client"
-      optionFilterProp="children"
-      onChange={handleClientSelect}
-      value={selectedClientId}
-      filterOption={(input, option) =>
-        option.children.toLowerCase().includes(input.toLowerCase())
-      }
-      className="w-full"
-      style={{
-        borderColor: colors.darkGold,
-      }}
-      suffixIcon={
-        <ChevronDown
-          className="h-4 w-4"
-          style={{ color: colors.darkGold }}
-        />
-      }
-    >
-      {clients.map((client) => (
-        <Option key={client.uniqueId} value={client.uniqueId}>
-          {client.uniqueId}
-        </Option>
-      ))}
-    </Select>
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div>
+      <label
+        className="block font-medium mb-2"
+        style={{ color: colors.velvet }}
+      >
+        Client*
+      </label>
+      <Select
+        showSearch
+        placeholder="Select client"
+        optionFilterProp="children"
+        onChange={handleClientSelect}
+        value={selectedClientId}
+        filterOption={(input, option) =>
+          option.children.toLowerCase().includes(input.toLowerCase())
+        }
+        className="w-full"
+        style={{
+          borderColor: colors.darkGold,
+        }}
+        suffixIcon={
+          <ChevronDown
+            className="h-4 w-4"
+            style={{ color: colors.darkGold }}
+          />
+        }
+      >
+        {clients.map((client) => (
+          <Option key={client.uniqueId} value={client.uniqueId}>
+            {client.uniqueId}
+          </Option>
+        ))}
+      </Select>
+    </div>
+    
+    <div>
+      <label
+        className="block font-medium mb-2"
+        style={{ color: colors.velvet }}
+      >
+        Expected Completion Date*
+      </label>
+      <DatePicker
+        value={expectedCompletionDate}
+        onChange={(date) => setExpectedCompletionDate(date)}
+        placeholder="Select completion date"
+        className="w-full"
+        style={{
+          borderColor: colors.darkGold,
+        }}
+        disabledDate={(current) => current && current < dayjs().startOf('day')}
+        format="DD MMM YYYY"
+      />
+    </div>
   </div>
 </div>
 

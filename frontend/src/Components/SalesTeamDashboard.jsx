@@ -2818,8 +2818,12 @@ const renderOrderHistory = () => (
                         <span>{order.client?.name || 'N/A'}</span>
                       </div> */}
                       <div className="flex justify-between">
-                        <span className="font-medium">Date:</span>
+                        <span className="font-medium">Order Date:</span>
                         <span>{dayjs(order.orderDate).format('DD MMM YYYY')}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="font-medium">Expected Completion:</span>
+                        <span>{order.expectedCompletionDate ? dayjs(order.expectedCompletionDate).format('DD MMM YYYY') : '-'}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="font-medium">Status:</span>
@@ -2882,10 +2886,16 @@ const renderOrderHistory = () => (
                   ),
                 }, */
                 {
-                  title: 'Date',
+                  title: 'Order Date',
                   dataIndex: 'orderDate',
                   key: 'date',
                   render: (date) => dayjs(date).format('DD MMM YYYY'),
+                },
+                {
+                  title: 'Expected Completion',
+                  dataIndex: 'expectedCompletionDate',
+                  key: 'expectedCompletion',
+                  render: (date) => date ? dayjs(date).format('DD MMM YYYY') : '-',
                 },
                 {
                   title: 'Status',

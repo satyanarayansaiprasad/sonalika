@@ -2288,43 +2288,51 @@ const renderOrderForm = () => (
         </div>
       ) : (
         <>
-          {/* Simple Form Layout */}
-          <div className="space-y-4 mb-6">
+          {/* Modern Form Layout */}
+          <div className="space-y-6 mb-8">
             {orderItems.map((item, index) => (
-              <div key={index} className="bg-white p-4 rounded-lg border" style={{ borderColor: colors.darkGold }}>
-                <div className="flex items-center justify-between mb-4">
-                  <h4 className="text-lg font-medium" style={{ color: colors.velvet }}>
-                    Item {index + 1}
-                  </h4>
+              <div key={index} className="bg-gradient-to-br from-white to-gray-50 p-6 rounded-2xl shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-md">
+                      <span className="text-white font-bold text-lg">{index + 1}</span>
+                    </div>
+                    <h4 className="text-xl font-bold text-gray-800">
+                      Jewelry Item {index + 1}
+                    </h4>
+                  </div>
                   <Button
-                    size="small"
+                    size="middle"
                     danger
                     onClick={() => removeOrderItem(index)}
-                    style={{ backgroundColor: colors.roseGold, borderColor: colors.roseGold }}
+                    className="bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 border-0 shadow-md hover:shadow-lg transition-all duration-300 rounded-xl px-6 py-2"
+                    icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>}
                   >
-                    Remove
+                    Remove Item
                   </Button>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                   {/* SR No */}
-                  <div>
-                    <label className="block text-sm font-medium mb-1" style={{ color: colors.velvet }}>
+                  <div className="space-y-2">
+                    <label className="block text-sm font-semibold text-gray-700 uppercase tracking-wide">
                       SR No
                     </label>
                     <InputNumber
                       value={item.srNo}
                       onChange={(val) => updateOrderItem(index, "srNo", val)}
-                      className="w-full"
+                      className="w-full h-11 rounded-xl border-2 border-gray-200 focus:border-blue-500 transition-all duration-300"
                       min={1}
                       placeholder="1"
                     />
                   </div>
 
                   {/* Style No */}
-                  <div>
-                    <label className="block text-sm font-medium mb-1" style={{ color: colors.velvet }}>
-                      Style No*
+                  <div className="space-y-2">
+                    <label className="block text-sm font-semibold text-gray-700 uppercase tracking-wide">
+                      Style No <span className="text-red-500">*</span>
                     </label>
                     <Select
                       value={item.styleNo}
@@ -2343,13 +2351,17 @@ const renderOrderForm = () => (
                           }
                         }
                       }}
-                      placeholder="Select style"
-                      className="w-full"
+                      placeholder="Select style number"
+                      className="w-full h-11"
                       showSearch
                       filterOption={(input, option) =>
                         option?.children?.toLowerCase().includes(input.toLowerCase())
                       }
                       allowClear
+                      style={{
+                        borderRadius: '12px',
+                        border: '2px solid #e5e7eb'
+                      }}
                     >
                       {styleNumbers.map((style) => (
                         <Option key={style.styleNumber} value={style.styleNumber}>
@@ -2360,15 +2372,19 @@ const renderOrderForm = () => (
                   </div>
 
                   {/* Diamond Clarity */}
-                  <div>
-                    <label className="block text-sm font-medium mb-1" style={{ color: colors.velvet }}>
+                  <div className="space-y-2">
+                    <label className="block text-sm font-semibold text-gray-700 uppercase tracking-wide">
                       Diamond Clarity
                     </label>
                     <Select
                       value={item.diamondClarity}
                       onChange={(val) => updateOrderItem(index, "diamondClarity", val)}
                       placeholder="Select clarity"
-                      className="w-full"
+                      className="w-full h-11"
+                      style={{
+                        borderRadius: '12px',
+                        border: '2px solid #e5e7eb'
+                      }}
                     >
                       {diamondClarityOptions.map((option) => (
                         <Option key={option} value={option}>
@@ -2379,15 +2395,19 @@ const renderOrderForm = () => (
                   </div>
 
                   {/* Diamond Color */}
-                  <div>
-                    <label className="block text-sm font-medium mb-1" style={{ color: colors.velvet }}>
+                  <div className="space-y-2">
+                    <label className="block text-sm font-semibold text-gray-700 uppercase tracking-wide">
                       Diamond Color
                     </label>
                     <Select
                       value={item.diamondColor}
                       onChange={(val) => updateOrderItem(index, "diamondColor", val)}
                       placeholder="Select color"
-                      className="w-full"
+                      className="w-full h-11"
+                      style={{
+                        borderRadius: '12px',
+                        border: '2px solid #e5e7eb'
+                      }}
                     >
                       {diamondColorOptions.map((option) => (
                         <Option key={option} value={option}>
@@ -2398,15 +2418,19 @@ const renderOrderForm = () => (
                   </div>
 
                   {/* Gold Purity */}
-                  <div>
-                    <label className="block text-sm font-medium mb-1" style={{ color: colors.velvet }}>
+                  <div className="space-y-2">
+                    <label className="block text-sm font-semibold text-gray-700 uppercase tracking-wide">
                       Gold Purity
                     </label>
                     <Select
                       value={item.goldPurity}
                       onChange={(val) => updateOrderItem(index, "goldPurity", val)}
                       placeholder="Select purity"
-                      className="w-full"
+                      className="w-full h-11"
+                      style={{
+                        borderRadius: '12px',
+                        border: '2px solid #e5e7eb'
+                      }}
                     >
                       {goldPuritOptions.map((option) => (
                         <Option key={option} value={option}>

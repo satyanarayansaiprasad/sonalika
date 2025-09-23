@@ -652,7 +652,6 @@ exports.addClientOrder = async (req, res) => {
         pcs: item.pcs || 0,
         // amount: item.amount, // Removed - using order-level totalAmount instead
         // total: item.total || (item.amount * (item.quantity || 1)),
-        description: item.description?.trim() || "",
         remark: item.remark?.trim() || ""
       }))
     };

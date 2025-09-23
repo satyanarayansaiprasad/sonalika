@@ -408,7 +408,6 @@ const SalesDashboard = () => {
           netWeight: item.netWeight || 0,
           diaWeight: item.diaWeight || 0,
           pcs: item.pcs,
-          description: item.description?.trim() || "",
           remark: item.remark?.trim() || "",
         })),
       };
@@ -540,7 +539,6 @@ const SalesDashboard = () => {
         diaWeight: 0,
         pcs: 1,
         amount: 0,
-        description: "",
         remark: "",
       },
     ]);
@@ -903,13 +901,6 @@ const OngoingOrderModal = ({ order, visible, onClose }) => {
       key: "amount",
       className: "font-medium text-gray-600 bg-gray-50",
       render: (val) => <span className="font-medium text-gray-800">{val?.toFixed(2) || "0.00"}</span>,
-    },
-    {
-      title: "Description",
-      dataIndex: "description",
-      key: "description",
-      className: "font-medium text-gray-600 bg-gray-50",
-      render: (val) => <span className="text-gray-700">{val || "-"}</span>,
     },
     {
       title: "Remark",
@@ -2327,21 +2318,6 @@ const renderOrderForm = () => (
 
                 <div>
                   <label className="block text-sm font-medium" style={{ color: colors.velvet }}>
-                    Description
-                  </label>
-                  <Input.TextArea
-                    value={item.description}
-                    onChange={(e) =>
-                      updateOrderItem(index, "description", e.target.value)
-                    }
-                    rows={2}
-                    style={{ width: "100%", borderColor: colors.darkGold }}
-                    placeholder={`Description for item ${index + 1}`}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium" style={{ color: colors.velvet }}>
                     Remark
                   </label>
                   <Input.TextArea
@@ -2653,20 +2629,6 @@ const renderOrderForm = () => (
                       className="w-full"
                       min={1}
                       placeholder="1"
-                    />
-                  </div>
-
-                  {/* Description */}
-                  <div className="md:col-span-2 lg:col-span-3">
-                    <label className="block text-sm font-medium mb-1" style={{ color: colors.velvet }}>
-                      Description
-                    </label>
-                    <Input.TextArea
-                      value={item.description}
-                      onChange={(e) => updateOrderItem(index, "description", e.target.value)}
-                      rows={2}
-                      className="w-full"
-                      placeholder={`Add description for item ${index + 1}`}
                     />
                   </div>
 

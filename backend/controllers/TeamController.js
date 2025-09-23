@@ -742,3 +742,76 @@ exports.getOrderHistory = async (req, res) => {
     });
   }
 };
+
+// Update Client
+exports.updateClient = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updateData = req.body;
+
+    // Validate required fields
+    if (!updateData.name || !updateData.phone) {
+      return res.status(400).json({
+        success: false,
+        message: 'Name and phone are required fields'
+      });
+    }
+
+    // Find and update the client
+    const updatedClient = await Clienttss.findByIdAndUpdate(
+      id,
+      updateData,
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedClient) {
+      return res.status(404).json({
+        success: false,
+        message: 'Client not found'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Client updated successfully',
+      client: updatedClient
+    });
+  } catch (error) {
+    console.error('Update client error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update client',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+// Delete Client
+exports.deleteClient = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Find and delete the client
+    const deletedClient = await Clienttss.findByIdAndDelete(id);
+
+    if (!deletedClient) {
+      return res.status(404).json({
+        success: false,
+        message: 'Client not found'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Client deleted successfully',
+      client: deletedClient
+    });
+  } catch (error) {
+    console.error('Delete client error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete client',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};

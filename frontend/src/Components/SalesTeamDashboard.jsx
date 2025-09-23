@@ -122,6 +122,33 @@ const SalesDashboard = () => {
   const [orderDescription, setOrderDescription] = useState("");
   const [expectedCompletionDate, setExpectedCompletionDate] = useState(null);
   const [selectedStyleImages, setSelectedStyleImages] = useState({});
+  
+  // Client Management States
+  const [clients, setClients] = useState([]);
+  const [editingClient, setEditingClient] = useState(null);
+  const [editClientModalVisible, setEditClientModalVisible] = useState(false);
+  const [deleteClientModalVisible, setDeleteClientModalVisible] = useState(false);
+  const [clientToDelete, setClientToDelete] = useState(null);
+  const [clientFormData, setClientFormData] = useState({
+    name: '',
+    companyName: '',
+    msmeNumber: '',
+    phone: '',
+    mobile: '',
+    officePhone: '',
+    landline: '',
+    email: '',
+    address: '',
+    gstNo: '',
+    companyPAN: '',
+    ownerPAN: '',
+    aadharNumber: '',
+    importExportCode: '',
+    igi: '',
+    huid: '',
+    diamondWeightLazerMarking: ''
+  });
+  
   const [stats, setStats] = useState({
     totalClients: 0,
     activeClients: 0,
@@ -329,6 +356,106 @@ const SalesDashboard = () => {
   const handleOrderClick = (order) => {
     setSelectedOrder(order);
     setOngoingOrderModalVisible(true);
+  };
+
+  // Client Management Functions
+  const handleEditClient = (client) => {
+    setEditingClient(client);
+    setClientFormData({
+      name: client.name || '',
+      companyName: client.companyName || '',
+      msmeNumber: client.msmeNumber || '',
+      phone: client.phone || '',
+      mobile: client.mobile || '',
+      officePhone: client.officePhone || '',
+      landline: client.landline || '',
+      email: client.email || '',
+      address: client.address || '',
+      gstNo: client.gstNo || '',
+      companyPAN: client.companyPAN || '',
+      ownerPAN: client.ownerPAN || '',
+      aadharNumber: client.aadharNumber || '',
+      importExportCode: client.importExportCode || '',
+      igi: client.igi || '',
+      huid: client.huid || '',
+      diamondWeightLazerMarking: client.diamondWeightLazerMarking || ''
+    });
+    setEditClientModalVisible(true);
+  };
+
+  const handleDeleteClient = (client) => {
+    setClientToDelete(client);
+    setDeleteClientModalVisible(true);
+  };
+
+  const confirmDeleteClient = async () => {
+    if (!clientToDelete) return;
+    
+    try {
+      setLoading(true);
+      const response = await axios.delete(
+        `${API_BASE_URL}/api/team/delete-client/${clientToDelete._id}`
+      );
+      
+      if (response.data.success) {
+        message.success("Client deleted successfully");
+        fetchClients();
+        setDeleteClientModalVisible(false);
+        setClientToDelete(null);
+      } else {
+        throw new Error(response.data.message || "Failed to delete client");
+      }
+    } catch (error) {
+      console.error("Delete error:", error);
+      message.error(error.response?.data?.message || error.message || "Failed to delete client");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdateClient = async () => {
+    if (!editingClient) return;
+
+    try {
+      setLoading(true);
+      const response = await axios.put(
+        `${API_BASE_URL}/api/team/update-client/${editingClient._id}`,
+        clientFormData
+      );
+
+      if (response.data.success) {
+        message.success("Client updated successfully");
+        fetchClients();
+        setEditClientModalVisible(false);
+        setEditingClient(null);
+        setClientFormData({
+          name: '',
+          companyName: '',
+          msmeNumber: '',
+          phone: '',
+          mobile: '',
+          officePhone: '',
+          landline: '',
+          email: '',
+          address: '',
+          gstNo: '',
+          companyPAN: '',
+          ownerPAN: '',
+          aadharNumber: '',
+          importExportCode: '',
+          igi: '',
+          huid: '',
+          diamondWeightLazerMarking: ''
+        });
+      } else {
+        throw new Error(response.data.message || "Failed to update client");
+      }
+    } catch (error) {
+      console.error("Update error:", error);
+      message.error(error.response?.data?.message || error.message || "Failed to update client");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const closeModal = () => {
@@ -3011,6 +3138,8 @@ const renderOrderHistory = () => (
         return renderOrderForm();
       case "history":
         return renderOrderHistory();
+      case "clients":
+        return renderClientManagement();
       default:
         return renderDashboard();
     }
@@ -3019,6 +3148,111 @@ const renderOrderHistory = () => (
   const toggleMobileMenu = () => {
     setMobileMenuVisible(!mobileMenuVisible);
   };
+
+  // Client Management View
+  const renderClientManagement = () => (
+    <div className="p-6">
+      <div className="mb-6">
+        <h2 className="text-3xl font-bold mb-2" style={{ color: colors.velvet }}>
+          Client Management
+        </h2>
+        <p className="text-gray-600">
+          View, edit, and manage all your clients
+        </p>
+      </div>
+
+      {/* Client Table */}
+      <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr style={{ backgroundColor: colors.darkGold }}>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-white">
+                  Client Name
+                </th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-white">
+                  Company
+                </th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-white">
+                  Phone
+                </th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-white">
+                  Email
+                </th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-white">
+                  Orders
+                </th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-white">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {clients.map((client, index) => (
+                <tr
+                  key={client._id}
+                  className={`border-b border-gray-100 hover:bg-gray-50 ${
+                    index % 2 === 0 ? "bg-white" : "bg-gray-25"
+                  }`}
+                >
+                  <td className="px-6 py-4">
+                    <div>
+                      <div className="font-medium text-gray-900">{client.name}</div>
+                      <div className="text-sm text-gray-500">ID: {client.uniqueId}</div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-900">
+                    {client.companyName || "N/A"}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-900">
+                    {client.phone || client.mobile || "N/A"}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-900">
+                    {client.email || "N/A"}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-900">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      {client.orders ? Object.keys(client.orders).length : 0} orders
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-sm font-medium">
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => handleEditClient(client)}
+                        className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white hover:bg-opacity-90 transition-colors"
+                        style={{ backgroundColor: colors.darkGold }}
+                      >
+                        <Edit className="h-4 w-4 mr-1" />
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDeleteClient(client)}
+                        className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white hover:bg-opacity-90 transition-colors"
+                        style={{ backgroundColor: "#dc2626" }}
+                      >
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        Delete
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        
+        {clients.length === 0 && (
+          <div className="text-center py-12">
+            <Users className="mx-auto h-12 w-12 text-gray-400" />
+            <h3 className="mt-2 text-sm font-medium text-gray-900">No clients</h3>
+            <p className="mt-1 text-sm text-gray-500">
+              Get started by adding a new client through KYC form.
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen flex bg-gray-50">
@@ -3117,6 +3351,27 @@ const renderOrderHistory = () => (
               >
                 <History className="h-5 w-5 mr-3" />
                 <span>Order History</span>
+              </button>
+            </li>
+            <li>
+              <button
+                onClick={() => setSelectedMenu("clients")}
+                className={`w-full flex items-center p-3 rounded-lg transition-colors ${
+                  selectedMenu === "clients"
+                    ? "bg-opacity-20"
+                    : "text-gray-300 hover:bg-opacity-10"
+                }`}
+                style={{
+                  backgroundColor:
+                    selectedMenu === "clients" ? colors.gold : "transparent",
+                  color:
+                    selectedMenu === "clients"
+                      ? colors.deepNavy
+                      : colors.platinum,
+                }}
+              >
+                <Users className="h-5 w-5 mr-3" />
+                <span>Client Management</span>
               </button>
             </li>
           </ul>
@@ -3254,6 +3509,32 @@ const renderOrderHistory = () => (
                     <span>Order History</span>
                   </button>
                 </li>
+                <li>
+                  <button
+                    onClick={() => {
+                      setSelectedMenu("clients");
+                      toggleMobileMenu();
+                    }}
+                    className={`w-full flex items-center p-3 rounded-lg transition-colors ${
+                      selectedMenu === "clients"
+                        ? "bg-opacity-20"
+                        : "text-gray-300 hover:bg-opacity-10"
+                    }`}
+                    style={{
+                      backgroundColor:
+                        selectedMenu === "clients"
+                          ? colors.gold
+                          : "transparent",
+                      color:
+                        selectedMenu === "clients"
+                          ? colors.deepNavy
+                          : colors.platinum,
+                    }}
+                  >
+                    <Users className="h-5 w-5 mr-3" />
+                    <span>Client Management</span>
+                  </button>
+                </li>
               </ul>
             </nav>
           </div>
@@ -3361,6 +3642,201 @@ const renderOrderHistory = () => (
           border-color: ${colors.roseGold} !important;
         }
       `}</style> */}
+
+      {/* Edit Client Modal */}
+      <Modal
+        title="Edit Client"
+        open={editClientModalVisible}
+        onCancel={() => setEditClientModalVisible(false)}
+        footer={null}
+        width={800}
+      >
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium mb-2" style={{ color: colors.velvet }}>
+              Client Name*
+            </label>
+            <Input
+              value={clientFormData.name}
+              onChange={(e) => setClientFormData({...clientFormData, name: e.target.value})}
+              placeholder="Enter client name"
+              style={{ borderColor: colors.darkGold }}
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium mb-2" style={{ color: colors.velvet }}>
+              Company Name
+            </label>
+            <Input
+              value={clientFormData.companyName}
+              onChange={(e) => setClientFormData({...clientFormData, companyName: e.target.value})}
+              placeholder="Enter company name"
+              style={{ borderColor: colors.darkGold }}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2" style={{ color: colors.velvet }}>
+              Phone*
+            </label>
+            <Input
+              value={clientFormData.phone}
+              onChange={(e) => setClientFormData({...clientFormData, phone: e.target.value})}
+              placeholder="Enter phone number"
+              style={{ borderColor: colors.darkGold }}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2" style={{ color: colors.velvet }}>
+              Mobile
+            </label>
+            <Input
+              value={clientFormData.mobile}
+              onChange={(e) => setClientFormData({...clientFormData, mobile: e.target.value})}
+              placeholder="Enter mobile number"
+              style={{ borderColor: colors.darkGold }}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2" style={{ color: colors.velvet }}>
+              Email
+            </label>
+            <Input
+              value={clientFormData.email}
+              onChange={(e) => setClientFormData({...clientFormData, email: e.target.value})}
+              placeholder="Enter email address"
+              style={{ borderColor: colors.darkGold }}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2" style={{ color: colors.velvet }}>
+              GST Number
+            </label>
+            <Input
+              value={clientFormData.gstNo}
+              onChange={(e) => setClientFormData({...clientFormData, gstNo: e.target.value})}
+              placeholder="Enter GST number"
+              style={{ borderColor: colors.darkGold }}
+            />
+          </div>
+
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium mb-2" style={{ color: colors.velvet }}>
+              Address
+            </label>
+            <Input.TextArea
+              value={clientFormData.address}
+              onChange={(e) => setClientFormData({...clientFormData, address: e.target.value})}
+              placeholder="Enter address"
+              rows={3}
+              style={{ borderColor: colors.darkGold }}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2" style={{ color: colors.velvet }}>
+              IGI
+            </label>
+            <Input
+              value={clientFormData.igi}
+              onChange={(e) => setClientFormData({...clientFormData, igi: e.target.value})}
+              placeholder="Enter IGI"
+              style={{ borderColor: colors.darkGold }}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2" style={{ color: colors.velvet }}>
+              HUID
+            </label>
+            <Input
+              value={clientFormData.huid}
+              onChange={(e) => setClientFormData({...clientFormData, huid: e.target.value})}
+              placeholder="Enter HUID"
+              style={{ borderColor: colors.darkGold }}
+            />
+          </div>
+
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium mb-2" style={{ color: colors.velvet }}>
+              Diamond Weight Lazer Marking
+            </label>
+            <Input
+              value={clientFormData.diamondWeightLazerMarking}
+              onChange={(e) => setClientFormData({...clientFormData, diamondWeightLazerMarking: e.target.value})}
+              placeholder="Enter diamond weight lazer marking"
+              style={{ borderColor: colors.darkGold }}
+            />
+          </div>
+        </div>
+
+        <div className="flex justify-end space-x-3 mt-6">
+          <Button
+            onClick={() => setEditClientModalVisible(false)}
+            style={{ borderColor: colors.darkGold, color: colors.darkGold }}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="primary"
+            onClick={handleUpdateClient}
+            loading={loading}
+            style={{ backgroundColor: colors.darkGold, borderColor: colors.darkGold }}
+          >
+            Update Client
+          </Button>
+        </div>
+      </Modal>
+
+      {/* Delete Client Confirmation Modal */}
+      <Modal
+        title="Delete Client"
+        open={deleteClientModalVisible}
+        onCancel={() => setDeleteClientModalVisible(false)}
+        footer={null}
+      >
+        <div className="text-center py-4">
+          <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+            <Trash2 className="h-6 w-6 text-red-600" />
+          </div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            Are you sure you want to delete this client?
+          </h3>
+          <p className="text-sm text-gray-500 mb-6">
+            This action cannot be undone. All client data and associated orders will be permanently deleted.
+          </p>
+          {clientToDelete && (
+            <div className="bg-gray-50 p-4 rounded-lg mb-6">
+              <p className="font-medium text-gray-900">{clientToDelete.name}</p>
+              <p className="text-sm text-gray-500">ID: {clientToDelete.uniqueId}</p>
+              <p className="text-sm text-gray-500">
+                Orders: {clientToDelete.orders ? Object.keys(clientToDelete.orders).length : 0}
+              </p>
+            </div>
+          )}
+          <div className="flex justify-center space-x-3">
+            <Button
+              onClick={() => setDeleteClientModalVisible(false)}
+              style={{ borderColor: colors.darkGold, color: colors.darkGold }}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="primary"
+              danger
+              onClick={confirmDeleteClient}
+              loading={loading}
+              style={{ backgroundColor: "#dc2626", borderColor: "#dc2626" }}
+            >
+              Delete Client
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };

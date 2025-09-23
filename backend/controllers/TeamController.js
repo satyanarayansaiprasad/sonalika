@@ -709,6 +709,9 @@ exports.getOrderHistory = async (req, res) => {
       orderId,
       orderDate: order.orderDate,
       status: order.status,
+      expectedCompletionDate: order.expectedCompletionDate,
+      totalAmount: order.totalAmount,
+      orderDescription: order.orderDescription,
       orderItems: (order.orderItems || []).map(item => ({
         srNo: item.srNo || 0,
         styleNo: item.styleNo || '',
@@ -722,7 +725,7 @@ exports.getOrderHistory = async (req, res) => {
         diaWeight: item.diaWeight || 0,
         pcs: item.pcs || 0,
         amount: item.amount || 0,
-        description: item.description || ''
+        remark: item.remark || ''
       }))
     }));
 

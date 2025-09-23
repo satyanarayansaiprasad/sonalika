@@ -2288,114 +2288,44 @@ const renderOrderForm = () => (
         </div>
       ) : (
         <>
-          <table
-            className="w-full mb-4"
-            style={{ border: `1px solid ${colors.darkGold}` }}
-          >
-            <thead>
-              <tr style={{ backgroundColor: colors.platinum }}>
-                <th
-                  className="p-2 text-left font-medium border"
-                  style={{ borderColor: colors.darkGold, color: colors.velvet, width: '80px' }}
-                >
-                  SR No
-                </th>
-                <th
-                  className="p-2 text-left border"
-                  style={{ borderColor: colors.darkGold, color: colors.velvet, width: '120px' }}
-                >
-                  Style No*
-                </th>
-                <th
-                  className="p-2 text-left font-medium border"
-                  style={{ borderColor: colors.darkGold, color: colors.velvet, width: '120px' }}
-                >
-                  Diamond Clarity
-                </th>
-                <th
-                  className="p-2 text-left font-medium border"
-                  style={{ borderColor: colors.darkGold, color: colors.velvet, width: '120px' }}
-                >
-                  Diamond Color
-                </th>
-                <th
-                  className="p-2 text-left font-medium border"
-                  style={{ borderColor: colors.darkGold, color: colors.velvet, width: '90px' }}
-                >
-                  Gold Purity
-                </th>
-                <th
-                  className="p-2 text-left font-medium border"
-                  style={{ borderColor: colors.darkGold, color: colors.velvet, width: '120px' }}
-                >
-                  Gold Color
-                </th>
-                <th
-                  className="p-2 text-left font-medium border"
-                  style={{ borderColor: colors.darkGold, color: colors.velvet, width: '100px' }}
-                >
-                  Gross WT
-                </th>
-                <th
-                  className="p-2 text-left font-medium border"
-                  style={{ borderColor: colors.darkGold, color: colors.velvet, width: '100px' }}
-                >
-                  Net WT
-                </th>
-                <th
-                  className="p-2 text-left font-medium border"
-                  style={{ borderColor: colors.darkGold, color: colors.velvet, width: '100px' }}
-                >
-                  DIA WT
-                </th>
-                <th
-                  className="p-2 text-left font-medium border"
-                  style={{ borderColor: colors.darkGold, color: colors.velvet, width: '100px' }}
-                >
-                  DIA PCS*
-                </th>
-                <th
-                  className="p-2 text-left font-medium border"
-                  style={{ borderColor: colors.darkGold, color: colors.velvet, width: '80px' }}
-                >
-                  Quantity
-                </th>
-                <th
-                  className="p-2 text-left font-medium border"
-                  style={{ borderColor: colors.darkGold, color: colors.velvet, width: '120px' }}
-                >
-                  Remark
-                </th>
-                <th
-                  className="p-2 text-left font-medium border"
-                  style={{ borderColor: colors.darkGold, color: colors.velvet, width: '80px' }}
-                >
-                  Action
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {orderItems.map((item, index) => (
-                <tr
-                  key={index}
-                  className="border"
-                  style={{
-                    borderColor: colors.darkGold,
-                    backgroundColor: colors.light,
-                  }}
-                >
-                  <td className="p-2 border" style={{ borderColor: colors.darkGold, width: '80px' }}>
+          {/* Simple Form Layout */}
+          <div className="space-y-4 mb-6">
+            {orderItems.map((item, index) => (
+              <div key={index} className="bg-white p-4 rounded-lg border" style={{ borderColor: colors.darkGold }}>
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="text-lg font-medium" style={{ color: colors.velvet }}>
+                    Item {index + 1}
+                  </h4>
+                  <Button
+                    size="small"
+                    danger
+                    onClick={() => removeOrderItem(index)}
+                    style={{ backgroundColor: colors.roseGold, borderColor: colors.roseGold }}
+                  >
+                    Remove
+                  </Button>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {/* SR No */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1" style={{ color: colors.velvet }}>
+                      SR No
+                    </label>
                     <InputNumber
                       value={item.srNo}
                       onChange={(val) => updateOrderItem(index, "srNo", val)}
-                      style={{
-                        width: "100%",
-                        borderColor: colors.darkGold,
-                      }}
+                      className="w-full"
                       min={1}
+                      placeholder="1"
                     />
-                  </td>
-                  <td className="p-2 border" style={{ borderColor: colors.darkGold, width: '120px' }}>
+                  </div>
+
+                  {/* Style No */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1" style={{ color: colors.velvet }}>
+                      Style No*
+                    </label>
                     <Select
                       value={item.styleNo}
                       onChange={(value) => {
@@ -2414,15 +2344,12 @@ const renderOrderForm = () => (
                         }
                       }}
                       placeholder="Select style"
+                      className="w-full"
                       showSearch
                       filterOption={(input, option) =>
                         option?.children?.toLowerCase().includes(input.toLowerCase())
                       }
                       allowClear
-                      style={{
-                        width: "100%",
-                        borderColor: colors.darkGold,
-                      }}
                     >
                       {styleNumbers.map((style) => (
                         <Option key={style.styleNumber} value={style.styleNumber}>
@@ -2430,18 +2357,18 @@ const renderOrderForm = () => (
                         </Option>
                       ))}
                     </Select>
-                  </td>
-                  <td className="p-2 border" style={{ borderColor: colors.darkGold, width: '120px' }}>
+                  </div>
+
+                  {/* Diamond Clarity */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1" style={{ color: colors.velvet }}>
+                      Diamond Clarity
+                    </label>
                     <Select
                       value={item.diamondClarity}
-                      onChange={(val) =>
-                        updateOrderItem(index, "diamondClarity", val)
-                      }
-                      style={{
-                        width: "100%",
-                        borderColor: colors.darkGold,
-                      }}
+                      onChange={(val) => updateOrderItem(index, "diamondClarity", val)}
                       placeholder="Select clarity"
+                      className="w-full"
                     >
                       {diamondClarityOptions.map((option) => (
                         <Option key={option} value={option}>
@@ -2449,18 +2376,18 @@ const renderOrderForm = () => (
                         </Option>
                       ))}
                     </Select>
-                  </td>
-                  <td className="p-2 border" style={{ borderColor: colors.darkGold, width: '120px' }}>
+                  </div>
+
+                  {/* Diamond Color */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1" style={{ color: colors.velvet }}>
+                      Diamond Color
+                    </label>
                     <Select
                       value={item.diamondColor}
-                      onChange={(val) =>
-                        updateOrderItem(index, "diamondColor", val)
-                      }
-                      style={{
-                        width: "100%",
-                        borderColor: colors.darkGold,
-                      }}
+                      onChange={(val) => updateOrderItem(index, "diamondColor", val)}
                       placeholder="Select color"
+                      className="w-full"
                     >
                       {diamondColorOptions.map((option) => (
                         <Option key={option} value={option}>
@@ -2468,18 +2395,18 @@ const renderOrderForm = () => (
                         </Option>
                       ))}
                     </Select>
-                  </td>
-                  <td className="p-2 border" style={{ borderColor: colors.darkGold, width: '120px' }}>
+                  </div>
+
+                  {/* Gold Purity */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1" style={{ color: colors.velvet }}>
+                      Gold Purity
+                    </label>
                     <Select
                       value={item.goldPurity}
-                      onChange={(val) =>
-                        updateOrderItem(index, "goldPurity", val)
-                      }
-                      style={{
-                        width: "100%",
-                        borderColor: colors.darkGold,
-                      }}
+                      onChange={(val) => updateOrderItem(index, "goldPurity", val)}
                       placeholder="Select purity"
+                      className="w-full"
                     >
                       {goldPuritOptions.map((option) => (
                         <Option key={option} value={option}>
@@ -2487,18 +2414,18 @@ const renderOrderForm = () => (
                         </Option>
                       ))}
                     </Select>
-                  </td>
-                  <td className="p-2 border" style={{ borderColor: colors.darkGold, width: '120px' }}>
+                  </div>
+
+                  {/* Gold Color */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1" style={{ color: colors.velvet }}>
+                      Gold Color
+                    </label>
                     <Select
                       value={item.goldColor}
-                      onChange={(val) =>
-                        updateOrderItem(index, "goldColor", val)
-                      }
-                      style={{
-                        width: "100%",
-                        borderColor: colors.darkGold,
-                      }}
+                      onChange={(val) => updateOrderItem(index, "goldColor", val)}
                       placeholder="Select color"
+                      className="w-full"
                     >
                       {goldColorOptions.map((option) => (
                         <Option key={option} value={option}>
@@ -2506,119 +2433,104 @@ const renderOrderForm = () => (
                         </Option>
                       ))}
                     </Select>
-                  </td>
-                  <td className="p-2 border" style={{ borderColor: colors.darkGold, width: '100px' }}>
+                  </div>
+
+                  {/* Gross Weight */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1" style={{ color: colors.velvet }}>
+                      Gross WT
+                    </label>
                     <InputNumber
                       value={item.grossWeight ?? 0.0}
-                      onChange={(val) =>
-                        updateOrderItem(index, "grossWeight", val)
-                      }
-                      style={{
-                        width: "100%",
-                        borderColor: colors.darkGold,
-                      }}
+                      onChange={(val) => updateOrderItem(index, "grossWeight", val)}
+                      className="w-full"
                       min={0}
                       step={0.01}
                       formatter={(value) => parseFloat(value || 0).toFixed(2)}
-                      parser={(value) =>
-                        parseFloat(value.replace(/[^\d.]/g, ""))
-                      }
+                      parser={(value) => parseFloat(value.replace(/[^\d.]/g, ""))}
+                      placeholder="0.00"
                     />
-                  </td>
-                  <td className="p-2 border" style={{ borderColor: colors.darkGold, width: '100px' }}>
+                  </div>
+
+                  {/* Net Weight */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1" style={{ color: colors.velvet }}>
+                      Net WT
+                    </label>
                     <InputNumber
                       value={item.netWeight ?? 0.0}
-                      onChange={(val) =>
-                        updateOrderItem(index, "netWeight", val)
-                      }
-                      style={{
-                        width: "100%",
-                        borderColor: colors.darkGold,
-                      }}
+                      onChange={(val) => updateOrderItem(index, "netWeight", val)}
+                      className="w-full"
                       min={0}
                       step={0.01}
                       formatter={(value) => parseFloat(value || 0).toFixed(2)}
-                      parser={(value) =>
-                        parseFloat(value.replace(/[^\d.]/g, ""))
-                      }
+                      parser={(value) => parseFloat(value.replace(/[^\d.]/g, ""))}
+                      placeholder="0.00"
                     />
-                  </td>
-                  <td className="p-2 border" style={{ borderColor: colors.darkGold, width: '100px' }}>
+                  </div>
+
+                  {/* Diamond Weight */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1" style={{ color: colors.velvet }}>
+                      DIA WT
+                    </label>
                     <InputNumber
                       value={item.diaWeight ?? 0.0}
-                      onChange={(val) =>
-                        updateOrderItem(index, "diaWeight", val)
-                      }
-                      style={{
-                        width: "100%",
-                        borderColor: colors.darkGold,
-                      }}
+                      onChange={(val) => updateOrderItem(index, "diaWeight", val)}
+                      className="w-full"
                       min={0}
                       step={0.01}
                       formatter={(value) => parseFloat(value || 0).toFixed(2)}
-                      parser={(value) =>
-                        parseFloat(value.replace(/[^\d.]/g, ""))
-                      }
+                      parser={(value) => parseFloat(value.replace(/[^\d.]/g, ""))}
+                      placeholder="0.00"
                     />
-                  </td>
-                  <td className="p-2 border" style={{ borderColor: colors.darkGold, width: '100px' }}>
+                  </div>
+
+                  {/* Diamond PCS */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1" style={{ color: colors.velvet }}>
+                      DIA PCS *
+                    </label>
                     <InputNumber
                       value={item.pcs}
                       onChange={(val) => updateOrderItem(index, "pcs", val)}
-                      style={{
-                        width: "100%",
-                        borderColor:
-                          !item.pcs || item.pcs < 1
-                            ? colors.roseGold
-                            : colors.darkGold,
-                      }}
+                      className="w-full"
                       min={1}
+                      placeholder="1"
                     />
-                  </td>
-                  <td className="p-2 border" style={{ borderColor: colors.darkGold, width: '80px' }}>
+                  </div>
+
+                  {/* Quantity */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1" style={{ color: colors.velvet }}>
+                      Quantity *
+                    </label>
                     <InputNumber
                       value={item.quantity}
-                      onChange={(val) =>
-                        updateOrderItem(index, "quantity", val)
-                      }
-                      style={{
-                        width: "100%",
-                        borderColor: colors.darkGold,
-                      }}
+                      onChange={(val) => updateOrderItem(index, "quantity", val)}
+                      className="w-full"
                       min={1}
+                      placeholder="1"
                     />
-                  </td>
-                  <td className="p-2 border" style={{ borderColor: colors.darkGold, width: '120px' }}>
+                  </div>
+
+                  {/* Remark */}
+                  <div className="md:col-span-2 lg:col-span-3">
+                    <label className="block text-sm font-medium mb-1" style={{ color: colors.velvet }}>
+                      Remark
+                    </label>
                     <Input.TextArea
                       value={item.remark}
-                      onChange={(e) =>
-                        updateOrderItem(index, "remark", e.target.value)
-                      }
+                      onChange={(e) => updateOrderItem(index, "remark", e.target.value)}
                       rows={2}
-                      style={{ width: "100%", borderColor: colors.darkGold }}
-                      placeholder={`Remark ${index + 1}`}
+                      className="w-full"
+                      placeholder={`Add remarks for item ${index + 1}`}
                     />
-                  </td>
-                  <td className="p-2 border text-center" style={{ borderColor: colors.darkGold, width: '80px' }}>
-                    <Button
-                      size="small"
-                      danger
-                      icon={<Minus className="h-4 w-4" />}
-                      onClick={() => removeOrderItem(index)}
-                      style={{
-                        backgroundColor: colors.roseGold,
-                        borderColor: colors.roseGold,
-                        color: 'white'
-                      }}
-                    >
-                      Remove
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </>
       )}
 

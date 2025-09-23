@@ -124,7 +124,6 @@ const SalesDashboard = () => {
   const [selectedStyleImages, setSelectedStyleImages] = useState({});
   
   // Client Management States
-  const [clients, setClients] = useState([]);
   const [editingClient, setEditingClient] = useState(null);
   const [editClientModalVisible, setEditClientModalVisible] = useState(false);
   const [deleteClientModalVisible, setDeleteClientModalVisible] = useState(false);

@@ -121,6 +121,7 @@ const SalesDashboard = () => {
   const [orderAmount, setOrderAmount] = useState(0);
   const [orderDescription, setOrderDescription] = useState("");
   const [expectedCompletionDate, setExpectedCompletionDate] = useState(null);
+  const [selectedStyleImages, setSelectedStyleImages] = useState({});
   const [stats, setStats] = useState({
     totalClients: 0,
     activeClients: 0,
@@ -556,6 +557,21 @@ const SalesDashboard = () => {
       newItems.splice(index, 1);
       // Reassign serial numbers
       return newItems.map((item, idx) => ({ ...item, srNo: idx + 1 }));
+    });
+
+    // Clean up image state for removed item and reindex remaining images
+    setSelectedStyleImages((prev) => {
+      const newImages = {};
+      Object.keys(prev).forEach(key => {
+        const keyIndex = parseInt(key);
+        if (keyIndex < index) {
+          newImages[keyIndex] = prev[key];
+        } else if (keyIndex > index) {
+          newImages[keyIndex - 1] = prev[key];
+        }
+        // Skip the removed item (keyIndex === index)
+      });
+      return newImages;
     });
   };
 
@@ -2297,9 +2313,6 @@ const renderOrderForm = () => (
                     <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-md">
                       <span className="text-white font-bold text-lg">{index + 1}</span>
                     </div>
-                    <h4 className="text-xl font-bold text-gray-800">
-                      Jewelry Item {index + 1}
-                    </h4>
                   </div>
                   <Button
                     size="middle"
@@ -2348,7 +2361,18 @@ const renderOrderForm = () => (
                             updateOrderItem(index, "netWeight", selectedStyle.netWt || 0);
                             updateOrderItem(index, "diaWeight", selectedStyle.diaWt || 0);
                             updateOrderItem(index, "pcs", selectedStyle.diaPcs || 1);
+                            // Store the selected image
+                            setSelectedStyleImages(prev => ({
+                              ...prev,
+                              [index]: selectedStyle.imageFile || ""
+                            }));
                           }
+                        } else {
+                          // Clear image when style is deselected
+                          setSelectedStyleImages(prev => ({
+                            ...prev,
+                            [index]: ""
+                          }));
                         }
                       }}
                       placeholder="Select style number"
@@ -2370,6 +2394,27 @@ const renderOrderForm = () => (
                       ))}
                     </Select>
                   </div>
+
+                  {/* Style Image Display */}
+                  {selectedStyleImages[index] && (
+                    <div className="col-span-full sm:col-span-2 lg:col-span-3 xl:col-span-4">
+                      <div className="bg-gray-50 rounded-xl p-4 border-2 border-gray-200">
+                        <label className="block text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">
+                          Product Image
+                        </label>
+                        <div className="flex justify-center">
+                          <img 
+                            src={selectedStyleImages[index]} 
+                            alt={`Style ${item.styleNo}`}
+                            className="max-w-full h-48 object-contain rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300"
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Diamond Clarity */}
                   <div className="space-y-2">

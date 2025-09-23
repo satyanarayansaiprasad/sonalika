@@ -725,7 +725,7 @@ exports.getOrderHistory = async (req, res) => {
         diaWeight: item.diaWeight || 0,
         pcs: item.pcs || 0,
         amount: item.amount || 0,
-        remark: item.remark || ''
+        remark: item.remark || item.description || '' // Support both old and new field names
       }))
     }));
 

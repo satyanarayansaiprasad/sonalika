@@ -118,7 +118,7 @@ const SalesDashboard = () => {
   const [orderHistory, setOrderHistory] = useState([]);
   const [selectedClientId, setSelectedClientId] = useState(null);
   const [styleNumbers, setStyleNumbers] = useState([]);
-  const [orderAmount, setOrderAmount] = useState(0);
+  const [orderAmount, setOrderAmount] = useState(null);
   const [orderDescription, setOrderDescription] = useState("");
   const [expectedCompletionDate, setExpectedCompletionDate] = useState(null);
   const [selectedStyleImages, setSelectedStyleImages] = useState({});
@@ -370,6 +370,12 @@ const SalesDashboard = () => {
           return errors.length > 0 ? { itemIndex: index, errors } : null;
         })
         .filter(Boolean);
+
+      // Validate order amount
+      if (!orderAmount || orderAmount <= 0) {
+        message.error("Total Amount must be greater than 0");
+        return;
+      }
 
       if (invalidItems.length > 0) {
         message.error({

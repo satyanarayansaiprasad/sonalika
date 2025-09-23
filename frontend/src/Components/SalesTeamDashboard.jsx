@@ -396,7 +396,7 @@ const SalesDashboard = () => {
       const payload = {
         uniqueId: selectedClientId,
         expectedCompletionDate: expectedCompletionDate?.toISOString(),
-        totalAmount: orderAmount,
+        totalAmount: orderAmount || null,
         orderDescription: orderDescription?.trim() || "",
         orderItems: orderItems.map((item) => ({
           srNo: item.srNo || 0,

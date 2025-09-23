@@ -29,6 +29,9 @@ const clientSchema = new mongoose.Schema({
     of: {
       orderDate: String,
       status: String,
+      expectedCompletionDate: Date,
+      totalAmount: Number,
+      orderDescription: String,
       orderItems: [
         {
           srNo: Number,
@@ -42,7 +45,6 @@ const clientSchema = new mongoose.Schema({
           goldPurity: String,
           goldColor: String,
           pcs: Number,
-          amount: Number,
           description: String,
           remark: String
         }

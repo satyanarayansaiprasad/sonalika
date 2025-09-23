@@ -640,7 +640,7 @@ exports.addClientOrder = async (req, res) => {
         netWeight: item.netWeight || 0,
         diaWeight: item.diaWeight || 0,
         pcs: item.pcs || 0,
-        amount: item.amount,
+        // amount: item.amount, // Removed - using order-level totalAmount instead
         // total: item.total || (item.amount * (item.quantity || 1)),
         description: item.description?.trim() || "",
         remark: item.remark?.trim() || ""

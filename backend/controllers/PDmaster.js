@@ -184,8 +184,19 @@ exports.getAllDesignMasters = async (req, res) => {
 // Get all style numbers for dropdown
 exports.getStyleNumbers = async (req, res) => {
   try {
-    const designs = await DesignMaster.find({}, 'styleNumber serialNumber grossWt netWt diaWt diaPcs clarity color imageFile').sort({ styleNumber: 1 });
-    res.status(200).json({ success: true, data: designs });
+    const designs = await DesignMaster.find({}).sort({ styleNumber: 1 });
+    const formattedDesigns = designs.map(design => ({
+      styleNumber: design.styleNumber,
+      serialNumber: design.serialNumber,
+      grossWt: design.grossWt,
+      netWt: design.netWt,
+      diaWt: design.diaWt,
+      diaPcs: design.diaPcs,
+      clarity: design.clarity,
+      color: design.color,
+      imageFile: design.imageFile || null
+    }));
+    res.status(200).json({ success: true, data: formattedDesigns });
   } catch (err) {
     console.error('Error fetching Style Numbers:', err);
     res.status(500).json({ success: false, message: 'Server Error' });

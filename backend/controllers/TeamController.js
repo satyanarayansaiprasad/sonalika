@@ -724,7 +724,6 @@ exports.getOrderHistory = async (req, res) => {
         netWeight: item.netWeight || 0,
         diaWeight: item.diaWeight || 0,
         pcs: item.pcs || 0,
-        amount: item.amount || 0,
         remark: item.remark || item.description || '' // Support both old and new field names
       }))
     }));

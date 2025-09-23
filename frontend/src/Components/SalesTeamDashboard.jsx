@@ -896,13 +896,6 @@ const OngoingOrderModal = ({ order, visible, onClose }) => {
       render: (text) => <span className="text-gray-700">{text}</span>,
     },
     {
-      title: "Amount (₹)",
-      dataIndex: "amount",
-      key: "amount",
-      className: "font-medium text-gray-600 bg-gray-50",
-      render: (val) => <span className="font-medium text-gray-800">{val?.toFixed(2) || "0.00"}</span>,
-    },
-    {
       title: "Remark",
       dataIndex: "remark",
       key: "remark",

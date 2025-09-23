@@ -2355,6 +2355,7 @@ const renderOrderForm = () => (
                         if (value) {
                           const selectedStyle = styleNumbers.find(style => style.styleNumber === value);
                           if (selectedStyle) {
+                            console.log("Selected style:", selectedStyle); // Debug log
                             updateOrderItem(index, "diamondClarity", selectedStyle.clarity || "");
                             updateOrderItem(index, "diamondColor", selectedStyle.color || "");
                             updateOrderItem(index, "grossWeight", selectedStyle.grossWt || 0);
@@ -2362,10 +2363,14 @@ const renderOrderForm = () => (
                             updateOrderItem(index, "diaWeight", selectedStyle.diaWt || 0);
                             updateOrderItem(index, "pcs", selectedStyle.diaPcs || 1);
                             // Store the selected image
-                            setSelectedStyleImages(prev => ({
-                              ...prev,
-                              [index]: selectedStyle.imageFile || ""
-                            }));
+                            setSelectedStyleImages(prev => {
+                              const newImages = {
+                                ...prev,
+                                [index]: selectedStyle.imageFile || ""
+                              };
+                              console.log("Updated selectedStyleImages:", newImages); // Debug log
+                              return newImages;
+                            });
                           }
                         } else {
                           // Clear image when style is deselected
@@ -2396,21 +2401,32 @@ const renderOrderForm = () => (
                   </div>
 
                   {/* Style Image Display */}
-                  {selectedStyleImages[index] && (
+                  {item.styleNo && (
                     <div className="col-span-full sm:col-span-2 lg:col-span-3 xl:col-span-4">
                       <div className="bg-gray-50 rounded-xl p-4 border-2 border-gray-200">
                         <label className="block text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">
                           Product Image
                         </label>
                         <div className="flex justify-center">
-                          <img 
-                            src={selectedStyleImages[index]} 
-                            alt={`Style ${item.styleNo}`}
-                            className="max-w-full h-48 object-contain rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300"
-                            onError={(e) => {
-                              e.target.style.display = 'none';
-                            }}
-                          />
+                          {selectedStyleImages[index] ? (
+                            <img 
+                              src={selectedStyleImages[index]} 
+                              alt={`Style ${item.styleNo}`}
+                              className="max-w-full h-48 object-contain rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300"
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                                e.target.nextSibling.style.display = 'flex';
+                              }}
+                            />
+                          ) : null}
+                          {!selectedStyleImages[index] && (
+                            <div className="flex flex-col items-center justify-center h-48 w-full bg-gray-100 rounded-lg border-2 border-dashed border-gray-300">
+                              <svg className="w-12 h-12 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              </svg>
+                              <p className="text-gray-500 text-sm">No image available for this style</p>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>

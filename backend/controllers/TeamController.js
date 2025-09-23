@@ -598,8 +598,6 @@ exports.addClientOrder = async (req, res) => {
       if (!item.styleNo) errors.push("styleNo is required");
       if (!item.quantity || isNaN(item.quantity) || item.quantity < 1)
         errors.push("quantity must be ≥ 1");
-      if (!item.amount || isNaN(item.amount))
-        errors.push("amount must be a valid number");
       return errors.length ? { itemIndex: index, errors } : null;
     }).filter(Boolean);
 
@@ -628,7 +626,7 @@ exports.addClientOrder = async (req, res) => {
       orderDate: new Date(),
       status: 'ongoing',
       expectedCompletionDate: expectedCompletionDate ? new Date(expectedCompletionDate) : null,
-      totalAmount: totalAmount || 0,
+      totalAmount: totalAmount || null,
       orderDescription: orderDescription?.trim() || "",
       orderItems: orderItems.map(item => ({
         srNo: item.srNo || 0,

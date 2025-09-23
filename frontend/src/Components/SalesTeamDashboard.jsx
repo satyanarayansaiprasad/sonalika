@@ -118,7 +118,7 @@ const SalesDashboard = () => {
   const [orderHistory, setOrderHistory] = useState([]);
   const [selectedClientId, setSelectedClientId] = useState(null);
   const [styleNumbers, setStyleNumbers] = useState([]);
-  const [orderAmount, setOrderAmount] = useState(null);
+  const [orderAmount, setOrderAmount] = useState(0);
   const [orderDescription, setOrderDescription] = useState("");
   const [expectedCompletionDate, setExpectedCompletionDate] = useState(null);
   const [selectedStyleImages, setSelectedStyleImages] = useState({});
@@ -365,17 +365,13 @@ const SalesDashboard = () => {
           if (!item.styleNo?.trim()) errors.push("Style No is required");
           if (!item.pcs || isNaN(item.pcs)) errors.push("PCS must be a number");
           if (item.pcs < 1) errors.push("DIA PCS must be at least 1");
-          if (!item.quantity || isNaN(item.quantity)) errors.push("Quantity must be a number");
-          if (item.quantity < 1) errors.push("Quantity must be at least 1");
+          if (!item.amount || isNaN(item.amount))
+            errors.push("Amount must be a number");
+          if (item.amount <= 0) errors.push("Amount must be greater than 0");
+
           return errors.length > 0 ? { itemIndex: index, errors } : null;
         })
         .filter(Boolean);
-
-      // Validate order amount
-      if (!orderAmount || orderAmount <= 0) {
-        message.error("Total Amount must be greater than 0");
-        return;
-      }
 
       if (invalidItems.length > 0) {
         message.error({
@@ -2662,18 +2658,18 @@ const renderOrderForm = () => (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium mb-2" style={{ color: colors.velvet }}>
-                Total Amount*
+                Total Amount
               </label>
               <InputNumber
                 value={orderAmount}
                 onChange={(val) => setOrderAmount(val)}
                 style={{
                   width: "100%",
-                  borderColor: !orderAmount || orderAmount <= 0 ? colors.roseGold : colors.darkGold,
+                  borderColor: colors.darkGold,
                 }}
                 min={0}
                 step={0.01}
-                placeholder="Enter total order amount"
+                placeholder="Enter total order amount (optional)"
               />
             </div>
             <div>

@@ -349,10 +349,11 @@ const SalesDashboard = () => {
         return;
       }
 
-      if (!expectedCompletionDate) {
-        message.error("Please select expected completion date");
-        return;
-      }
+      // Expected completion date is optional
+      // if (!expectedCompletionDate) {
+      //   message.error("Please select expected completion date");
+      //   return;
+      // }
 
       if (!orderItems || orderItems.length === 0) {
         message.error("Please add at least one order item");
@@ -411,6 +412,8 @@ const SalesDashboard = () => {
           remark: item.remark?.trim() || "",
         })),
       };
+
+      console.log("Frontend payload being sent:", payload);
 
       const response = await axios.post(
         `${API_BASE_URL}/api/team/client-orders`,

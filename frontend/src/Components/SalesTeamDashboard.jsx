@@ -407,7 +407,7 @@ const SalesDashboard = () => {
           netWeight: item.netWeight || 0,
           diaWeight: item.diaWeight || 0,
           pcs: item.pcs,
-          amount: item.amount,
+          description: item.description?.trim() || "",
           remark: item.remark?.trim() || "",
         })),
       };

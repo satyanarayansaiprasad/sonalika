@@ -583,6 +583,16 @@ exports.getAllClients = async (req, res) => {
 exports.addClientOrder = async (req, res) => {
   try {
     const { uniqueId, orderItems, totalAmount, orderDescription, expectedCompletionDate } = req.body;
+    
+    // Debug logging
+    console.log("Received order data:", {
+      uniqueId,
+      totalAmount,
+      orderDescription,
+      expectedCompletionDate,
+      orderItemsCount: orderItems?.length,
+      firstItem: orderItems?.[0]
+    });
 
     // 1. Validate input
     if (!uniqueId || !Array.isArray(orderItems) || orderItems.length === 0) {
@@ -636,9 +646,9 @@ exports.addClientOrder = async (req, res) => {
         goldPurity: item.goldPurity?.trim() || "",
         goldColor: item.goldColor?.trim() || "",
         quantity: item.quantity || 0,
-        grossWeight: item.grossWeight || 0,
-        netWeight: item.netWeight || 0,
-        diaWeight: item.diaWeight || 0,
+        grossWeight: parseFloat(item.grossWeight) || 0,
+        netWeight: parseFloat(item.netWeight) || 0,
+        diaWeight: parseFloat(item.diaWeight) || 0,
         pcs: item.pcs || 0,
         // amount: item.amount, // Removed - using order-level totalAmount instead
         // total: item.total || (item.amount * (item.quantity || 1)),

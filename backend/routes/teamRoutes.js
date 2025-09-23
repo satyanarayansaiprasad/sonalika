@@ -8,6 +8,4 @@ router.post('/create-client', TeamController.createUser);
 router.get('/get-clients', TeamController.getAllClients);
 router.post('/client-orders', TeamController.addClientOrder);
 router.get('/order-history/:uniqueId', TeamController.getOrderHistory);
-router.put('/update-client/:id', TeamController.updateClient);
-router.delete('/delete-client/:id', TeamController.deleteClient);
 module.exports = router;

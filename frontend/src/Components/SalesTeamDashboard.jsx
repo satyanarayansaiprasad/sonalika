@@ -2659,7 +2659,7 @@ const renderOrderForm = () => (
             Order Details
           </h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
+            {/* <div>
               <label className="block text-sm font-medium mb-2" style={{ color: colors.velvet }}>
                 Total Amount*
               </label>
@@ -2674,7 +2674,7 @@ const renderOrderForm = () => (
                 step={0.01}
                 placeholder="Enter total order amount"
               />
-            </div>
+            </div> */}
             <div>
               <label className="block text-sm font-medium mb-2" style={{ color: colors.velvet }}>
                 Order Description

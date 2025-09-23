@@ -365,7 +365,8 @@ const SalesDashboard = () => {
           if (!item.styleNo?.trim()) errors.push("Style No is required");
           if (!item.pcs || isNaN(item.pcs)) errors.push("PCS must be a number");
           if (item.pcs < 1) errors.push("DIA PCS must be at least 1");
-
+          if (!item.quantity || isNaN(item.quantity)) errors.push("Quantity must be a number");
+          if (item.quantity < 1) errors.push("Quantity must be at least 1");
           return errors.length > 0 ? { itemIndex: index, errors } : null;
         })
         .filter(Boolean);

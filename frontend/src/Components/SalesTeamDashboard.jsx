@@ -488,6 +488,9 @@ const SalesDashboard = () => {
         orderId: order.orderId,
         orderDate: order.orderDate ? new Date(order.orderDate) : null,
         status: order.status || "ongoing",
+        expectedCompletionDate: order.expectedCompletionDate ? new Date(order.expectedCompletionDate) : null,
+        totalAmount: order.totalAmount || 0,
+        orderDescription: order.orderDescription || "",
         orderItems: (order.orderItems || []).map((item) => ({
           srNo: item.srNo || 0,
           styleNo: item.styleNo || "",
@@ -500,14 +503,8 @@ const SalesDashboard = () => {
           netWeight: item.netWeight || 0,
           diaWeight: item.diaWeight || 0,
           pcs: item.pcs || 0,
-          amount: item.amount || 0,
-          description: item.description || "",
+          remark: item.remark || item.description || "", // Support both old and new field names
         })),
-        totalAmount: (order.orderItems || []).reduce(
-          (sum, item) => sum + (item.amount || 0) * (item.quantity || 1),
-          0
-        ),
-        
       }));
 
       // Sort by date (newest first)
@@ -590,18 +587,8 @@ const SalesDashboard = () => {
 
   // Filter orders based on search term, status filter, and date range
 const getFilteredOrders = () => {
-  // Get all orders from all clients
-  const allOrders = clients.flatMap(client => 
-    (client.orders || []).map(order => ({
-      ...order,
-      client: {
-        uniqueId: client.uniqueId,
-        name: client.name,
-        gstNo: client.gstNo,
-        address: client.address
-      }
-    }))
-  );
+  // Use detailed order history data instead of basic client data
+  const allOrders = orderHistory;
 
   return allOrders.filter(order => {
     // Filter by search term (matches unique ID or name)
@@ -635,10 +622,76 @@ const getFilteredOrders = () => {
     }
   };
 
+  // Fetch detailed order history for all clients
+  const fetchAllOrderHistory = async () => {
+    setLoading(true);
+    try {
+      const allOrders = [];
+      
+      // Fetch detailed order history for each client
+      for (const client of clients) {
+        try {
+          const res = await axios.get(`${API_BASE_URL}/api/team/order-history/${client.uniqueId}`);
+          if (res.data.success && res.data.orders) {
+            const clientOrders = res.data.orders.map((order, index) => ({
+              id: order.orderId || `order_${index}`,
+              orderId: order.orderId,
+              orderDate: order.orderDate ? new Date(order.orderDate) : null,
+              status: order.status || "ongoing",
+              expectedCompletionDate: order.expectedCompletionDate ? new Date(order.expectedCompletionDate) : null,
+              totalAmount: order.totalAmount || 0,
+              orderDescription: order.orderDescription || "",
+              orderItems: (order.orderItems || []).map((item) => ({
+                srNo: item.srNo || 0,
+                styleNo: item.styleNo || "",
+                diamondClarity: item.diamondClarity || "",
+                diamondColor: item.diamondColor || "",
+                goldPurity: item.goldPurity || "",
+                goldColor: item.goldColor || "",
+                quantity: item.quantity || 0,
+                grossWeight: item.grossWeight || 0,
+                netWeight: item.netWeight || 0,
+                diaWeight: item.diaWeight || 0,
+                pcs: item.pcs || 0,
+                remark: item.remark || item.description || "",
+              })),
+              client: {
+                uniqueId: client.uniqueId,
+                name: client.name,
+                gstNo: client.gstNo,
+                address: client.address
+              }
+            }));
+            allOrders.push(...clientOrders);
+          }
+        } catch (error) {
+          console.error(`Failed to fetch orders for client ${client.uniqueId}:`, error);
+        }
+      }
+      
+      // Sort by date (newest first)
+      allOrders.sort((a, b) => new Date(b.orderDate) - new Date(a.orderDate));
+      
+      setOrderHistory(allOrders);
+    } catch (error) {
+      console.error("Failed to fetch all order history:", error);
+      message.error("Failed to fetch order history");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchClients();
     fetchStyleNumbers();
   }, []);
+
+  // Fetch detailed order history when history menu is selected
+  useEffect(() => {
+    if (selectedMenu === "history" && clients.length > 0) {
+      fetchAllOrderHistory();
+    }
+  }, [selectedMenu, clients]);
 
   const ClientModal = ({ client, onClose }) => {
     if (!client) return null;

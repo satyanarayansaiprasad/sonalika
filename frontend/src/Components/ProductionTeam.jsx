@@ -4,6 +4,47 @@ import { FiMenu, FiX, FiHome, FiDatabase, FiShoppingBag, FiPlus, FiAward, FiChev
 
 const API_BASE_URL = 'https://sonalika.onrender.com';
 
+// MM Size mapping data
+const MM_SIZE_MAPPING = {
+  0.8: { seiveSize: '+0000-000', sieveSizeRange: '-2.0' },
+  0.9: { seiveSize: '+000-00', sieveSizeRange: '-2.0' },
+  1.0: { seiveSize: '+00-0', sieveSizeRange: '-2.0' },
+  1.1: { seiveSize: '+0-1.0', sieveSizeRange: '-2.0' },
+  1.2: { seiveSize: '+1.5-2.0', sieveSizeRange: '-2.0' },
+  1.3: { seiveSize: '+2.5-3.0', sieveSizeRange: '+2.0-6.5' },
+  1.4: { seiveSize: '+3.5-4.0', sieveSizeRange: '+2.0-6.5' },
+  1.5: { seiveSize: '+4.5-5.0', sieveSizeRange: '+2.0-6.5' },
+  1.6: { seiveSize: '+5.5-6.0', sieveSizeRange: '+2.0-6.5' },
+  1.7: { seiveSize: '+6.0-6.5', sieveSizeRange: '+2.0-6.5' },
+  1.8: { seiveSize: '+6.5-7.0', sieveSizeRange: '+6.5-8.0' },
+  1.9: { seiveSize: '+7.0-7.5', sieveSizeRange: '+6.5-8.0' },
+  2.0: { seiveSize: '+7.5-8.0', sieveSizeRange: '+6.5-8.0' },
+  2.1: { seiveSize: '+8.0-8.5', sieveSizeRange: '+8.0-11.0' },
+  2.2: { seiveSize: '+8.5-9.0', sieveSizeRange: '+8.0-11.0' },
+  2.3: { seiveSize: '+9.0-9.5', sieveSizeRange: '+8.0-11.0' },
+  2.4: { seiveSize: '+9.5-10.0', sieveSizeRange: '+8.0-11.0' },
+  2.5: { seiveSize: '+10.0-10.5', sieveSizeRange: '+8.0-11.0' },
+  2.6: { seiveSize: '+10.5-11.0', sieveSizeRange: '+8.0-11.0' },
+  2.7: { seiveSize: '+11.0-11.5', sieveSizeRange: '+11.0-14.0' },
+  2.8: { seiveSize: '+11.5-12.0', sieveSizeRange: '+11.0-14.0' },
+  2.9: { seiveSize: '+12.0-12.5', sieveSizeRange: '+11.0-14.0' },
+  3.0: { seiveSize: '+12.5-13.0', sieveSizeRange: '+11.0-14.0' },
+  3.1: { seiveSize: '+13.0-13.5', sieveSizeRange: '+11.0-14.0' },
+  3.2: { seiveSize: '+13.5-14.0', sieveSizeRange: '+11.0-14.0' },
+  3.3: { seiveSize: '+14.0-14.5', sieveSizeRange: '+14.0-16.0' },
+  3.4: { seiveSize: '+14.5-15.0', sieveSizeRange: '+14.0-16.0' },
+  3.5: { seiveSize: '+15.0-15.5', sieveSizeRange: '+14.0-16.0' },
+  3.6: { seiveSize: '+15.5-16.0', sieveSizeRange: '+14.0-16.0' },
+  3.7: { seiveSize: '+16.0-16.5', sieveSizeRange: '+16.0-20.0' },
+  3.8: { seiveSize: '+16.5-17.0', sieveSizeRange: '+16.0-20.0' },
+  3.9: { seiveSize: '+17.0-17.5', sieveSizeRange: '+16.0-20.0' },
+  4.0: { seiveSize: '+17.5-18.0', sieveSizeRange: '+16.0-20.0' },
+  4.1: { seiveSize: '+18.0-18.5', sieveSizeRange: '+16.0-20.0' },
+  4.2: { seiveSize: '+18.5-19.0', sieveSizeRange: '+16.0-20.0' },
+  4.3: { seiveSize: '+19.0-19.5', sieveSizeRange: '+16.0-20.0' },
+  4.4: { seiveSize: '+19.5-20.0', sieveSizeRange: '+16.0-20.0' }
+};
+
 const ProductionDashboard = () => {
   const [activeMenu, setActiveMenu] = useState(() => {
     const saved = localStorage.getItem('activeMenu');
@@ -21,7 +62,6 @@ const ProductionDashboard = () => {
   const [productMasters, setProductMasters] = useState([]);
   const [designMasters, setDesignMasters] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [productSerialNumbers, setProductSerialNumbers] = useState([]);
   const [previewImage, setPreviewImage] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showAddCategory, setShowAddCategory] = useState(false);
@@ -51,6 +91,9 @@ const ProductionDashboard = () => {
     diaPcs: '',
     clarity: '',
     color: '',
+    mmSize: null, // Initialize as null instead of empty string
+    seiveSize: '',
+    sieveSizeRange: '',
     imageFile: null
   });
 
@@ -58,18 +101,8 @@ const ProductionDashboard = () => {
     fetchAllProductMasters();
     fetchAllDesignMasters();
     fetchAllCategories();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => {
-    if (productMasters.length > 0) {
-      setProductSerialNumbers(
-        productMasters.map(pm => ({
-          value: pm.serialNumber,
-          label: pm.serialNumber
-        }))
-      );
-    }
-  }, [productMasters]);
 
   const showNotification = (message, isError = false) => {
     setNotification({ show: true, message, isError });
@@ -204,6 +237,20 @@ const ProductionDashboard = () => {
     }
   };
 
+  const handleMMSizeChange = (mmSize) => {
+    const mapping = MM_SIZE_MAPPING[mmSize];
+    
+    if (mapping) {
+      const newFormData = {
+        ...designForm,
+        mmSize: mmSize, // Keep as number, don't parse again
+        seiveSize: mapping.seiveSize,
+        sieveSizeRange: mapping.sieveSizeRange
+      };
+      setDesignForm(newFormData);
+    }
+  };
+
   const handleDesignSubmit = async (e) => {
     e.preventDefault();
     
@@ -212,6 +259,12 @@ const ProductionDashboard = () => {
         !designForm.color || !designForm.imageFile) {
       showNotification('Please fill all fields and upload a design image', true);
       return;
+    }
+
+    // Check if MM Size is selected (optional for now)
+    if (designForm.mmSize === null) {
+      // showNotification('Please select an MM Size', true);
+      // return;
     }
 
     try {
@@ -226,9 +279,19 @@ const ProductionDashboard = () => {
       formData.append('diaPcs', designForm.diaPcs);
       formData.append('clarity', designForm.clarity);
       formData.append('color', designForm.color);
+      // Always send the new fields
+      const mmSizeValue = designForm.mmSize !== null ? parseFloat(designForm.mmSize) : 0;
+      const seiveSizeValue = designForm.seiveSize || '';
+      const sieveSizeRangeValue = designForm.sieveSizeRange || '';
+      
+      formData.append('mmSize', mmSizeValue);
+      formData.append('seiveSize', seiveSizeValue);
+      formData.append('sieveSizeRange', sieveSizeRangeValue);
       formData.append('image', designForm.imageFile);
 
-      const response = await axios.post(
+
+
+      await axios.post(
         `${API_BASE_URL}/api/pdmaster/createDesignMaster`,
         formData,
         {
@@ -248,6 +311,9 @@ const ProductionDashboard = () => {
         diaPcs: '',
         clarity: '',
         color: '',
+        mmSize: null,
+        seiveSize: '',
+        sieveSizeRange: '',
         imageFile: null
       });
       setPreviewImage(null);
@@ -816,6 +882,58 @@ const ProductionDashboard = () => {
           </div>
         </div>
         
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">MM Size *</label>
+            <select
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition"
+              value={designForm.mmSize ? String(designForm.mmSize) : ''}
+              onChange={(e) => {
+                const value = e.target.value;
+                
+                if (value) {
+                  const numValue = parseFloat(value);
+                  handleMMSizeChange(numValue);
+                } else {
+                  // Handle empty selection - reset the fields
+                  setDesignForm(prev => ({
+                    ...prev,
+                    mmSize: null,
+                    seiveSize: '',
+                    sieveSizeRange: ''
+                  }));
+                }
+              }}
+              required
+            >
+              <option value="">Select MM Size</option>
+              {Object.keys(MM_SIZE_MAPPING).map(size => (
+                <option key={size} value={size}>{size}</option>
+              ))}
+            </select>
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Seive / Size</label>
+            <input
+              type="text"
+              className="w-full p-3 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed"
+              value={designForm.seiveSize || ''}
+              readOnly
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Sieve Size Range</label>
+            <input
+              type="text"
+              className="w-full p-3 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed"
+              value={designForm.sieveSizeRange || ''}
+              readOnly
+            />
+          </div>
+        </div>
+        
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Design Image</label>
           <div className="flex items-center space-x-4">
@@ -901,6 +1019,9 @@ const ProductionDashboard = () => {
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Net Wt (g)</th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Diamond Wt (ct)</th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Diamond Pcs</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">MM Size</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Seive / Size</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sieve Size Range</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -929,6 +1050,9 @@ const ProductionDashboard = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{design.netWt}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{design.diaWt}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{design.diaPcs}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{design.mmSize || '-'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{design.seiveSize || '-'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{design.sieveSizeRange || '-'}</td>
                     </tr>
                   ))}
                 </tbody>

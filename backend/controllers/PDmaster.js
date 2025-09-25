@@ -93,8 +93,12 @@ exports.createDesignMaster = async (req, res) => {
       diaPcs, 
       clarity, 
       color,
-      category
+      category,
+      mmSize,
+      seiveSize,
+      sieveSizeRange
     } = req.body;
+
 
     const imageFile = req.file;
 
@@ -102,9 +106,10 @@ exports.createDesignMaster = async (req, res) => {
     if (!serialNumber || !grossWt || !netWt || !diaWt || !diaPcs || !clarity || !color || !category) {
       return res.status(400).json({ 
         success: false,
-        message: "All fields are required" 
+        message: "Basic fields are required" 
       });
     }
+
 
     if (!imageFile) {
       return res.status(400).json({ 
@@ -132,17 +137,22 @@ exports.createDesignMaster = async (req, res) => {
 
     const styleNumber = await getNextStyleNumber(category);
 
-    const newDesign = await DesignMaster.create({
+    const designData = {
       serialNumber,
       styleNumber,
-      grossWt,
-      netWt,
-      diaWt,
-      diaPcs,
+      grossWt: parseFloat(grossWt),
+      netWt: parseFloat(netWt),
+      diaWt: parseFloat(diaWt),
+      diaPcs: parseInt(diaPcs),
       clarity,
       color,
+      mmSize: mmSize && mmSize !== '' ? parseFloat(mmSize) : 0,
+      seiveSize: seiveSize && seiveSize !== '' ? String(seiveSize) : '',
+      sieveSizeRange: sieveSizeRange && sieveSizeRange !== '' ? String(sieveSizeRange) : '',
       imageFile: imageUrl
-    });
+    };
+
+    const newDesign = await DesignMaster.create(designData);
 
     res.status(201).json({ 
       success: true, 
@@ -174,6 +184,7 @@ exports.getAllProductMasters = async (req, res) => {
 exports.getAllDesignMasters = async (req, res) => {
   try {
     const allDesigns = await DesignMaster.find().sort({ createdAt: -1 });
+    
     res.status(200).json({ success: true, data: allDesigns });
   } catch (err) {
     console.error('Error fetching Design Masters:', err);

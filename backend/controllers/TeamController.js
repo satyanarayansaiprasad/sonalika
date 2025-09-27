@@ -650,6 +650,9 @@ exports.addClientOrder = async (req, res) => {
         netWeight: parseFloat(item.netWeight) || 0,
         diaWeight: parseFloat(item.diaWeight) || 0,
         pcs: item.pcs || 0,
+        mmSize: parseFloat(item.mmSize) || 0,
+        seiveSize: item.seiveSize?.trim() || "",
+        sieveSizeRange: item.sieveSizeRange?.trim() || "",
         // amount: item.amount, // Removed - using order-level totalAmount instead
         // total: item.total || (item.amount * (item.quantity || 1)),
         remark: item.remark?.trim() || ""

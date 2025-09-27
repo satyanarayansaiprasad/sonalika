@@ -49,47 +49,6 @@ const { Option } = Select;
 
 const API_BASE_URL = 'https://sonalika.onrender.com';
 
-// MM Size mapping for auto-population
-const MM_SIZE_MAPPING = {
-  0.8: { seiveSize: '+0000-000', sieveSizeRange: '-2.0' },
-  0.9: { seiveSize: '+000-00', sieveSizeRange: '-2.0' },
-  1.0: { seiveSize: '+00-0', sieveSizeRange: '-2.0' },
-  1.1: { seiveSize: '+0-1.0', sieveSizeRange: '-2.0' },
-  1.2: { seiveSize: '+1.5-2.0', sieveSizeRange: '-2.0' },
-  1.3: { seiveSize: '+2.5-3.0', sieveSizeRange: '+2.0-6.5' },
-  1.4: { seiveSize: '+3.5-4.0', sieveSizeRange: '+2.0-6.5' },
-  1.5: { seiveSize: '+4.5-5.0', sieveSizeRange: '+2.0-6.5' },
-  1.6: { seiveSize: '+5.5-6.0', sieveSizeRange: '+2.0-6.5' },
-  1.7: { seiveSize: '+6.0-6.5', sieveSizeRange: '+2.0-6.5' },
-  1.8: { seiveSize: '+6.5-7.0', sieveSizeRange: '+6.5-8.0' },
-  1.9: { seiveSize: '+7.0-7.5', sieveSizeRange: '+6.5-8.0' },
-  2.0: { seiveSize: '+7.5-8.0', sieveSizeRange: '+6.5-8.0' },
-  2.1: { seiveSize: '+8.0-8.5', sieveSizeRange: '+8.0-11.0' },
-  2.2: { seiveSize: '+8.5-9.0', sieveSizeRange: '+8.0-11.0' },
-  2.3: { seiveSize: '+9.0-9.5', sieveSizeRange: '+8.0-11.0' },
-  2.4: { seiveSize: '+9.5-10.0', sieveSizeRange: '+8.0-11.0' },
-  2.5: { seiveSize: '+10.0-10.5', sieveSizeRange: '+8.0-11.0' },
-  2.6: { seiveSize: '+10.5-11.0', sieveSizeRange: '+8.0-11.0' },
-  2.7: { seiveSize: '+11.0-11.5', sieveSizeRange: '+11.0-14.0' },
-  2.8: { seiveSize: '+11.5-12.0', sieveSizeRange: '+11.0-14.0' },
-  2.9: { seiveSize: '+12.0-12.5', sieveSizeRange: '+11.0-14.0' },
-  3.0: { seiveSize: '+12.5-13.0', sieveSizeRange: '+11.0-14.0' },
-  3.1: { seiveSize: '+13.0-13.5', sieveSizeRange: '+11.0-14.0' },
-  3.2: { seiveSize: '+13.5-14.0', sieveSizeRange: '+11.0-14.0' },
-  3.3: { seiveSize: '+14.0-14.5', sieveSizeRange: '+14.0-16.0' },
-  3.4: { seiveSize: '+14.5-15.0', sieveSizeRange: '+14.0-16.0' },
-  3.5: { seiveSize: '+15.0-15.5', sieveSizeRange: '+14.0-16.0' },
-  3.6: { seiveSize: '+15.5-16.0', sieveSizeRange: '+14.0-16.0' },
-  3.7: { seiveSize: '+16.0-16.5', sieveSizeRange: '+16.0-20.0' },
-  3.8: { seiveSize: '+16.5-17.0', sieveSizeRange: '+16.0-20.0' },
-  3.9: { seiveSize: '+17.0-17.5', sieveSizeRange: '+16.0-20.0' },
-  4.0: { seiveSize: '+17.5-18.0', sieveSizeRange: '+16.0-20.0' },
-  4.1: { seiveSize: '+18.0-18.5', sieveSizeRange: '+16.0-20.0' },
-  4.2: { seiveSize: '+18.5-19.0', sieveSizeRange: '+16.0-20.0' },
-  4.3: { seiveSize: '+19.0-19.5', sieveSizeRange: '+16.0-20.0' },
-  4.4: { seiveSize: '+19.5-20.0', sieveSizeRange: '+16.0-20.0' }
-};
-
 // Color palette
 const colors = {
   gold: "#f9e79f",
@@ -145,10 +104,10 @@ const SalesDashboard = () => {
       diaWeight: 0,
       pcs: 1,
       amount: 0,
-      mmSize: 0,
+      remark: "",
+      mmSize: null,
       seiveSize: "",
       sieveSizeRange: "",
-      remark: "",
     },
   ]);
   const [design, setDesign] = useState({
@@ -452,10 +411,10 @@ const SalesDashboard = () => {
           netWeight: item.netWeight || 0,
           diaWeight: item.diaWeight || 0,
           pcs: item.pcs,
-          mmSize: item.mmSize || 0,
+          remark: item.remark?.trim() || "",
+          mmSize: item.mmSize || null,
           seiveSize: item.seiveSize?.trim() || "",
           sieveSizeRange: item.sieveSizeRange?.trim() || "",
-          remark: item.remark?.trim() || "",
         })),
       };
 
@@ -484,6 +443,9 @@ const SalesDashboard = () => {
             pcs: 1,
             amount: 0,
             remark: "",
+            mmSize: null,
+            seiveSize: "",
+            sieveSizeRange: "",
           },
         ]);
         setOrderAmount(0);
@@ -550,10 +512,10 @@ const SalesDashboard = () => {
           netWeight: item.netWeight || 0,
           diaWeight: item.diaWeight || 0,
           pcs: item.pcs || 0,
-          mmSize: item.mmSize || 0,
+          remark: item.remark || item.description || "", // Support both old and new field names
+          mmSize: item.mmSize || null,
           seiveSize: item.seiveSize || "",
           sieveSizeRange: item.sieveSizeRange || "",
-          remark: item.remark || item.description || "", // Support both old and new field names
         })),
       }));
 
@@ -586,10 +548,10 @@ const SalesDashboard = () => {
         diaWeight: 0,
         pcs: 1,
         amount: 0,
-        mmSize: 0,
+        remark: "",
+        mmSize: null,
         seiveSize: "",
         sieveSizeRange: "",
-        remark: "",
       },
     ]);
   };
@@ -706,9 +668,6 @@ const getFilteredOrders = () => {
                 netWeight: item.netWeight || 0,
                 diaWeight: item.diaWeight || 0,
                 pcs: item.pcs || 0,
-                mmSize: item.mmSize || 0,
-                seiveSize: item.seiveSize || "",
-                sieveSizeRange: item.sieveSizeRange || "",
                 remark: item.remark || item.description || "",
               })),
               client: {
@@ -989,27 +948,6 @@ const OngoingOrderModal = ({ order, visible, onClose }) => {
       key: "pcs",
       className: "font-medium text-gray-600 bg-gray-50",
       render: (text) => <span className="text-gray-700">{text}</span>,
-    },
-    {
-      title: "MM Size",
-      dataIndex: "mmSize",
-      key: "mmSize",
-      className: "font-medium text-gray-600 bg-gray-50",
-      render: (val) => <span className="text-gray-700">{val || "-"}</span>,
-    },
-    {
-      title: "Seive / Size",
-      dataIndex: "seiveSize",
-      key: "seiveSize",
-      className: "font-medium text-gray-600 bg-gray-50",
-      render: (text) => <span className="text-gray-700">{text || "-"}</span>,
-    },
-    {
-      title: "Sieve Size Range",
-      dataIndex: "sieveSizeRange",
-      key: "sieveSizeRange",
-      className: "font-medium text-gray-600 bg-gray-50",
-      render: (text) => <span className="text-gray-700">{text || "-"}</span>,
     },
      { 
       title: "GOLD PURITY", 
@@ -2242,21 +2180,33 @@ const renderOrderForm = () => (
                     value={item.styleNo}
                     onChange={(value) => {
                       updateOrderItem(index, "styleNo", value);
-                        // Auto-fill other fields when style number is selected
-                        if (value) {
-                          const selectedStyle = styleNumbers.find(style => style.styleNumber === value);
-                          if (selectedStyle) {
-                            updateOrderItem(index, "diamondClarity", selectedStyle.clarity || "");
-                            updateOrderItem(index, "diamondColor", selectedStyle.color || "");
-                            updateOrderItem(index, "grossWeight", selectedStyle.grossWt || 0);
-                            updateOrderItem(index, "netWeight", selectedStyle.netWt || 0);
-                            updateOrderItem(index, "diaWeight", selectedStyle.diaWt || 0);
-                            updateOrderItem(index, "pcs", selectedStyle.diaPcs || 1);
-                            updateOrderItem(index, "mmSize", selectedStyle.mmSize || 0);
-                            updateOrderItem(index, "seiveSize", selectedStyle.seiveSize || "");
-                            updateOrderItem(index, "sieveSizeRange", selectedStyle.sieveSizeRange || "");
+                      // Auto-fill other fields when style number is selected
+                      if (value) {
+                        const selectedStyle = styleNumbers.find(style => style.styleNumber === value);
+                        if (selectedStyle) {
+                          updateOrderItem(index, "diamondClarity", selectedStyle.clarity || "");
+                          updateOrderItem(index, "diamondColor", selectedStyle.color || "");
+                          updateOrderItem(index, "grossWeight", selectedStyle.grossWt || 0);
+                          updateOrderItem(index, "netWeight", selectedStyle.netWt || 0);
+                          updateOrderItem(index, "diaWeight", selectedStyle.diaWt || 0);
+                          updateOrderItem(index, "pcs", selectedStyle.diaPcs || 1);
+                          
+                          // Auto-populate MM Size fields if available
+                          if (selectedStyle.mmSize !== undefined && selectedStyle.mmSize !== null) {
+                            const mapping = MM_SIZE_MAPPING[selectedStyle.mmSize];
+                            updateOrderItem(index, "mmSize", selectedStyle.mmSize);
+                            if (mapping) {
+                              updateOrderItem(index, "seiveSize", mapping.seiveSize);
+                              updateOrderItem(index, "sieveSizeRange", mapping.sieveSizeRange);
+                            }
                           }
                         }
+                      } else {
+                        // Clear MM Size fields when style is deselected
+                        updateOrderItem(index, "mmSize", null);
+                        updateOrderItem(index, "seiveSize", "");
+                        updateOrderItem(index, "sieveSizeRange", "");
+                      }
                     }}
                     placeholder="Select style number"
                     style={{ width: "100%", borderColor: colors.darkGold }}
@@ -2428,6 +2378,69 @@ const renderOrderForm = () => (
                     min={1}
                   />
                 </div>
+
+                <div>
+                  <label className="block text-sm font-medium" style={{ color: colors.velvet }}>
+                    MM Size
+                  </label>
+                  <Select
+                    value={item.mmSize}
+                    onChange={(val) => {
+                      updateOrderItem(index, "mmSize", val);
+                      if (val) {
+                        const mapping = MM_SIZE_MAPPING[val];
+                        if (mapping) {
+                          updateOrderItem(index, "seiveSize", mapping.seiveSize);
+                          updateOrderItem(index, "sieveSizeRange", mapping.sieveSizeRange);
+                        }
+                      } else {
+                        updateOrderItem(index, "seiveSize", "");
+                        updateOrderItem(index, "sieveSizeRange", "");
+                      }
+                    }}
+                    placeholder="Select MM Size"
+                    style={{ width: "100%", borderColor: colors.darkGold }}
+                    allowClear
+                  >
+                    {Object.keys(MM_SIZE_MAPPING).map((size) => (
+                      <Option key={size} value={parseFloat(size)}>
+                        {size}
+                      </Option>
+                    ))}
+                  </Select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium" style={{ color: colors.velvet }}>
+                    Seive/Size
+                  </label>
+                  <Input
+                    value={item.seiveSize}
+                    readOnly
+                    style={{ 
+                      width: "100%", 
+                      borderColor: colors.darkGold,
+                      backgroundColor: '#f5f5f5'
+                    }}
+                    placeholder="Auto-filled"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium" style={{ color: colors.velvet }}>
+                    Sieve Size Range
+                  </label>
+                  <Input
+                    value={item.sieveSizeRange}
+                    readOnly
+                    style={{ 
+                      width: "100%", 
+                      borderColor: colors.darkGold,
+                      backgroundColor: '#f5f5f5'
+                    }}
+                    placeholder="Auto-filled"
+                  />
+                </div>
                 
                 <div>
                   <label className="block text-sm font-medium" style={{ color: colors.velvet }}>
@@ -2440,60 +2453,6 @@ const renderOrderForm = () => (
                     }
                     style={{ width: "100%", borderColor: colors.darkGold }}
                     min={1}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium" style={{ color: colors.velvet }}>
-                    MM Size
-                  </label>
-                  <Select
-                    value={item.mmSize ? String(item.mmSize) : ''}
-                    onChange={(value) => {
-                      const numValue = value ? parseFloat(value) : 0;
-                      updateOrderItem(index, "mmSize", numValue);
-                      // Auto-populate seive size and sieve size range
-                      if (value && MM_SIZE_MAPPING[value]) {
-                        updateOrderItem(index, "seiveSize", MM_SIZE_MAPPING[value].seiveSize);
-                        updateOrderItem(index, "sieveSizeRange", MM_SIZE_MAPPING[value].sieveSizeRange);
-                      } else {
-                        updateOrderItem(index, "seiveSize", "");
-                        updateOrderItem(index, "sieveSizeRange", "");
-                      }
-                    }}
-                    placeholder="Select MM Size"
-                    style={{ width: "100%", borderColor: colors.darkGold }}
-                    allowClear
-                  >
-                    {Object.keys(MM_SIZE_MAPPING).map(size => (
-                      <Option key={size} value={size}>{size}</Option>
-                    ))}
-                  </Select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium" style={{ color: colors.velvet }}>
-                    Seive / Size
-                  </label>
-                  <Input
-                    value={item.seiveSize || ''}
-                    onChange={(e) => updateOrderItem(index, "seiveSize", e.target.value)}
-                    placeholder="Auto-populated"
-                    style={{ width: "100%", borderColor: colors.darkGold }}
-                    readOnly
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium" style={{ color: colors.velvet }}>
-                    Sieve Size Range
-                  </label>
-                  <Input
-                    value={item.sieveSizeRange || ''}
-                    onChange={(e) => updateOrderItem(index, "sieveSizeRange", e.target.value)}
-                    placeholder="Auto-populated"
-                    style={{ width: "100%", borderColor: colors.darkGold }}
-                    readOnly
                   />
                 </div>
 
@@ -2576,9 +2535,17 @@ const renderOrderForm = () => (
                             updateOrderItem(index, "netWeight", selectedStyle.netWt || 0);
                             updateOrderItem(index, "diaWeight", selectedStyle.diaWt || 0);
                             updateOrderItem(index, "pcs", selectedStyle.diaPcs || 1);
-                            updateOrderItem(index, "mmSize", selectedStyle.mmSize || 0);
-                            updateOrderItem(index, "seiveSize", selectedStyle.seiveSize || "");
-                            updateOrderItem(index, "sieveSizeRange", selectedStyle.sieveSizeRange || "");
+                            
+                            // Auto-populate MM Size fields if available
+                            if (selectedStyle.mmSize !== undefined && selectedStyle.mmSize !== null) {
+                              const mapping = MM_SIZE_MAPPING[selectedStyle.mmSize];
+                              updateOrderItem(index, "mmSize", selectedStyle.mmSize);
+                              if (mapping) {
+                                updateOrderItem(index, "seiveSize", mapping.seiveSize);
+                                updateOrderItem(index, "sieveSizeRange", mapping.sieveSizeRange);
+                              }
+                            }
+                            
                             // Store the selected image
                             setSelectedStyleImages(prev => {
                               const newImages = {
@@ -2590,11 +2557,14 @@ const renderOrderForm = () => (
                             });
                           }
                         } else {
-                          // Clear image when style is deselected
+                          // Clear image and MM Size fields when style is deselected
                           setSelectedStyleImages(prev => ({
                             ...prev,
                             [index]: ""
                           }));
+                          updateOrderItem(index, "mmSize", null);
+                          updateOrderItem(index, "seiveSize", "");
+                          updateOrderItem(index, "sieveSizeRange", "");
                         }
                       }}
                       placeholder="Select style number"
@@ -2802,6 +2772,66 @@ const renderOrderForm = () => (
                     />
                   </div>
 
+                  {/* MM Size */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1" style={{ color: colors.velvet }}>
+                      MM Size
+                    </label>
+                    <Select
+                      value={item.mmSize}
+                      onChange={(val) => {
+                        updateOrderItem(index, "mmSize", val);
+                        if (val) {
+                          const mapping = MM_SIZE_MAPPING[val];
+                          if (mapping) {
+                            updateOrderItem(index, "seiveSize", mapping.seiveSize);
+                            updateOrderItem(index, "sieveSizeRange", mapping.sieveSizeRange);
+                          }
+                        } else {
+                          updateOrderItem(index, "seiveSize", "");
+                          updateOrderItem(index, "sieveSizeRange", "");
+                        }
+                      }}
+                      placeholder="Select MM Size"
+                      className="w-full"
+                      allowClear
+                    >
+                      {Object.keys(MM_SIZE_MAPPING).map((size) => (
+                        <Option key={size} value={parseFloat(size)}>
+                          {size}
+                        </Option>
+                      ))}
+                    </Select>
+                  </div>
+
+                  {/* Seive/Size */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1" style={{ color: colors.velvet }}>
+                      Seive/Size
+                    </label>
+                    <Input
+                      value={item.seiveSize}
+                      readOnly
+                      className="w-full"
+                      placeholder="Auto-filled"
+                      style={{ backgroundColor: '#f5f5f5' }}
+                    />
+                  </div>
+
+                  {/* Sieve Size Range */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1" style={{ color: colors.velvet }}>
+                      Sieve Size Range
+                    </label>
+                    <Input
+                      value={item.sieveSizeRange}
+                      readOnly
+                      className="w-full"
+                      placeholder="Auto-filled"
+                      style={{ backgroundColor: '#f5f5f5' }}
+                    />
+                  </div>
+
                   {/* Quantity */}
                   <div>
                     <label className="block text-sm font-medium mb-1" style={{ color: colors.velvet }}>
@@ -2813,77 +2843,6 @@ const renderOrderForm = () => (
                       className="w-full"
                       min={1}
                       placeholder="1"
-                    />
-                  </div>
-
-                  {/* MM Size */}
-                  <div>
-                    <label className="block text-sm font-medium mb-1" style={{ color: colors.velvet }}>
-                      MM Size
-                    </label>
-                    <Select
-                      value={item.mmSize ? String(item.mmSize) : ''}
-                      onChange={(value) => {
-                        const numValue = value ? parseFloat(value) : 0;
-                        updateOrderItem(index, "mmSize", numValue);
-                        // Auto-populate seive size and sieve size range
-                        if (value && MM_SIZE_MAPPING[value]) {
-                          updateOrderItem(index, "seiveSize", MM_SIZE_MAPPING[value].seiveSize);
-                          updateOrderItem(index, "sieveSizeRange", MM_SIZE_MAPPING[value].sieveSizeRange);
-                        } else {
-                          updateOrderItem(index, "seiveSize", "");
-                          updateOrderItem(index, "sieveSizeRange", "");
-                        }
-                      }}
-                      placeholder="Select MM Size"
-                      className="w-full"
-                      allowClear
-                      style={{
-                        borderRadius: '12px',
-                        border: '2px solid #e5e7eb'
-                      }}
-                    >
-                      {Object.keys(MM_SIZE_MAPPING).map(size => (
-                        <Option key={size} value={size}>{size}</Option>
-                      ))}
-                    </Select>
-                  </div>
-
-                  {/* Seive / Size */}
-                  <div>
-                    <label className="block text-sm font-medium mb-1" style={{ color: colors.velvet }}>
-                      Seive / Size
-                    </label>
-                    <Input
-                      value={item.seiveSize || ''}
-                      onChange={(e) => updateOrderItem(index, "seiveSize", e.target.value)}
-                      placeholder="Auto-populated"
-                      className="w-full"
-                      readOnly
-                      style={{
-                        borderRadius: '12px',
-                        border: '2px solid #e5e7eb',
-                        backgroundColor: '#f9fafb'
-                      }}
-                    />
-                  </div>
-
-                  {/* Sieve Size Range */}
-                  <div>
-                    <label className="block text-sm font-medium mb-1" style={{ color: colors.velvet }}>
-                      Sieve Size Range
-                    </label>
-                    <Input
-                      value={item.sieveSizeRange || ''}
-                      onChange={(e) => updateOrderItem(index, "sieveSizeRange", e.target.value)}
-                      placeholder="Auto-populated"
-                      className="w-full"
-                      readOnly
-                      style={{
-                        borderRadius: '12px',
-                        border: '2px solid #e5e7eb',
-                        backgroundColor: '#f9fafb'
-                      }}
                     />
                   </div>
 

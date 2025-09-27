@@ -45,10 +45,10 @@ const clientSchema = new mongoose.Schema({
           goldPurity: String,
           goldColor: String,
           pcs: Number,
+          remark: String,
           mmSize: Number,
           seiveSize: String,
-          sieveSizeRange: String,
-          remark: String
+          sieveSizeRange: String
         }
       ]
     },

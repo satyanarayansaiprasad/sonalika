@@ -15,6 +15,9 @@ const clientSchema = new mongoose.Schema({
   aadharNumber: String,
   importExportCode: String,
   msmeNumber: String,
+  igi: String,
+  huid: String,
+  diamondWeightLazerMarking: String,
 
   // 🔽 Add these if you're uploading files
   gstCertificate: String,

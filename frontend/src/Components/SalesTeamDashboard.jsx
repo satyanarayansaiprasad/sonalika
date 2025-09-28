@@ -949,6 +949,27 @@ const OngoingOrderModal = ({ order, visible, onClose }) => {
       className: "font-medium text-gray-600 bg-gray-50",
       render: (text) => <span className="text-gray-700">{text}</span>,
     },
+    {
+      title: "MM Size",
+      dataIndex: "mmSize",
+      key: "mmSize",
+      className: "font-medium text-gray-600 bg-gray-50",
+      render: (val) => <span className="text-gray-700">{val || "-"}</span>,
+    },
+    {
+      title: "Seive/Size",
+      dataIndex: "seiveSize",
+      key: "seiveSize",
+      className: "font-medium text-gray-600 bg-gray-50",
+      render: (text) => <span className="text-gray-700">{text || "-"}</span>,
+    },
+    {
+      title: "Sieve Size Range",
+      dataIndex: "sieveSizeRange",
+      key: "sieveSizeRange",
+      className: "font-medium text-gray-600 bg-gray-50",
+      render: (text) => <span className="text-gray-700">{text || "-"}</span>,
+    },
      { 
       title: "GOLD PURITY", 
       dataIndex: "goldPurity", 

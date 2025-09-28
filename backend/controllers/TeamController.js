@@ -507,6 +507,9 @@ exports.getAllClients = async (req, res) => {
           netWeight: item.netWeight || 0,
           diaWeight: item.diaWeight || 0,
           pcs: item.pcs || 0,
+          mmSize: item.mmSize || 0,
+          seiveSize: item.seiveSize || '',
+          sieveSizeRange: item.sieveSizeRange || '',
           amount: item.amount || 0,
           description: item.description || ''
         }))
@@ -650,6 +653,9 @@ exports.addClientOrder = async (req, res) => {
         netWeight: parseFloat(item.netWeight) || 0,
         diaWeight: parseFloat(item.diaWeight) || 0,
         pcs: item.pcs || 0,
+        mmSize: parseFloat(item.mmSize) || 0,
+        seiveSize: item.seiveSize?.trim() || "",
+        sieveSizeRange: item.sieveSizeRange?.trim() || "",
         // amount: item.amount, // Removed - using order-level totalAmount instead
         // total: item.total || (item.amount * (item.quantity || 1)),
         remark: item.remark?.trim() || ""
@@ -724,6 +730,9 @@ exports.getOrderHistory = async (req, res) => {
         netWeight: item.netWeight || 0,
         diaWeight: item.diaWeight || 0,
         pcs: item.pcs || 0,
+        mmSize: item.mmSize || 0,
+        seiveSize: item.seiveSize || '',
+        sieveSizeRange: item.sieveSizeRange || '',
         remark: item.remark || item.description || '' // Support both old and new field names
       }))
     }));

@@ -103,6 +103,9 @@ const SalesDashboard = () => {
       netWeight: 0,
       diaWeight: 0,
       pcs: 1,
+      mmSize: 0,
+      seiveSize: "",
+      sieveSizeRange: "",
       amount: 0,
       remark: "",
     },
@@ -408,6 +411,9 @@ const SalesDashboard = () => {
           netWeight: item.netWeight || 0,
           diaWeight: item.diaWeight || 0,
           pcs: item.pcs,
+          mmSize: item.mmSize || 0,
+          seiveSize: item.seiveSize || "",
+          sieveSizeRange: item.sieveSizeRange || "",
           remark: item.remark?.trim() || "",
         })),
       };
@@ -503,6 +509,9 @@ const SalesDashboard = () => {
           netWeight: item.netWeight || 0,
           diaWeight: item.diaWeight || 0,
           pcs: item.pcs || 0,
+          mmSize: item.mmSize || 0,
+          seiveSize: item.seiveSize || "",
+          sieveSizeRange: item.sieveSizeRange || "",
           remark: item.remark || item.description || "", // Support both old and new field names
         })),
       }));
@@ -535,6 +544,9 @@ const SalesDashboard = () => {
         netWeight: 0,
         diaWeight: 0,
         pcs: 1,
+        mmSize: 0,
+        seiveSize: "",
+        sieveSizeRange: "",
         amount: 0,
         remark: "",
       },
@@ -653,6 +665,9 @@ const getFilteredOrders = () => {
                 netWeight: item.netWeight || 0,
                 diaWeight: item.diaWeight || 0,
                 pcs: item.pcs || 0,
+                mmSize: item.mmSize || 0,
+                seiveSize: item.seiveSize || "",
+                sieveSizeRange: item.sieveSizeRange || "",
                 remark: item.remark || item.description || "",
               })),
               client: {
@@ -2175,6 +2190,9 @@ const renderOrderForm = () => (
                           updateOrderItem(index, "netWeight", selectedStyle.netWt || 0);
                           updateOrderItem(index, "diaWeight", selectedStyle.diaWt || 0);
                           updateOrderItem(index, "pcs", selectedStyle.diaPcs || 1);
+                          updateOrderItem(index, "mmSize", selectedStyle.mmSize || 0);
+                          updateOrderItem(index, "seiveSize", selectedStyle.seiveSize || "");
+                          updateOrderItem(index, "sieveSizeRange", selectedStyle.sieveSizeRange || "");
                           
                           // Log the 3 new fields in console
                           console.log("🔍 === STYLE SELECTION DEBUG ===");
@@ -2241,6 +2259,45 @@ const renderOrderForm = () => (
                       </Option>
                     ))}
                   </Select>
+                </div>
+
+                {/* MM Size Field */}
+                <div>
+                  <label className="block font-medium" style={{ color: colors.velvet }}>
+                    MM Size
+                  </label>
+                  <Input
+                    value={item.mmSize || ""}
+                    readOnly
+                    style={{ width: "100%", borderColor: colors.darkGold, backgroundColor: "#f5f5f5" }}
+                    placeholder="MM Size will appear here"
+                  />
+                </div>
+
+                {/* Seive/Size Field */}
+                <div>
+                  <label className="block font-medium" style={{ color: colors.velvet }}>
+                    Seive/Size
+                  </label>
+                  <Input
+                    value={item.seiveSize || ""}
+                    readOnly
+                    style={{ width: "100%", borderColor: colors.darkGold, backgroundColor: "#f5f5f5" }}
+                    placeholder="Seive/Size will appear here"
+                  />
+                </div>
+
+                {/* Sieve Size Range Field */}
+                <div>
+                  <label className="block font-medium" style={{ color: colors.velvet }}>
+                    Sieve Size Range
+                  </label>
+                  <Input
+                    value={item.sieveSizeRange || ""}
+                    readOnly
+                    style={{ width: "100%", borderColor: colors.darkGold, backgroundColor: "#f5f5f5" }}
+                    placeholder="Sieve Size Range will appear here"
+                  />
                 </div>
                 
                 <div>
@@ -2451,6 +2508,9 @@ const renderOrderForm = () => (
                             updateOrderItem(index, "netWeight", selectedStyle.netWt || 0);
                             updateOrderItem(index, "diaWeight", selectedStyle.diaWt || 0);
                             updateOrderItem(index, "pcs", selectedStyle.diaPcs || 1);
+                            updateOrderItem(index, "mmSize", selectedStyle.mmSize || 0);
+                            updateOrderItem(index, "seiveSize", selectedStyle.seiveSize || "");
+                            updateOrderItem(index, "sieveSizeRange", selectedStyle.sieveSizeRange || "");
                             
                             // Log the 3 new fields in console
                             console.log("🔍 === STYLE SELECTION DEBUG (Form 2) ===");
@@ -2575,6 +2635,60 @@ const renderOrderForm = () => (
                         </Option>
                       ))}
                     </Select>
+                  </div>
+
+                  {/* MM Size Field */}
+                  <div className="space-y-2">
+                    <label className="block text-sm font-semibold text-gray-700 uppercase tracking-wide">
+                      MM Size
+                    </label>
+                    <Input
+                      value={item.mmSize || ""}
+                      readOnly
+                      className="w-full h-11"
+                      style={{
+                        borderRadius: '12px',
+                        border: '2px solid #e5e7eb',
+                        backgroundColor: '#f5f5f5'
+                      }}
+                      placeholder="MM Size will appear here"
+                    />
+                  </div>
+
+                  {/* Seive/Size Field */}
+                  <div className="space-y-2">
+                    <label className="block text-sm font-semibold text-gray-700 uppercase tracking-wide">
+                      Seive/Size
+                    </label>
+                    <Input
+                      value={item.seiveSize || ""}
+                      readOnly
+                      className="w-full h-11"
+                      style={{
+                        borderRadius: '12px',
+                        border: '2px solid #e5e7eb',
+                        backgroundColor: '#f5f5f5'
+                      }}
+                      placeholder="Seive/Size will appear here"
+                    />
+                  </div>
+
+                  {/* Sieve Size Range Field */}
+                  <div className="space-y-2">
+                    <label className="block text-sm font-semibold text-gray-700 uppercase tracking-wide">
+                      Sieve Size Range
+                    </label>
+                    <Input
+                      value={item.sieveSizeRange || ""}
+                      readOnly
+                      className="w-full h-11"
+                      style={{
+                        borderRadius: '12px',
+                        border: '2px solid #e5e7eb',
+                        backgroundColor: '#f5f5f5'
+                      }}
+                      placeholder="Sieve Size Range will appear here"
+                    />
                   </div>
 
                   {/* Gold Purity */}

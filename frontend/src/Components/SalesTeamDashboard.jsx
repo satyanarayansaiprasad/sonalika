@@ -105,9 +105,6 @@ const SalesDashboard = () => {
       pcs: 1,
       amount: 0,
       remark: "",
-      mmSize: null,
-      seiveSize: "",
-      sieveSizeRange: "",
     },
   ]);
   const [design, setDesign] = useState({
@@ -412,9 +409,6 @@ const SalesDashboard = () => {
           diaWeight: item.diaWeight || 0,
           pcs: item.pcs,
           remark: item.remark?.trim() || "",
-          mmSize: item.mmSize || null,
-          seiveSize: item.seiveSize?.trim() || "",
-          sieveSizeRange: item.sieveSizeRange?.trim() || "",
         })),
       };
 
@@ -443,9 +437,6 @@ const SalesDashboard = () => {
             pcs: 1,
             amount: 0,
             remark: "",
-            mmSize: null,
-            seiveSize: "",
-            sieveSizeRange: "",
           },
         ]);
         setOrderAmount(0);
@@ -513,9 +504,6 @@ const SalesDashboard = () => {
           diaWeight: item.diaWeight || 0,
           pcs: item.pcs || 0,
           remark: item.remark || item.description || "", // Support both old and new field names
-          mmSize: item.mmSize || null,
-          seiveSize: item.seiveSize || "",
-          sieveSizeRange: item.sieveSizeRange || "",
         })),
       }));
 
@@ -549,9 +537,6 @@ const SalesDashboard = () => {
         pcs: 1,
         amount: 0,
         remark: "",
-        mmSize: null,
-        seiveSize: "",
-        sieveSizeRange: "",
       },
     ]);
   };
@@ -2191,21 +2176,15 @@ const renderOrderForm = () => (
                           updateOrderItem(index, "diaWeight", selectedStyle.diaWt || 0);
                           updateOrderItem(index, "pcs", selectedStyle.diaPcs || 1);
                           
-                          // Auto-populate MM Size fields if available
-                          if (selectedStyle.mmSize !== undefined && selectedStyle.mmSize !== null) {
-                            const mapping = MM_SIZE_MAPPING[selectedStyle.mmSize];
-                            updateOrderItem(index, "mmSize", selectedStyle.mmSize);
-                            if (mapping) {
-                              updateOrderItem(index, "seiveSize", mapping.seiveSize);
-                              updateOrderItem(index, "sieveSizeRange", mapping.sieveSizeRange);
-                            }
-                          }
+                          // Log the 3 new fields in console
+                          console.log("🔍 === STYLE SELECTION DEBUG ===");
+                          console.log("Selected Style Number:", selectedStyle.styleNumber);
+                          console.log("MM Size:", selectedStyle.mmSize);
+                          console.log("Seive/Size:", selectedStyle.seiveSize);
+                          console.log("Sieve Size Range:", selectedStyle.sieveSizeRange);
+                          console.log("Complete Style Data:", selectedStyle);
+                          console.log("🔍 === END STYLE SELECTION DEBUG ===");
                         }
-                      } else {
-                        // Clear MM Size fields when style is deselected
-                        updateOrderItem(index, "mmSize", null);
-                        updateOrderItem(index, "seiveSize", "");
-                        updateOrderItem(index, "sieveSizeRange", "");
                       }
                     }}
                     placeholder="Select style number"
@@ -2378,69 +2357,6 @@ const renderOrderForm = () => (
                     min={1}
                   />
                 </div>
-
-                <div>
-                  <label className="block text-sm font-medium" style={{ color: colors.velvet }}>
-                    MM Size
-                  </label>
-                  <Select
-                    value={item.mmSize}
-                    onChange={(val) => {
-                      updateOrderItem(index, "mmSize", val);
-                      if (val) {
-                        const mapping = MM_SIZE_MAPPING[val];
-                        if (mapping) {
-                          updateOrderItem(index, "seiveSize", mapping.seiveSize);
-                          updateOrderItem(index, "sieveSizeRange", mapping.sieveSizeRange);
-                        }
-                      } else {
-                        updateOrderItem(index, "seiveSize", "");
-                        updateOrderItem(index, "sieveSizeRange", "");
-                      }
-                    }}
-                    placeholder="Select MM Size"
-                    style={{ width: "100%", borderColor: colors.darkGold }}
-                    allowClear
-                  >
-                    {Object.keys(MM_SIZE_MAPPING).map((size) => (
-                      <Option key={size} value={parseFloat(size)}>
-                        {size}
-                      </Option>
-                    ))}
-                  </Select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium" style={{ color: colors.velvet }}>
-                    Seive/Size
-                  </label>
-                  <Input
-                    value={item.seiveSize}
-                    readOnly
-                    style={{ 
-                      width: "100%", 
-                      borderColor: colors.darkGold,
-                      backgroundColor: '#f5f5f5'
-                    }}
-                    placeholder="Auto-filled"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium" style={{ color: colors.velvet }}>
-                    Sieve Size Range
-                  </label>
-                  <Input
-                    value={item.sieveSizeRange}
-                    readOnly
-                    style={{ 
-                      width: "100%", 
-                      borderColor: colors.darkGold,
-                      backgroundColor: '#f5f5f5'
-                    }}
-                    placeholder="Auto-filled"
-                  />
-                </div>
                 
                 <div>
                   <label className="block text-sm font-medium" style={{ color: colors.velvet }}>
@@ -2536,15 +2452,14 @@ const renderOrderForm = () => (
                             updateOrderItem(index, "diaWeight", selectedStyle.diaWt || 0);
                             updateOrderItem(index, "pcs", selectedStyle.diaPcs || 1);
                             
-                            // Auto-populate MM Size fields if available
-                            if (selectedStyle.mmSize !== undefined && selectedStyle.mmSize !== null) {
-                              const mapping = MM_SIZE_MAPPING[selectedStyle.mmSize];
-                              updateOrderItem(index, "mmSize", selectedStyle.mmSize);
-                              if (mapping) {
-                                updateOrderItem(index, "seiveSize", mapping.seiveSize);
-                                updateOrderItem(index, "sieveSizeRange", mapping.sieveSizeRange);
-                              }
-                            }
+                            // Log the 3 new fields in console
+                            console.log("🔍 === STYLE SELECTION DEBUG (Form 2) ===");
+                            console.log("Selected Style Number:", selectedStyle.styleNumber);
+                            console.log("MM Size:", selectedStyle.mmSize);
+                            console.log("Seive/Size:", selectedStyle.seiveSize);
+                            console.log("Sieve Size Range:", selectedStyle.sieveSizeRange);
+                            console.log("Complete Style Data:", selectedStyle);
+                            console.log("🔍 === END STYLE SELECTION DEBUG (Form 2) ===");
                             
                             // Store the selected image
                             setSelectedStyleImages(prev => {
@@ -2557,14 +2472,11 @@ const renderOrderForm = () => (
                             });
                           }
                         } else {
-                          // Clear image and MM Size fields when style is deselected
+                          // Clear image when style is deselected
                           setSelectedStyleImages(prev => ({
                             ...prev,
                             [index]: ""
                           }));
-                          updateOrderItem(index, "mmSize", null);
-                          updateOrderItem(index, "seiveSize", "");
-                          updateOrderItem(index, "sieveSizeRange", "");
                         }
                       }}
                       placeholder="Select style number"
@@ -2769,66 +2681,6 @@ const renderOrderForm = () => (
                       className="w-full"
                       min={1}
                       placeholder="1"
-                    />
-                  </div>
-
-                  {/* MM Size */}
-                  <div>
-                    <label className="block text-sm font-medium mb-1" style={{ color: colors.velvet }}>
-                      MM Size
-                    </label>
-                    <Select
-                      value={item.mmSize}
-                      onChange={(val) => {
-                        updateOrderItem(index, "mmSize", val);
-                        if (val) {
-                          const mapping = MM_SIZE_MAPPING[val];
-                          if (mapping) {
-                            updateOrderItem(index, "seiveSize", mapping.seiveSize);
-                            updateOrderItem(index, "sieveSizeRange", mapping.sieveSizeRange);
-                          }
-                        } else {
-                          updateOrderItem(index, "seiveSize", "");
-                          updateOrderItem(index, "sieveSizeRange", "");
-                        }
-                      }}
-                      placeholder="Select MM Size"
-                      className="w-full"
-                      allowClear
-                    >
-                      {Object.keys(MM_SIZE_MAPPING).map((size) => (
-                        <Option key={size} value={parseFloat(size)}>
-                          {size}
-                        </Option>
-                      ))}
-                    </Select>
-                  </div>
-
-                  {/* Seive/Size */}
-                  <div>
-                    <label className="block text-sm font-medium mb-1" style={{ color: colors.velvet }}>
-                      Seive/Size
-                    </label>
-                    <Input
-                      value={item.seiveSize}
-                      readOnly
-                      className="w-full"
-                      placeholder="Auto-filled"
-                      style={{ backgroundColor: '#f5f5f5' }}
-                    />
-                  </div>
-
-                  {/* Sieve Size Range */}
-                  <div>
-                    <label className="block text-sm font-medium mb-1" style={{ color: colors.velvet }}>
-                      Sieve Size Range
-                    </label>
-                    <Input
-                      value={item.sieveSizeRange}
-                      readOnly
-                      className="w-full"
-                      placeholder="Auto-filled"
-                      style={{ backgroundColor: '#f5f5f5' }}
                     />
                   </div>
 

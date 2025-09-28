@@ -205,6 +205,9 @@ exports.getStyleNumbers = async (req, res) => {
       diaPcs: design.diaPcs,
       clarity: design.clarity,
       color: design.color,
+      mmSize: design.mmSize || 0,
+      seiveSize: design.seiveSize || '',
+      sieveSizeRange: design.sieveSizeRange || '',
       imageFile: design.imageFile || null
     }));
     res.status(200).json({ success: true, data: formattedDesigns });

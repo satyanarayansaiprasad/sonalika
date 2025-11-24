@@ -19,10 +19,8 @@ const TeamLogin = () => {
 
   // Check if team was pre-selected from navigation state
   useEffect(() => {
-    console.log('TeamLogin: location.state', location.state);
     if (location.state?.team) {
       const team = location.state.team;
-      console.log('TeamLogin: Setting team to', team);
       setSelectedTeam(team);
       setStep('login'); // Skip team selection and go directly to login
     }
@@ -144,8 +142,14 @@ const TeamLogin = () => {
       };
     }
 
+    const apiBaseUrl = import.meta.env.VITE_API_URL || 'https://sonalika.onrender.com';
+    const fullUrl = `${apiBaseUrl}${endpoint}`;
+    
+    console.log('Making login request to:', fullUrl);
+    console.log('Request data:', { ...requestData, password: '***' });
+    
     const res = await axios.post(
-      `https://sonalika.onrender.com${endpoint}`,
+      fullUrl,
       requestData,
       { withCredentials: true }
     );
@@ -158,14 +162,31 @@ const TeamLogin = () => {
     }
 
   } catch (err) {
+    console.error('Login error:', err);
+    console.error('Error response:', err.response);
+    console.error('Error status:', err.response?.status);
+    console.error('Error data:', err.response?.data);
+    
     // Updated error handling to show specific message for invalid credentials
-    if (err.response && err.response.status === 401) {
-      setError("Invalid credentials. Please check your login details and try again.");
+    if (err.response) {
+      if (err.response.status === 401) {
+        setError("Invalid credentials. Please check your login details and try again.");
+      } else if (err.response.status === 404) {
+        setError("Server endpoint not found. Please contact administrator.");
+      } else if (err.response.status >= 500) {
+        setError("Server error. Please try again later.");
+      } else {
+        const errorMessage = err.response?.data?.message || 
+                          err.response?.data?.error || 
+                          `Login failed (Status: ${err.response.status}). Please try again.`;
+        setError(errorMessage);
+      }
+    } else if (err.request) {
+      // Request was made but no response received
+      setError("Unable to connect to server. Please check your internet connection and try again.");
     } else {
-      const errorMessage = err.response?.data?.message || 
-                        err.response?.data?.error || 
-                        "Login failed. Please try again later.";
-      setError(errorMessage);
+      // Something else happened
+      setError("An unexpected error occurred. Please try again.");
     }
   } finally {
     setLoading(false);

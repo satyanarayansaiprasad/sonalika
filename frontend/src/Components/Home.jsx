@@ -303,7 +303,7 @@ const handleSubmit = async (e) => {
                 <motion.button
                   onClick={() => {
                     setSelectedDepartment("production");
-                    navigate("/spteamlogin", { state: { team: "productionteam" } });
+                    navigate("/spteamlogin");
                   }}
                   className="w-full py-5 rounded-xl font-medium text-lg relative overflow-hidden group"
                   style={{
@@ -333,7 +333,7 @@ const handleSubmit = async (e) => {
                 <motion.button
                   onClick={() => {
                     setSelectedDepartment("sales");
-                    navigate("/spteamlogin", { state: { team: "salesteam" } });
+                    navigate("/spteamlogin");
                   }}
                   className="w-full py-5 rounded-xl font-medium text-lg relative overflow-hidden group"
                   style={{

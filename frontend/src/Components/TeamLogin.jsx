@@ -142,17 +142,38 @@ const TeamLogin = () => {
       };
     }
 
-    const apiBaseUrl = import.meta.env.VITE_API_URL || 'https://sonalika.onrender.com';
+    // Try localhost first for development, then fallback to production
+    const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const apiBaseUrl = import.meta.env.VITE_API_URL || 
+                      (isDevelopment ? 'http://localhost:3001' : 'https://sonalika.onrender.com');
     const fullUrl = `${apiBaseUrl}${endpoint}`;
     
     console.log('Making login request to:', fullUrl);
     console.log('Request data:', { ...requestData, password: '***' });
+    console.log('Environment:', isDevelopment ? 'Development' : 'Production');
+    console.log('Selected team:', selectedTeam);
     
     const res = await axios.post(
       fullUrl,
       requestData,
-      { withCredentials: true }
+      { 
+        withCredentials: true,
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      }
     );
+
+    console.log('Login response:', res.data);
+    
+    // Set session storage for authentication
+    sessionStorage.setItem("isAuthenticated", "true");
+    sessionStorage.setItem("role", selectedTeam);
+    if (selectedTeam === 'salesteam') {
+      sessionStorage.setItem("team", "salesteam");
+    } else {
+      sessionStorage.setItem("team", "productionteam");
+    }
 
     // On successful login
     if (selectedTeam === 'salesteam') {

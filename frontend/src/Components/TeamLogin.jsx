@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import SonalikaLogo from './SonalikaLogo.png'; // Replace with your logo path
 
 const TeamLogin = () => {
+  const location = useLocation();
   const [step, setStep] = useState('selectTeam');
   const [selectedTeam, setSelectedTeam] = useState(null);
   const [formData, setFormData] = useState({
@@ -15,6 +16,15 @@ const TeamLogin = () => {
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
+
+  // Check if team was pre-selected from navigation state
+  useEffect(() => {
+    if (location.state?.team) {
+      const team = location.state.team;
+      setSelectedTeam(team);
+      setStep('login'); // Skip team selection and go directly to login
+    }
+  }, [location.state]);
 
   // Premium Jewellery Color Palette
   const colors = {

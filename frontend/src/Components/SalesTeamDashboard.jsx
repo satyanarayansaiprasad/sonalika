@@ -3370,19 +3370,20 @@ const renderOrderHistory = () => (
   return (
     <div className="min-h-screen flex bg-gray-50">
       {/* Desktop Sidebar */}
-      <div
-        className={`${collapsed ? 'w-20' : 'w-64'} text-white flex-shrink-0 hidden md:block transition-all duration-200`}
-        style={{ backgroundColor: colors.deepNavy }}
+      <motion.div
+        className={`${collapsed ? 'w-20' : 'w-64'} text-white flex-shrink-0 hidden md:block transition-all duration-200 shadow-2xl`}
+        style={{ 
+          backgroundColor: colors.deepNavy,
+          background: `linear-gradient(180deg, ${colors.deepNavy} 0%, #1a1a2e 100%)`
+        }}
+        initial={{ x: -20, opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        transition={{ duration: 0.3 }}
       >
         <div
           className="h-16 flex items-center justify-center border-b relative"
           style={{ borderColor: colors.darkGold }}
         >
-          {!collapsed && (
-            <span className="text-xl font-bold" style={{ color: colors.gold }}>
-              SONALIKA JEWELLERS
-            </span>
-          )}
           <button
             onClick={() => setCollapsed(!collapsed)}
             className="absolute right-2 p-2 rounded-md hover:bg-white/10 transition-colors"

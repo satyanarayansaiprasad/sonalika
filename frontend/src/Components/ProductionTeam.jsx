@@ -1231,40 +1231,15 @@ const ProductionDashboard = () => {
         >
           <div className="p-4 border-b-2 border-white/20">
             <div className="flex items-center justify-between">
-              {!sidebarCollapsed && (
-                <motion.div 
-                  className="flex items-center justify-center mb-2 flex-1"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.2 }}
-                >
-                  <img 
-                    src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBmaWxsPSIjRjNGNEY2Ii8+Cjx0ZXh0IHg9IjIwIiB5PSIyNSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjE0IiBmaWxsPSIjOUNBM0FGIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5TSjwvdGV4dD4KPC9zdmc+Cg==" 
-                      alt="Sonalika Jewellers" 
-                      className="h-10 w-10 rounded-full"
-                    />
-                </motion.div>
-              )}
-              <motion.button
-                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                className="hidden md:block p-2 rounded-lg hover:bg-white/10 transition-all"
-                whileHover={{ scale: 1.1, rotate: 90 }}
-                whileTap={{ scale: 0.9 }}
-              >
-                {sidebarCollapsed ? <FiMenu className="text-xl" /> : <FiX className="text-xl" />}
-              </motion.button>
-            </div>
-            {!sidebarCollapsed && (
-              <motion.h1 
-                className="text-xl font-bold text-center tracking-wider"
-                style={{ color: '#f9e79f' }}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.3 }}
-              >
-                Sonalika Jewellers
-              </motion.h1>
-            )}
+            <motion.button
+              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+              className="hidden md:block p-2 rounded-lg hover:bg-white/10 transition-all ml-auto"
+              whileHover={{ scale: 1.1, rotate: 90 }}
+              whileTap={{ scale: 0.9 }}
+            >
+              {sidebarCollapsed ? <FiMenu className="text-xl" /> : <FiX className="text-xl" />}
+            </motion.button>
+          </div>
           </div>
           <nav className="mt-6 flex-1 overflow-y-auto px-2">
             <motion.div 

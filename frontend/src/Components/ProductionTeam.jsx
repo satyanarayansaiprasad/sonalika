@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { FiMenu, FiX, FiHome, FiDatabase, FiShoppingBag, FiPlus, FiAward, FiChevronDown, FiChevronUp, FiTrash2, FiEdit2, FiCheckCircle, FiLogOut } from 'react-icons/fi';
+import { motion } from 'framer-motion';
+import { FiMenu, FiX, FiHome, FiDatabase, FiShoppingBag, FiPlus, FiAward, FiChevronDown, FiChevronUp, FiTrash2, FiEdit2, FiCheckCircle, FiLogOut, FiClock } from 'react-icons/fi';
 
 const API_BASE_URL = 'https://sonalika.onrender.com';
 
@@ -418,73 +419,144 @@ const ProductionDashboard = () => {
     });
   };
 
-  const renderDashboard = () => (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-800">Production Dashboard</h1>
-      </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-gradient-to-r from-[#00072D] to-blue-[#00072D] rounded-xl shadow-lg p-6 text-white transform hover:scale-105 transition duration-300">
-          <div className="flex items-center">
-            <div className="p-3 rounded-full bg-white bg-opacity-20 mr-4">
-              <FiShoppingBag className="text-xl" />
-            </div>
-            <div>
-              <h3 className="text-sm font-medium opacity-80">Product Masters</h3>
-              <p className="text-2xl font-bold">{productMasters.length}</p>
-            </div>
-          </div>
+  const renderDashboard = () => {
+    const colors = {
+      gold: "#f9e79f",
+      darkGold: "#D4AF37",
+      deepNavy: "#00072D",
+      platinum: "#E5E4E2",
+      light: "#F8F8F8",
+      diamond: "rgba(255,255,255,0.95)",
+      success: "#10b981",
+      info: "#3b82f6",
+      warning: "#f59e0b",
+    };
+
+    return (
+      <div className="space-y-6">
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold mb-2" style={{ color: colors.deepNavy }}>
+            Production Dashboard
+          </h1>
+          <p className="text-gray-600">Manage your product and design masters efficiently</p>
         </div>
         
-        <div className="bg-gradient-to-r from-[#00072D] to-[#00072D] rounded-xl shadow-lg p-6 text-white transform hover:scale-105 transition duration-300">
-          <div className="flex items-center">
-            <div className="p-3 rounded-full bg-white bg-opacity-20 mr-4">
-              <FiAward className="text-xl" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <motion.div 
+            className="rounded-xl shadow-lg p-6 border-2 relative overflow-hidden group cursor-pointer"
+            style={{
+              background: `linear-gradient(135deg, ${colors.deepNavy} 0%, #1a1a2e 100%)`,
+              borderColor: colors.info,
+            }}
+            whileHover={{ scale: 1.02, y: -4 }}
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <div className="absolute top-0 right-0 w-32 h-32 rounded-full opacity-10"
+              style={{ background: `radial-gradient(circle, ${colors.info} 0%, transparent 70%)` }}
+            />
+            <div className="relative z-10 text-white">
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-4 rounded-xl bg-white bg-opacity-20">
+                  <FiShoppingBag className="text-2xl" style={{ color: colors.gold }} />
+                </div>
+              </div>
+              <h3 className="text-sm font-medium opacity-80 mb-2">Product Masters</h3>
+              <p className="text-4xl font-bold" style={{ color: colors.gold }}>{productMasters.length}</p>
             </div>
-            <div>
-              <h3 className="text-sm font-medium opacity-80">Design Masters</h3>
-              <p className="text-2xl font-bold">{designMasters.length}</p>
+          </motion.div>
+          
+          <motion.div 
+            className="rounded-xl shadow-lg p-6 border-2 relative overflow-hidden group cursor-pointer"
+            style={{
+              background: `linear-gradient(135deg, ${colors.deepNavy} 0%, #1a1a2e 100%)`,
+              borderColor: colors.warning,
+            }}
+            whileHover={{ scale: 1.02, y: -4 }}
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <div className="absolute top-0 right-0 w-32 h-32 rounded-full opacity-10"
+              style={{ background: `radial-gradient(circle, ${colors.warning} 0%, transparent 70%)` }}
+            />
+            <div className="relative z-10 text-white">
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-4 rounded-xl bg-white bg-opacity-20">
+                  <FiAward className="text-2xl" style={{ color: colors.gold }} />
+                </div>
+              </div>
+              <h3 className="text-sm font-medium opacity-80 mb-2">Design Masters</h3>
+              <p className="text-4xl font-bold" style={{ color: colors.gold }}>{designMasters.length}</p>
             </div>
-          </div>
+          </motion.div>
         </div>
-      </div>
 
-      <div className="bg-white rounded-xl shadow-lg p-6">
-        <h2 className="text-xl font-semibold mb-4 text-gray-800">Recent Activity</h2>
-        <div className="space-y-4">
-          {productMasters.slice(0, 3).map((product, index) => (
-            <div key={index} className="flex items-center p-3 hover:bg-gray-50 rounded-lg transition">
-              <div className="bg-blue-100 p-2 rounded-lg mr-4">
-                <FiShoppingBag className="text-blue-600" />
+        <motion.div 
+          className="bg-white rounded-xl shadow-lg p-6 border-2"
+          style={{ borderColor: colors.gold }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.2 }}
+        >
+          <div className="flex items-center mb-6 pb-4 border-b-2" style={{ borderColor: colors.gold }}>
+            <FiClock className="h-6 w-6 mr-3" style={{ color: colors.darkGold }} />
+            <h2 className="text-xl font-bold" style={{ color: colors.deepNavy }}>Recent Activity</h2>
+          </div>
+          <div className="space-y-3">
+            {productMasters.slice(0, 3).map((product, index) => (
+              <motion.div 
+                key={`product-${index}`}
+                className="flex items-center p-4 hover:bg-gray-50 rounded-lg transition-all border border-transparent hover:border-gray-200"
+                whileHover={{ x: 4 }}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.3 + index * 0.1 }}
+              >
+                <div className="p-3 rounded-xl mr-4" style={{ backgroundColor: `${colors.info}15` }}>
+                  <FiShoppingBag className="text-xl" style={{ color: colors.info }} />
+                </div>
+                <div className="flex-1">
+                  <p className="font-semibold text-gray-800">New Product Added</p>
+                  <p className="text-sm text-gray-600">{product.category} - {product.serialNumber}</p>
+                </div>
+                <div className="text-sm text-gray-400 font-medium">
+                  Just now
+                </div>
+              </motion.div>
+            ))}
+            {designMasters.slice(0, 3).map((design, index) => (
+              <motion.div 
+                key={`design-${index}`}
+                className="flex items-center p-4 hover:bg-gray-50 rounded-lg transition-all border border-transparent hover:border-gray-200"
+                whileHover={{ x: 4 }}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.4 + index * 0.1 }}
+              >
+                <div className="p-3 rounded-xl mr-4" style={{ backgroundColor: `${colors.warning}15` }}>
+                  <FiAward className="text-xl" style={{ color: colors.warning }} />
+                </div>
+                <div className="flex-1">
+                  <p className="font-semibold text-gray-800">New Design Added</p>
+                  <p className="text-sm text-gray-600">{design.serialNumber} - {design.styleNumber || 'N/A'}</p>
+                </div>
+                <div className="text-sm text-gray-400 font-medium">
+                  Just now
+                </div>
+              </motion.div>
+            ))}
+            {productMasters.length === 0 && designMasters.length === 0 && (
+              <div className="text-center py-8 text-gray-500">
+                <p>No recent activity</p>
               </div>
-              <div>
-                <p className="font-medium text-gray-800">New Product Added</p>
-                <p className="text-sm text-gray-500">{product.category} - {product.serialNumber}</p>
-              </div>
-              <div className="ml-auto text-sm text-gray-400">
-                Just now
-              </div>
-            </div>
-          ))}
-          {designMasters.slice(0, 3).map((design, index) => (
-            <div key={index} className="flex items-center p-3 hover:bg-gray-50 rounded-lg transition">
-              <div className="bg-purple-100 p-2 rounded-lg mr-4">
-                <FiAward className="text-purple-600" />
-              </div>
-              <div>
-                <p className="font-medium text-gray-800">New Design Added</p>
-                <p className="text-sm text-gray-500">{design.serialNumber} - {design.styleNumber}</p>
-              </div>
-              <div className="ml-auto text-sm text-gray-400">
-                Just now
-              </div>
-            </div>
-          ))}
-        </div>
+            )}
+          </div>
+        </motion.div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const renderProductMasterForm = () => (
     <div className="bg-white h-screen rounded-xl shadow-lg p-6">
@@ -1147,74 +1219,89 @@ const ProductionDashboard = () => {
 
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar - Fixed and not scrolling */}
-        <div 
-          className={`fixed inset-y-0 left-0 transform ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 z-20 ${sidebarCollapsed ? 'w-20' : 'w-64'} bg-[#00072D] text-white transition-all duration-200 ease-in-out md:transition-all flex flex-col`}
-          style={{ height: '100vh' }}
+        <motion.div 
+          className={`fixed inset-y-0 left-0 transform ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 z-20 ${sidebarCollapsed ? 'w-20' : 'w-64'} bg-[#00072D] text-white transition-all duration-200 ease-in-out md:transition-all flex flex-col shadow-2xl`}
+          style={{ 
+            height: '100vh',
+            background: `linear-gradient(180deg, #00072D 0%, #1a1a2e 100%)`
+          }}
+          initial={{ x: -20, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          transition={{ duration: 0.3 }}
         >
-          <div className="p-4 border-b border-white/10">
+          <div className="p-4 border-b-2 border-white/20">
             <div className="flex items-center justify-between">
               {!sidebarCollapsed && (
-                <div className="flex items-center justify-center mb-2 flex-1">
+                <motion.div 
+                  className="flex items-center justify-center mb-2 flex-1"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.2 }}
+                >
                   <img 
                     src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBmaWxsPSIjRjNGNEY2Ii8+Cjx0ZXh0IHg9IjIwIiB5PSIyNSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjE0IiBmaWxsPSIjOUNBM0FGIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5TSjwvdGV4dD4KPC9zdmc+Cg==" 
                       alt="Sonalika Jewellers" 
                       className="h-10 w-10 rounded-full"
                     />
-                </div>
+                </motion.div>
               )}
-              <button
+              <motion.button
                 onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                className="hidden md:block p-2 rounded-md hover:bg-white/10 transition-colors ml-auto"
+                className="hidden md:block p-2 rounded-lg hover:bg-white/10 transition-all"
+                whileHover={{ scale: 1.1, rotate: 90 }}
+                whileTap={{ scale: 0.9 }}
               >
                 {sidebarCollapsed ? <FiMenu className="text-xl" /> : <FiX className="text-xl" />}
-              </button>
+              </motion.button>
             </div>
             {!sidebarCollapsed && (
-              <h1 className="text-xl font-bold text-center">Sonalika Jewellers</h1>
+              <motion.h1 
+                className="text-xl font-bold text-center tracking-wider"
+                style={{ color: '#f9e79f' }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.3 }}
+              >
+                Sonalika Jewellers
+              </motion.h1>
             )}
           </div>
-          <nav className="mt-6 flex-1 overflow-y-auto">
-            <div 
-              className={`flex items-center px-6 py-3 cursor-pointer transition ${activeMenu === 'dashboard' ? 'bg-white/10' : 'hover:bg-white/5'}`}
+          <nav className="mt-6 flex-1 overflow-y-auto px-2">
+            <motion.div 
+              className={`flex items-center px-4 py-4 cursor-pointer rounded-xl transition-all mb-2 ${activeMenu === 'dashboard' ? 'bg-white/10 shadow-lg' : 'hover:bg-white/5'}`}
               onClick={() => {
                 setActiveMenu('dashboard');
                 setMobileMenuOpen(false);
                 setMasterType(null);
               }}
               title="Dashboard"
+              whileHover={{ scale: 1.02, x: 4 }}
+              whileTap={{ scale: 0.98 }}
             >
-              <FiHome className="mr-3 flex-shrink-0" />
-              {!sidebarCollapsed && <span>Dashboard</span>}
-            </div>
-            <div 
-              className={`flex items-center px-6 py-3 cursor-pointer transition ${activeMenu === 'master' ? 'bg-white/10' : 'hover:bg-white/5'}`}
+              <FiHome className="mr-3 flex-shrink-0 text-lg" />
+              {!sidebarCollapsed && <span className="font-medium">Dashboard</span>}
+            </motion.div>
+            <motion.div 
+              className={`flex items-center px-4 py-4 cursor-pointer rounded-xl transition-all ${activeMenu === 'master' ? 'bg-white/10 shadow-lg' : 'hover:bg-white/5'}`}
               onClick={() => {
                 setActiveMenu('master');
                 setMobileMenuOpen(false);
                 setMasterType(null);
               }}
               title="Master Data"
+              whileHover={{ scale: 1.02, x: 4 }}
+              whileTap={{ scale: 0.98 }}
             >
-              <FiDatabase className="mr-3 flex-shrink-0" />
-              {!sidebarCollapsed && <span>Master Data</span>}
-            </div>
+              <FiDatabase className="mr-3 flex-shrink-0 text-lg" />
+              {!sidebarCollapsed && <span className="font-medium">Master Data</span>}
+            </motion.div>
           </nav>
-          <div className="p-4 border-t border-white/10">
-            <button
-              onClick={handleLogout}
-              className="w-full flex items-center px-6 py-3 rounded-lg transition-colors text-red-300 hover:bg-red-600/20"
-              title="Logout"
-            >
-              <FiLogOut className="mr-3 flex-shrink-0" />
-              {!sidebarCollapsed && <span>Logout</span>}
-            </button>
-            {!sidebarCollapsed && (
-              <div className="text-sm text-white/60 mt-2 text-center">
-                PageTraffics
-              </div>
-            )}
-          </div>
-        </div>
+          {!sidebarCollapsed && (
+            <div className="p-4 text-xs text-white/40 border-t border-white/10 text-center">
+              PageTraffics
+            </div>
+          )}
+        </motion.div>
 
         {/* Overlay for mobile menu */}
         {mobileMenuOpen && (
@@ -1225,23 +1312,41 @@ const ProductionDashboard = () => {
         )}
 
         {/* Desktop Header */}
-        <div className="hidden md:block fixed top-0 right-0 left-64 bg-[#00072D] text-white p-4 flex justify-between items-center shadow-md z-10 transition-all duration-200"
-          style={{ left: sidebarCollapsed ? '80px' : '256px' }}
+        <motion.div 
+          className="hidden md:block fixed top-0 right-0 left-64 bg-[#00072D] text-white p-4 flex justify-between items-center shadow-lg z-10 transition-all duration-200 border-b-2"
+          style={{ 
+            left: sidebarCollapsed ? '80px' : '256px',
+            borderColor: '#f9e79f',
+            background: `linear-gradient(90deg, #00072D 0%, #1a1a2e 100%)`
+          }}
+          initial={{ y: -20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.3 }}
         >
-          <h1 className="text-xl font-bold">Production Dashboard</h1>
+          <div className="flex items-center space-x-3">
+            <div className="p-2 rounded-lg bg-white/10">
+              <FiHome className="text-lg" style={{ color: '#f9e79f' }} />
+            </div>
+            <h1 className="text-xl font-bold tracking-wide" style={{ color: '#f9e79f' }}>Production Dashboard</h1>
+          </div>
           <div className="flex items-center space-x-4">
-            <span className="text-sm text-white/70">
-              {new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
-            </span>
-            <button
+            <div className="px-3 py-1 rounded-lg bg-white/10">
+              <span className="text-sm font-medium" style={{ color: '#f9e79f' }}>
+                {new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
+              </span>
+            </div>
+            <motion.button
               onClick={handleLogout}
-              className="flex items-center space-x-2 px-4 py-2 rounded-lg hover:bg-red-600/20 transition-colors border border-white/20"
+              className="flex items-center space-x-2 px-4 py-2 rounded-lg hover:bg-red-600/20 transition-all border border-white/20"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              style={{ color: '#f9e79f' }}
             >
               <FiLogOut />
               <span>Logout</span>
-            </button>
+            </motion.button>
           </div>
-        </div>
+        </motion.div>
 
         {/* Main Content - Scrollable */}
         <div className="flex-1 overflow-auto p-4 md:p-6 md:pt-20">

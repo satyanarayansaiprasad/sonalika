@@ -52,16 +52,21 @@ const { Option } = Select;
 
 const API_BASE_URL = 'https://sonalika.onrender.com';
 
-// Color palette
+// Modern Color palette
 const colors = {
   gold: "#f9e79f",
-  darkGold: "#050d3f",
+  darkGold: "#D4AF37",
   roseGold: "#B76E79",
   platinum: "#E5E4E2",
-  deepNavy: "#050d3f",
-  velvet: "#050d3f",
+  deepNavy: "#00072D",
+  velvet: "#1a1a2e",
   light: "#F8F8F8",
-  diamond: "rgba(255,255,255,0.9)",
+  diamond: "rgba(255,255,255,0.95)",
+  accent: "#f9e79f",
+  success: "#10b981",
+  warning: "#f59e0b",
+  error: "#ef4444",
+  info: "#3b82f6",
 };
 
 // Mobile detection hook
@@ -1245,70 +1250,158 @@ const OngoingOrderModal = ({ order, visible, onClose }) => {
 };
 
   const renderDashboard = () => (
-    <div className="space-y-6">
-      <h3 className="text-2xl font-semibold" style={{ color: colors.velvet }}>
-        Sales Dashboard
-      </h3>
+    <motion.div 
+      className="space-y-6"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+    >
+      <div className="mb-6">
+        <h3 className="text-3xl font-bold mb-2" style={{ color: colors.deepNavy }}>
+          Sales Dashboard
+        </h3>
+        <p className="text-gray-600">Overview of your sales performance and client management</p>
+      </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <div
-          className="rounded-lg shadow p-4 border"
+      {/* Modern Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <motion.div
+          className="rounded-xl shadow-lg p-6 border-2 relative overflow-hidden group cursor-pointer"
           style={{
-            backgroundColor: colors.diamond,
-            borderColor: colors.darkGold,
+            background: `linear-gradient(135deg, ${colors.diamond} 0%, ${colors.platinum} 100%)`,
+            borderColor: colors.gold,
           }}
+          whileHover={{ scale: 1.02, y: -4 }}
+          transition={{ duration: 0.2 }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
         >
-          <Statistic
-            title={<span className="text-gray-600">Total Clients</span>}
-            value={stats.totalClients}
-            valueStyle={{ color: colors.velvet, fontSize: "24px" }}
+          <div className="absolute top-0 right-0 w-32 h-32 rounded-full opacity-10"
+            style={{ background: `radial-gradient(circle, ${colors.gold} 0%, transparent 70%)` }}
           />
-        </div>
-        <div
-          className="rounded-lg shadow p-4 border"
+          <div className="relative z-10">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-3 rounded-lg" style={{ backgroundColor: `${colors.gold}20` }}>
+                <User className="h-6 w-6" style={{ color: colors.darkGold }} />
+              </div>
+            </div>
+            <Statistic
+              title={<span className="text-gray-600 font-medium">Total Clients</span>}
+              value={stats.totalClients}
+              valueStyle={{ color: colors.deepNavy, fontSize: "32px", fontWeight: "bold" }}
+            />
+          </div>
+        </motion.div>
+
+        <motion.div
+          className="rounded-xl shadow-lg p-6 border-2 relative overflow-hidden group cursor-pointer"
           style={{
-            backgroundColor: colors.diamond,
-            borderColor: colors.roseGold,
+            background: `linear-gradient(135deg, ${colors.diamond} 0%, ${colors.platinum} 100%)`,
+            borderColor: colors.success,
           }}
+          whileHover={{ scale: 1.02, y: -4 }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.2, delay: 0.1 }}
         >
-          <Statistic
-            title={<span className="text-gray-600">Active Clients</span>}
-            value={stats.activeClients}
-            valueStyle={{ color: colors.roseGold, fontSize: "24px" }}
+          <div className="absolute top-0 right-0 w-32 h-32 rounded-full opacity-10"
+            style={{ background: `radial-gradient(circle, ${colors.success} 0%, transparent 70%)` }}
           />
-        </div>
-        <div
-          className="rounded-lg shadow p-4 border"
+          <div className="relative z-10">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-3 rounded-lg" style={{ backgroundColor: `${colors.success}20` }}>
+                <User className="h-6 w-6" style={{ color: colors.success }} />
+              </div>
+            </div>
+            <Statistic
+              title={<span className="text-gray-600 font-medium">Active Clients</span>}
+              value={stats.activeClients}
+              valueStyle={{ color: colors.success, fontSize: "32px", fontWeight: "bold" }}
+            />
+          </div>
+        </motion.div>
+
+        <motion.div
+          className="rounded-xl shadow-lg p-6 border-2 relative overflow-hidden group cursor-pointer"
           style={{
-            backgroundColor: colors.diamond,
-            borderColor: colors.darkGold,
+            background: `linear-gradient(135deg, ${colors.diamond} 0%, ${colors.platinum} 100%)`,
+            borderColor: colors.info,
           }}
+          whileHover={{ scale: 1.02, y: -4 }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.2, delay: 0.2 }}
         >
-          <Statistic
-            title={<span className="text-gray-600">Total Orders</span>}
-            value={stats.totalOrders}
-            valueStyle={{ color: colors.velvet, fontSize: "24px" }}
+          <div className="absolute top-0 right-0 w-32 h-32 rounded-full opacity-10"
+            style={{ background: `radial-gradient(circle, ${colors.info} 0%, transparent 70%)` }}
           />
-        </div>
+          <div className="relative z-10">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-3 rounded-lg" style={{ backgroundColor: `${colors.info}20` }}>
+                <ShoppingCart className="h-6 w-6" style={{ color: colors.info }} />
+              </div>
+            </div>
+            <Statistic
+              title={<span className="text-gray-600 font-medium">Total Orders</span>}
+              value={stats.totalOrders}
+              valueStyle={{ color: colors.info, fontSize: "32px", fontWeight: "bold" }}
+            />
+          </div>
+        </motion.div>
+
+        <motion.div
+          className="rounded-xl shadow-lg p-6 border-2 relative overflow-hidden group cursor-pointer"
+          style={{
+            background: `linear-gradient(135deg, ${colors.diamond} 0%, ${colors.platinum} 100%)`,
+            borderColor: colors.warning,
+          }}
+          whileHover={{ scale: 1.02, y: -4 }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.2, delay: 0.3 }}
+        >
+          <div className="absolute top-0 right-0 w-32 h-32 rounded-full opacity-10"
+            style={{ background: `radial-gradient(circle, ${colors.warning} 0%, transparent 70%)` }}
+          />
+          <div className="relative z-10">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-3 rounded-lg" style={{ backgroundColor: `${colors.warning}20` }}>
+                <svg className="h-6 w-6" style={{ color: colors.warning }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+            </div>
+            <Statistic
+              title={<span className="text-gray-600 font-medium">Total Revenue</span>}
+              value={`₹${stats.totalRevenue.toLocaleString('en-IN')}`}
+              valueStyle={{ color: colors.warning, fontSize: "28px", fontWeight: "bold" }}
+            />
+          </div>
+        </motion.div>
       </div>
 
       {/* Clients and Orders Sections */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
         {/* All Clients */}
-        <div
-          className="rounded-2xl shadow-sm border "
+        <motion.div
+          className="rounded-2xl shadow-lg border-2 overflow-hidden"
           style={{
             backgroundColor: colors.diamond,
-            borderColor: colors.darkGold,
+            borderColor: colors.gold,
           }}
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.4 }}
         >
-          <h2
-            className="text-lg font-semibold mb-3 border-b p-4 pb-2"
-            style={{ color: colors.velvet }}
-          >
-            All Clients
-          </h2>
+          <div className="p-4 border-b-2" style={{ borderColor: colors.gold, backgroundColor: `${colors.gold}10` }}>
+            <h2
+              className="text-xl font-bold flex items-center"
+              style={{ color: colors.deepNavy }}
+            >
+              <User className="h-5 w-5 mr-2" style={{ color: colors.darkGold }} />
+              All Clients
+            </h2>
+          </div>
           <Table
             dataSource={clients}
             columns={[
@@ -1355,19 +1448,25 @@ const OngoingOrderModal = ({ order, visible, onClose }) => {
         </div>
 
         {/* Ongoing Orders */}
-        <div
-          className="rounded-2xl shadow-sm border "
+        <motion.div
+          className="rounded-2xl shadow-lg border-2 overflow-hidden"
           style={{
             backgroundColor: colors.diamond,
-            borderColor: colors.darkGold,
+            borderColor: colors.success,
           }}
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.4 }}
         >
-          <h2
-            className="text-lg font-semibold mb-3 border-b p-4 pb-2"
-            style={{ color: colors.velvet }}
-          >
-            Ongoing Orders
-          </h2>
+          <div className="p-4 border-b-2" style={{ borderColor: colors.success, backgroundColor: `${colors.success}10` }}>
+            <h2
+              className="text-xl font-bold flex items-center"
+              style={{ color: colors.deepNavy }}
+            >
+              <ShoppingCart className="h-5 w-5 mr-2" style={{ color: colors.success }} />
+              Ongoing Orders
+            </h2>
+          </div>
           <Table
             dataSource={clients.flatMap((client) => {
               const ongoingOrders = (client.orders || []).filter(
@@ -1448,24 +1547,30 @@ const OngoingOrderModal = ({ order, visible, onClose }) => {
             scroll={{ y: 280 }}
             size="small"
             bordered
-            className="custom-table"
+            className="modern-table"
           />
-        </div>
+        </motion.div>
 
         {/* Completed Orders */}
-        <div
-          className="rounded-2xl shadow-sm border "
+        <motion.div
+          className="rounded-2xl shadow-lg border-2 overflow-hidden"
           style={{
             backgroundColor: colors.diamond,
-            borderColor: colors.darkGold,
+            borderColor: colors.info,
           }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.2 }}
         >
-          <h2
-            className="text-lg font-semibold mb-3 border-b pb-2"
-            style={{ color: colors.velvet }}
-          >
-            Completed Orders
-          </h2>
+          <div className="p-4 border-b-2" style={{ borderColor: colors.info, backgroundColor: `${colors.info}10` }}>
+            <h2
+              className="text-xl font-bold flex items-center"
+              style={{ color: colors.deepNavy }}
+            >
+              <History className="h-5 w-5 mr-2" style={{ color: colors.info }} />
+              Completed Orders
+            </h2>
+          </div>
           <Table
             dataSource={clients.flatMap((client) => {
               const ongoingOrders = (client.orders || []).filter(
@@ -3287,14 +3392,14 @@ const renderOrderHistory = () => (
           </button>
         </div>
         <nav className="p-4 flex flex-col h-full">
-          <ul className="space-y-2 flex-1">
+          <ul className="space-y-3 flex-1">
             <li>
-              <button
+              <motion.button
                 onClick={() => setSelectedMenu("dashboard")}
-                className={`w-full flex items-center p-3 rounded-lg transition-colors ${
+                className={`w-full flex items-center p-4 rounded-xl transition-all ${
                   selectedMenu === "dashboard"
-                    ? "bg-opacity-20"
-                    : "text-gray-300 hover:bg-opacity-10"
+                    ? "shadow-lg"
+                    : "hover:bg-opacity-10"
                 }`}
                 style={{
                   backgroundColor:
@@ -3305,18 +3410,20 @@ const renderOrderHistory = () => (
                       : colors.platinum,
                 }}
                 title="Dashboard"
+                whileHover={{ scale: 1.02, x: 4 }}
+                whileTap={{ scale: 0.98 }}
               >
                 <LayoutDashboard className="h-5 w-5 flex-shrink-0" style={{ marginRight: collapsed ? 0 : '0.75rem' }} />
-                {!collapsed && <span>Dashboard</span>}
-              </button>
+                {!collapsed && <span className="font-medium">Dashboard</span>}
+              </motion.button>
             </li>
             <li>
-              <button
+              <motion.button
                 onClick={() => setSelectedMenu("kyc")}
-                className={`w-full flex items-center p-3 rounded-lg transition-colors ${
+                className={`w-full flex items-center p-4 rounded-xl transition-all ${
                   selectedMenu === "kyc"
-                    ? "bg-opacity-20"
-                    : "text-gray-300 hover:bg-opacity-10"
+                    ? "shadow-lg"
+                    : "hover:bg-opacity-10"
                 }`}
                 style={{
                   backgroundColor:
@@ -3325,18 +3432,20 @@ const renderOrderHistory = () => (
                     selectedMenu === "kyc" ? colors.deepNavy : colors.platinum,
                 }}
                 title="Client KYC"
+                whileHover={{ scale: 1.02, x: 4 }}
+                whileTap={{ scale: 0.98 }}
               >
                 <User className="h-5 w-5 flex-shrink-0" style={{ marginRight: collapsed ? 0 : '0.75rem' }} />
-                {!collapsed && <span>Client KYC</span>}
-              </button>
+                {!collapsed && <span className="font-medium">Client KYC</span>}
+              </motion.button>
             </li>
             <li>
-              <button
+              <motion.button
                 onClick={() => setSelectedMenu("order")}
-                className={`w-full flex items-center p-3 rounded-lg transition-colors ${
+                className={`w-full flex items-center p-4 rounded-xl transition-all ${
                   selectedMenu === "order"
-                    ? "bg-opacity-20"
-                    : "text-gray-300 hover:bg-opacity-10"
+                    ? "shadow-lg"
+                    : "hover:bg-opacity-10"
                 }`}
                 style={{
                   backgroundColor:
@@ -3347,18 +3456,20 @@ const renderOrderHistory = () => (
                       : colors.platinum,
                 }}
                 title="Create Order"
+                whileHover={{ scale: 1.02, x: 4 }}
+                whileTap={{ scale: 0.98 }}
               >
                 <ShoppingCart className="h-5 w-5 flex-shrink-0" style={{ marginRight: collapsed ? 0 : '0.75rem' }} />
-                {!collapsed && <span>Create Order</span>}
-              </button>
+                {!collapsed && <span className="font-medium">Create Order</span>}
+              </motion.button>
             </li>
             <li>
-              <button
+              <motion.button
                 onClick={() => setSelectedMenu("history")}
-                className={`w-full flex items-center p-3 rounded-lg transition-colors ${
+                className={`w-full flex items-center p-4 rounded-xl transition-all ${
                   selectedMenu === "history"
-                    ? "bg-opacity-20"
-                    : "text-gray-300 hover:bg-opacity-10"
+                    ? "shadow-lg"
+                    : "hover:bg-opacity-10"
                 }`}
                 style={{
                   backgroundColor:
@@ -3369,24 +3480,16 @@ const renderOrderHistory = () => (
                       : colors.platinum,
                 }}
                 title="Order History"
+                whileHover={{ scale: 1.02, x: 4 }}
+                whileTap={{ scale: 0.98 }}
               >
                 <History className="h-5 w-5 flex-shrink-0" style={{ marginRight: collapsed ? 0 : '0.75rem' }} />
-                {!collapsed && <span>Order History</span>}
-              </button>
+                {!collapsed && <span className="font-medium">Order History</span>}
+              </motion.button>
             </li>
           </ul>
-          <div className="pt-4 border-t border-white/10">
-            <button
-              onClick={handleLogout}
-              className="w-full flex items-center p-3 rounded-lg transition-colors text-red-300 hover:bg-red-600/20"
-              title="Logout"
-            >
-              <LogOut className="h-5 w-5 flex-shrink-0" style={{ marginRight: collapsed ? 0 : '0.75rem' }} />
-              {!collapsed && <span>Logout</span>}
-            </button>
-          </div>
         </nav>
-      </div>
+      </motion.div>
 
       {/* Mobile Header with Hamburger */}
       <div className="md:hidden fixed top-0 left-0 right-0 z-50">
@@ -3526,18 +3629,6 @@ const renderOrderHistory = () => (
                   >
                     <History className="h-5 w-5 mr-3" />
                     <span>Order History</span>
-                  </button>
-                </li>
-                <li className="pt-4 mt-4 border-t border-white/10">
-                  <button
-                    onClick={() => {
-                      handleLogout();
-                      toggleMobileMenu();
-                    }}
-                    className="w-full flex items-center p-3 rounded-lg transition-colors text-red-300 hover:bg-red-600/20"
-                  >
-                    <LogOut className="h-5 w-5 mr-3" />
-                    <span>Logout</span>
                   </button>
                 </li>
               </ul>

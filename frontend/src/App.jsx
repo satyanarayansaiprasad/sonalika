@@ -5,7 +5,6 @@ import TeamLogin from './Components/TeamLogin';
 import SalesTeamDashboard from './Components/SalesTeamDashboard';
 import AdminDashboard from './Components/AdminDashboard';
 import ProductionTeam from './Components/ProductionTeam';
-import AccountsDashboard from './Components/AccountsDashboard';
 import ProtectedRoute from './Components/ProtectedRoute';
 
 const App = () => {
@@ -40,11 +39,6 @@ const App = () => {
         </ProtectedRoute>
         }/>
       <Route  path='/productiondashboard' element={<ProductionTeam/>}/>
-      <Route  path='/accountsdashboard' element={
-        <ProtectedRoute allowedRoles={["accounts"]}>
-          <AccountsDashboard/>
-        </ProtectedRoute>
-      }/>
       {/* Add more routes here when needed */}
     </Routes>
   );

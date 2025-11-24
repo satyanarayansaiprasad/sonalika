@@ -276,6 +276,35 @@ const Home = () => {
                     SALES
                   </span>
                 </motion.button>
+
+                {/* Accounts Department */}
+                <motion.button
+                  onClick={() => {
+                    navigate("/accountslogin");
+                  }}
+                  className="w-full py-5 rounded-xl font-medium text-lg relative overflow-hidden group"
+                  style={{
+                    background: `linear-gradient(135deg, ${colors.gold}20 0%, transparent 100%)`,
+                    border: `1px solid ${colors.gold}`,
+                    color: colors.gold,
+                    boxShadow: `0 5px 20px ${colors.gold}10`,
+                  }}
+                  whileHover={{
+                    background: `linear-gradient(135deg, ${colors.gold}30 0%, transparent 100%)`,
+                    boxShadow: `0 8px 40px ${colors.gold}30`,
+                  }}
+                  whileTap={{ scale: 0.98 }}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 1.2 }}
+                >
+                  <span className="relative z-10 flex items-center justify-center">
+                    <svg className="w-6 h-6 mr-3" fill="none" viewBox="0 0 24 24" stroke={colors.gold}>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    ACCOUNTS
+                  </span>
+                </motion.button>
               </div>
             </motion.div>
           )}

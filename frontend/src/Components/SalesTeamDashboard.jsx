@@ -1445,7 +1445,7 @@ const OngoingOrderModal = ({ order, visible, onClose }) => {
               style: { cursor: "pointer", backgroundColor: colors.light },
             })}
           />
-        </div>
+        </motion.div>
 
         {/* Ongoing Orders */}
         <motion.div
@@ -1653,7 +1653,7 @@ const OngoingOrderModal = ({ order, visible, onClose }) => {
             bordered
             className="custom-table"
           />
-        </div>
+        </motion.div>
       </div>
 
       {/* Client Modal */}

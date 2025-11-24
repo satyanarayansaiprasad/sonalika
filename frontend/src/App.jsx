@@ -18,11 +18,7 @@ const App = () => {
         }/> */}
 
        
-        <Route  path='/spteamlogin'  element={
-          <ProtectedRoute allowedRoles={["team"]}>
-            <TeamLogin />
-          </ProtectedRoute>
-        }/>
+        <Route  path='/spteamlogin'  element={<TeamLogin />}/>
        <Route path='/admindashboard'  element={
           <ProtectedRoute allowedRoles={["admin"]}>
             <AdminDashboard />

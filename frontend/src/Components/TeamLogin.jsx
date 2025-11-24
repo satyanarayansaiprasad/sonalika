@@ -19,12 +19,14 @@ const TeamLogin = () => {
 
   // Check if team was pre-selected from navigation state
   useEffect(() => {
+    console.log('TeamLogin: location.state', location.state);
     if (location.state?.team) {
       const team = location.state.team;
+      console.log('TeamLogin: Setting team to', team);
       setSelectedTeam(team);
       setStep('login'); // Skip team selection and go directly to login
     }
-  }, [location.state]);
+  }, [location]);
 
   // Premium Jewellery Color Palette
   const colors = {

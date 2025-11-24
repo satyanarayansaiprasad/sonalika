@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { FiMenu, FiX, FiHome, FiDatabase, FiShoppingBag, FiPlus, FiAward, FiChevronDown, FiChevronUp, FiTrash2, FiEdit2, FiCheckCircle } from 'react-icons/fi';
+import { useNavigate } from 'react-router-dom';
+import { FiMenu, FiX, FiHome, FiDatabase, FiShoppingBag, FiPlus, FiAward, FiChevronDown, FiChevronUp, FiTrash2, FiEdit2, FiCheckCircle, FiLogOut } from 'react-icons/fi';
 
 const API_BASE_URL = 'https://sonalika.onrender.com';
 
@@ -46,6 +47,7 @@ const MM_SIZE_MAPPING = {
 };
 
 const ProductionDashboard = () => {
+  const navigate = useNavigate();
   const [activeMenu, setActiveMenu] = useState(() => {
     const saved = localStorage.getItem('activeMenu');
     return saved || 'dashboard';
@@ -70,6 +72,15 @@ const ProductionDashboard = () => {
     types: [{ name: '', values: [{ value: '', description: '' }] }]
   });
   const [notification, setNotification] = useState({ show: false, message: '', isError: false });
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  // Logout handler
+  const handleLogout = () => {
+    sessionStorage.removeItem("isAuthenticated");
+    sessionStorage.removeItem("role");
+    sessionStorage.removeItem("team");
+    navigate("/");
+  };
 
   useEffect(() => {
     localStorage.setItem('activeMenu', activeMenu);
@@ -1121,29 +1132,46 @@ const ProductionDashboard = () => {
       <div className="md:hidden bg-[#00072D] text-white p-4 flex justify-between items-center sticky top-0 z-10 shadow-md">
         <button 
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="p-2 rounded-md focus:outline-none"
+          className="p-2 rounded-md focus:outline-none hover:bg-white/10 transition-colors"
         >
           {mobileMenuOpen ? <FiX className="text-xl" /> : <FiMenu className="text-xl" />}
         </button>
         <h1 className="text-xl font-bold">Production Dashboard</h1>
-        <div className="w-8"></div>
+        <button
+          onClick={handleLogout}
+          className="p-2 rounded-md hover:bg-red-600/20 transition-colors"
+        >
+          <FiLogOut className="text-xl" />
+        </button>
       </div>
 
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar - Fixed and not scrolling */}
         <div 
-          className={`fixed inset-y-0 left-0 transform ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 z-20 w-64 bg-[#00072D] text-white transition duration-200 ease-in-out md:transition-none flex flex-col`}
+          className={`fixed inset-y-0 left-0 transform ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 z-20 ${sidebarCollapsed ? 'w-20' : 'w-64'} bg-[#00072D] text-white transition-all duration-200 ease-in-out md:transition-all flex flex-col`}
           style={{ height: '100vh' }}
         >
           <div className="p-4 border-b border-white/10">
-            <div className="flex items-center justify-center mb-2">
-              <img 
-                src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBmaWxsPSIjRjNGNEY2Ii8+Cjx0ZXh0IHg9IjIwIiB5PSIyNSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjE0IiBmaWxsPSIjOUNBM0FGIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5TSjwvdGV4dD4KPC9zdmc+Cg==" 
-                alt="Sonalika Jewellers" 
-                className="h-10 w-10 rounded-full"
-              />
+            <div className="flex items-center justify-between">
+              {!sidebarCollapsed && (
+                <div className="flex items-center justify-center mb-2 flex-1">
+                  <img 
+                    src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBmaWxsPSIjRjNGNEY2Ii8+Cjx0ZXh0IHg9IjIwIiB5PSIyNSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjE0IiBmaWxsPSIjOUNBM0FGIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5TSjwvdGV4dD4KPC9zdmc+Cg==" 
+                      alt="Sonalika Jewellers" 
+                      className="h-10 w-10 rounded-full"
+                    />
+                </div>
+              )}
+              <button
+                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                className="hidden md:block p-2 rounded-md hover:bg-white/10 transition-colors ml-auto"
+              >
+                {sidebarCollapsed ? <FiMenu className="text-xl" /> : <FiX className="text-xl" />}
+              </button>
             </div>
-            <h1 className="text-xl font-bold text-center">Sonalika Jewellers</h1>
+            {!sidebarCollapsed && (
+              <h1 className="text-xl font-bold text-center">Sonalika Jewellers</h1>
+            )}
           </div>
           <nav className="mt-6 flex-1 overflow-y-auto">
             <div 
@@ -1153,9 +1181,10 @@ const ProductionDashboard = () => {
                 setMobileMenuOpen(false);
                 setMasterType(null);
               }}
+              title="Dashboard"
             >
-              <FiHome className="mr-3" />
-              <span>Dashboard</span>
+              <FiHome className="mr-3 flex-shrink-0" />
+              {!sidebarCollapsed && <span>Dashboard</span>}
             </div>
             <div 
               className={`flex items-center px-6 py-3 cursor-pointer transition ${activeMenu === 'master' ? 'bg-white/10' : 'hover:bg-white/5'}`}
@@ -1164,13 +1193,26 @@ const ProductionDashboard = () => {
                 setMobileMenuOpen(false);
                 setMasterType(null);
               }}
+              title="Master Data"
             >
-              <FiDatabase className="mr-3" />
-              <span>Master Data</span>
+              <FiDatabase className="mr-3 flex-shrink-0" />
+              {!sidebarCollapsed && <span>Master Data</span>}
             </div>
           </nav>
-          <div className="p-4 text-sm text-white/60 border-t border-white/10 hidden md:block">
-           PageTraffics
+          <div className="p-4 border-t border-white/10">
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center px-6 py-3 rounded-lg transition-colors text-red-300 hover:bg-red-600/20"
+              title="Logout"
+            >
+              <FiLogOut className="mr-3 flex-shrink-0" />
+              {!sidebarCollapsed && <span>Logout</span>}
+            </button>
+            {!sidebarCollapsed && (
+              <div className="text-sm text-white/60 mt-2 text-center">
+                PageTraffics
+              </div>
+            )}
           </div>
         </div>
 
@@ -1182,8 +1224,27 @@ const ProductionDashboard = () => {
           ></div>
         )}
 
+        {/* Desktop Header */}
+        <div className="hidden md:block fixed top-0 right-0 left-64 bg-[#00072D] text-white p-4 flex justify-between items-center shadow-md z-10 transition-all duration-200"
+          style={{ left: sidebarCollapsed ? '80px' : '256px' }}
+        >
+          <h1 className="text-xl font-bold">Production Dashboard</h1>
+          <div className="flex items-center space-x-4">
+            <span className="text-sm text-white/70">
+              {new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
+            </span>
+            <button
+              onClick={handleLogout}
+              className="flex items-center space-x-2 px-4 py-2 rounded-lg hover:bg-red-600/20 transition-colors border border-white/20"
+            >
+              <FiLogOut />
+              <span>Logout</span>
+            </button>
+          </div>
+        </div>
+
         {/* Main Content - Scrollable */}
-        <div className="flex-1 overflow-auto p-4 md:p-6">
+        <div className="flex-1 overflow-auto p-4 md:p-6 md:pt-20">
           {activeMenu === 'dashboard' && renderDashboard()}
 
           {activeMenu === 'master' && (

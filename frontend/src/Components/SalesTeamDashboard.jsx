@@ -28,6 +28,7 @@ import { UploadOutlined } from "@ant-design/icons";
 
 import axios from "axios";
 import dayjs from "dayjs";
+import { useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   User,
@@ -39,6 +40,8 @@ import {
   ChevronDown,
   ChevronRight,
   Menu as MenuIcon,
+  LogOut,
+  X,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -82,6 +85,7 @@ const useMobile = () => {
 };
 
 const SalesDashboard = () => {
+  const navigate = useNavigate();
   const isMobile = useMobile();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileMenuVisible, setMobileMenuVisible] = useState(false);
@@ -138,6 +142,14 @@ const SalesDashboard = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [dateRange, setDateRange] = useState([]);
+
+  // Logout handler
+  const handleLogout = () => {
+    sessionStorage.removeItem("isAuthenticated");
+    sessionStorage.removeItem("role");
+    sessionStorage.removeItem("team");
+    navigate("/");
+  };
 
 
 
@@ -3254,19 +3266,28 @@ const renderOrderHistory = () => (
     <div className="min-h-screen flex bg-gray-50">
       {/* Desktop Sidebar */}
       <div
-        className="w-64 text-white flex-shrink-0 hidden md:block"
+        className={`${collapsed ? 'w-20' : 'w-64'} text-white flex-shrink-0 hidden md:block transition-all duration-200`}
         style={{ backgroundColor: colors.deepNavy }}
       >
         <div
-          className="h-16 flex items-center justify-center border-b"
+          className="h-16 flex items-center justify-center border-b relative"
           style={{ borderColor: colors.darkGold }}
         >
-          <span className="text-xl font-bold" style={{ color: colors.gold }}>
-            SONALIKA JEWELLERS
-          </span>
+          {!collapsed && (
+            <span className="text-xl font-bold" style={{ color: colors.gold }}>
+              SONALIKA JEWELLERS
+            </span>
+          )}
+          <button
+            onClick={() => setCollapsed(!collapsed)}
+            className="absolute right-2 p-2 rounded-md hover:bg-white/10 transition-colors"
+            style={{ color: colors.gold }}
+          >
+            {collapsed ? <MenuIcon size={20} /> : <X size={20} />}
+          </button>
         </div>
-        <nav className="p-4">
-          <ul className="space-y-2">
+        <nav className="p-4 flex flex-col h-full">
+          <ul className="space-y-2 flex-1">
             <li>
               <button
                 onClick={() => setSelectedMenu("dashboard")}
@@ -3283,9 +3304,10 @@ const renderOrderHistory = () => (
                       ? colors.deepNavy
                       : colors.platinum,
                 }}
+                title="Dashboard"
               >
-                <LayoutDashboard className="h-5 w-5 mr-3" />
-                <span>Dashboard</span>
+                <LayoutDashboard className="h-5 w-5 flex-shrink-0" style={{ marginRight: collapsed ? 0 : '0.75rem' }} />
+                {!collapsed && <span>Dashboard</span>}
               </button>
             </li>
             <li>
@@ -3302,9 +3324,10 @@ const renderOrderHistory = () => (
                   color:
                     selectedMenu === "kyc" ? colors.deepNavy : colors.platinum,
                 }}
+                title="Client KYC"
               >
-                <User className="h-5 w-5 mr-3" />
-                <span>Client KYC</span>
+                <User className="h-5 w-5 flex-shrink-0" style={{ marginRight: collapsed ? 0 : '0.75rem' }} />
+                {!collapsed && <span>Client KYC</span>}
               </button>
             </li>
             <li>
@@ -3323,9 +3346,10 @@ const renderOrderHistory = () => (
                       ? colors.deepNavy
                       : colors.platinum,
                 }}
+                title="Create Order"
               >
-                <ShoppingCart className="h-5 w-5 mr-3" />
-                <span>Create Order</span>
+                <ShoppingCart className="h-5 w-5 flex-shrink-0" style={{ marginRight: collapsed ? 0 : '0.75rem' }} />
+                {!collapsed && <span>Create Order</span>}
               </button>
             </li>
             <li>
@@ -3344,12 +3368,23 @@ const renderOrderHistory = () => (
                       ? colors.deepNavy
                       : colors.platinum,
                 }}
+                title="Order History"
               >
-                <History className="h-5 w-5 mr-3" />
-                <span>Order History</span>
+                <History className="h-5 w-5 flex-shrink-0" style={{ marginRight: collapsed ? 0 : '0.75rem' }} />
+                {!collapsed && <span>Order History</span>}
               </button>
             </li>
           </ul>
+          <div className="pt-4 border-t border-white/10">
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center p-3 rounded-lg transition-colors text-red-300 hover:bg-red-600/20"
+              title="Logout"
+            >
+              <LogOut className="h-5 w-5 flex-shrink-0" style={{ marginRight: collapsed ? 0 : '0.75rem' }} />
+              {!collapsed && <span>Logout</span>}
+            </button>
+          </div>
         </nav>
       </div>
 
@@ -3362,12 +3397,21 @@ const renderOrderHistory = () => (
           <h4 className="text-lg font-semibold" style={{ color: colors.gold }}>
             Jewelry Sales
           </h4>
-          <button
-            onClick={toggleMobileMenu}
-            className="text-white p-2 rounded-md focus:outline-none"
-          >
-            <MenuIcon className="h-6 w-6" style={{ color: colors.gold }} />
-          </button>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={handleLogout}
+              className="p-2 rounded-md hover:bg-red-600/20 transition-colors"
+              style={{ color: colors.gold }}
+            >
+              <LogOut size={20} />
+            </button>
+            <button
+              onClick={toggleMobileMenu}
+              className="text-white p-2 rounded-md focus:outline-none"
+            >
+              <MenuIcon className="h-6 w-6" style={{ color: colors.gold }} />
+            </button>
+          </div>
         </header>
       </div>
 
@@ -3484,6 +3528,18 @@ const renderOrderHistory = () => (
                     <span>Order History</span>
                   </button>
                 </li>
+                <li className="pt-4 mt-4 border-t border-white/10">
+                  <button
+                    onClick={() => {
+                      handleLogout();
+                      toggleMobileMenu();
+                    }}
+                    className="w-full flex items-center p-3 rounded-lg transition-colors text-red-300 hover:bg-red-600/20"
+                  >
+                    <LogOut className="h-5 w-5 mr-3" />
+                    <span>Logout</span>
+                  </button>
+                </li>
               </ul>
             </nav>
           </div>
@@ -3492,30 +3548,44 @@ const renderOrderHistory = () => (
       <div className="flex-1 flex flex-col overflow-hidden md:mt-0 mt-16">
         {/* Desktop Header */}
         <header
-          className="shadow-sm z-10 border-b hidden md:block"
+          className="shadow-sm z-10 border-b hidden md:block fixed top-0 right-0 transition-all duration-200"
           style={{
             backgroundColor: colors.diamond,
             borderColor: colors.darkGold,
+            left: collapsed ? '80px' : '256px',
           }}
         >
           <div className="flex items-center justify-between bg-[#050d3f] h-16 px-6">
-            <h4
-              className="text-lg font-semibold"
-              style={{ color: colors.velvet }}
-            >
-              Sales Dashboard
-            </h4>
             <div className="flex items-center space-x-4">
-              <span style={{ color: colors.velvet }}>
+              <h4
+                className="text-lg font-semibold"
+                style={{ color: colors.gold }}
+              >
+                Sales Dashboard
+              </h4>
+            </div>
+            <div className="flex items-center space-x-4">
+              <span style={{ color: colors.gold }}>
                 {dayjs().format("DD MMM YYYY")}
               </span>
+              <button
+                onClick={handleLogout}
+                className="flex items-center space-x-2 px-4 py-2 rounded-lg hover:bg-red-600/20 transition-colors border"
+                style={{ 
+                  borderColor: colors.gold,
+                  color: colors.gold 
+                }}
+              >
+                <LogOut size={18} />
+                <span>Logout</span>
+              </button>
             </div>
           </div>
         </header>
 
         {/* Content */}
         <main
-          className="flex-1 overflow-y-auto p-4 md:p-6"
+          className="flex-1 overflow-y-auto p-4 md:p-6 md:pt-24"
           style={{ backgroundColor: colors.light }}
         >
           <div

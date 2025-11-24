@@ -1665,7 +1665,7 @@ const OngoingOrderModal = ({ order, visible, onClose }) => {
         visible={ongoingOrderModalVisible}
         onClose={closeOrderModal}
       />
-    </div>
+    </motion.div>
   );
 const renderKYCForm = () => (
   <Form

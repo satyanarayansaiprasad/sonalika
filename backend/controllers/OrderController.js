@@ -299,7 +299,8 @@ exports.syncOrdersFromClients = async (req, res) => {
               quantity: totalPlatinum || 0,
               unit: 'grams'
             },
-            status: orderData.status === 'ongoing' ? 'pending' : 'pending'
+            status: orderData.status === 'ongoing' ? 'pending' : 'pending',
+            orderItems: orderData.orderItems || [] // Include order items from Sales
           });
 
           await newOrder.save();

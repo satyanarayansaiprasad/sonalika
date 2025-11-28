@@ -514,14 +514,28 @@ const AccountsDashboard = () => {
                 try {
                   setLoading(true);
                   const apiBaseUrl = getApiBaseUrl();
-                  const response = await axios.post(`${apiBaseUrl}/api/orders/sync-from-clients`);
+                  console.log('Syncing orders from:', `${apiBaseUrl}/api/orders/sync-from-clients`);
+                  const response = await axios.post(`${apiBaseUrl}/api/orders/sync-from-clients`, {}, {
+                    headers: {
+                      'Content-Type': 'application/json'
+                    }
+                  });
+                  console.log('Sync response:', response.data);
                   if (response.data.success) {
-                    alert(`Synced ${response.data.synced} orders. Skipped ${response.data.skipped} existing orders.`);
+                    alert(`Synced ${response.data.synced} orders. Skipped ${response.data.skipped} existing orders. Errors: ${response.data.errors}`);
                     await fetchOrders();
+                  } else {
+                    alert(`Sync failed: ${response.data.error || 'Unknown error'}`);
                   }
                 } catch (error) {
                   console.error('Sync error:', error);
-                  alert('Failed to sync orders. Please try again.');
+                  console.error('Error response:', error.response?.data);
+                  console.error('Error status:', error.response?.status);
+                  if (error.response?.status === 404) {
+                    alert('Sync endpoint not found. The backend may need to be restarted or redeployed. Please contact the administrator.');
+                  } else {
+                    alert(`Failed to sync orders: ${error.response?.data?.error || error.message}`);
+                  }
                 } finally {
                   setLoading(false);
                 }

@@ -672,8 +672,68 @@ exports.addClientOrder = async (req, res) => {
     // 6. Add to client's orders map
     client.orders.set(orderId, newOrder);
 
-    // 7. Save
+    // 7. Save client
     await client.save();
+
+    // 8. Create order in Order collection for Accounts dashboard
+    // Calculate material requirements from order items
+    let totalGold = 0;      // Sum of netWeight (gold weight)
+    let totalDiamond = 0;   // Sum of diaWeight (diamond weight in carats)
+    let totalSilver = 0;     // Can be calculated from grossWeight - netWeight if needed
+    let totalPlatinum = 0;   // Can be added if there's platinum in items
+
+    orderItems.forEach(item => {
+      // Gold: netWeight in grams
+      totalGold += (parseFloat(item.netWeight) || 0) * (item.quantity || 1);
+      
+      // Diamond: diaWeight in carats
+      totalDiamond += (parseFloat(item.diaWeight) || 0) * (item.quantity || 1);
+      
+      // Silver and Platinum: For now, set to 0 (can be calculated later if needed)
+      // If you have specific fields for silver/platinum, add them here
+    });
+
+    // Create order in Order collection for Accounts dashboard
+    const Order = require('../models/Order');
+    try {
+      // Format order date
+      const orderDateStr = newOrder.orderDate instanceof Date 
+        ? newOrder.orderDate.toISOString().split('T')[0] 
+        : new Date().toISOString().split('T')[0];
+      
+      const accountsOrder = new Order({
+        orderId: orderId,
+        orderDate: orderDateStr,
+        clientName: client.name,
+        description: orderDescription?.trim() || `Order from ${client.name}`,
+        gold: {
+          quantity: totalGold || 0,
+          unit: 'grams'
+        },
+        diamond: {
+          quantity: totalDiamond || 0,
+          unit: 'carats'
+        },
+        silver: {
+          quantity: totalSilver || 0,
+          unit: 'grams'
+        },
+        platinum: {
+          quantity: totalPlatinum || 0,
+          unit: 'grams'
+        },
+        status: 'pending' // Accounts will accept/reject
+      });
+      
+      await accountsOrder.save();
+      console.log('✅ Order created in Order collection for Accounts:', orderId);
+      console.log('   Materials - Gold:', totalGold, 'g, Diamond:', totalDiamond, 'ct');
+    } catch (orderError) {
+      console.error('❌ Error creating order in Order collection:', orderError);
+      console.error('   Order ID:', orderId);
+      console.error('   Error details:', orderError.message);
+      // Don't fail the request if Order creation fails, but log it
+    }
 
     return res.status(201).json({
       success: true,

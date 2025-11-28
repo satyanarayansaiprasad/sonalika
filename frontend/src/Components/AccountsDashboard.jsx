@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -28,6 +28,10 @@ const AccountsDashboard = () => {
   
   // Orders from DB
   const [orders, setOrders] = useState([]);
+  
+  // Track if we've already tried auto-sync
+  const hasAutoSynced = useRef(false);
+  const initialFetchDone = useRef(false);
   
   // API Base URL
   const getApiBaseUrl = () => {
@@ -69,6 +73,7 @@ const AccountsDashboard = () => {
       console.log('First order in state:', orders[0]);
     }
   }, [orders]);
+
 
   // Fetch inventory from DB
   const fetchInventory = async () => {

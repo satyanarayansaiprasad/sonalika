@@ -1258,8 +1258,8 @@ const OngoingOrderModal = ({ order, visible, onClose }) => {
     >
       <div className="mb-6">
         <h3 className="text-3xl font-bold mb-2" style={{ color: colors.deepNavy }}>
-          Sales Dashboard
-        </h3>
+        Sales Dashboard
+      </h3>
         <p className="text-gray-600">Overview of your sales performance and client management</p>
       </div>
 
@@ -1285,12 +1285,12 @@ const OngoingOrderModal = ({ order, visible, onClose }) => {
                 <User className="h-6 w-6" style={{ color: colors.darkGold }} />
               </div>
             </div>
-            <Statistic
+          <Statistic
               title={<span className="text-gray-600 font-medium">Total Clients</span>}
-              value={stats.totalClients}
+            value={stats.totalClients}
               valueStyle={{ color: colors.deepNavy, fontSize: "32px", fontWeight: "bold" }}
-            />
-          </div>
+          />
+        </div>
         </motion.div>
 
         <motion.div
@@ -1313,12 +1313,12 @@ const OngoingOrderModal = ({ order, visible, onClose }) => {
                 <User className="h-6 w-6" style={{ color: colors.success }} />
               </div>
             </div>
-            <Statistic
+          <Statistic
               title={<span className="text-gray-600 font-medium">Active Clients</span>}
-              value={stats.activeClients}
+            value={stats.activeClients}
               valueStyle={{ color: colors.success, fontSize: "32px", fontWeight: "bold" }}
-            />
-          </div>
+          />
+        </div>
         </motion.div>
 
         <motion.div
@@ -1341,12 +1341,12 @@ const OngoingOrderModal = ({ order, visible, onClose }) => {
                 <ShoppingCart className="h-6 w-6" style={{ color: colors.info }} />
               </div>
             </div>
-            <Statistic
+          <Statistic
               title={<span className="text-gray-600 font-medium">Total Orders</span>}
-              value={stats.totalOrders}
+            value={stats.totalOrders}
               valueStyle={{ color: colors.info, fontSize: "32px", fontWeight: "bold" }}
-            />
-          </div>
+          />
+        </div>
         </motion.div>
 
         <motion.div
@@ -1394,13 +1394,13 @@ const OngoingOrderModal = ({ order, visible, onClose }) => {
           transition={{ duration: 0.4 }}
         >
           <div className="p-4 border-b-2" style={{ borderColor: colors.gold, backgroundColor: `${colors.gold}10` }}>
-            <h2
+          <h2
               className="text-xl font-bold flex items-center"
               style={{ color: colors.deepNavy }}
-            >
+          >
               <User className="h-5 w-5 mr-2" style={{ color: colors.darkGold }} />
-              All Clients
-            </h2>
+            All Clients
+          </h2>
           </div>
           <Table
             dataSource={clients}
@@ -1459,13 +1459,13 @@ const OngoingOrderModal = ({ order, visible, onClose }) => {
           transition={{ duration: 0.4 }}
         >
           <div className="p-4 border-b-2" style={{ borderColor: colors.success, backgroundColor: `${colors.success}10` }}>
-            <h2
+          <h2
               className="text-xl font-bold flex items-center"
               style={{ color: colors.deepNavy }}
-            >
+          >
               <ShoppingCart className="h-5 w-5 mr-2" style={{ color: colors.success }} />
-              Ongoing Orders
-            </h2>
+            Ongoing Orders
+          </h2>
           </div>
           <Table
             dataSource={clients.flatMap((client) => {
@@ -1563,13 +1563,13 @@ const OngoingOrderModal = ({ order, visible, onClose }) => {
           transition={{ duration: 0.4, delay: 0.2 }}
         >
           <div className="p-4 border-b-2" style={{ borderColor: colors.info, backgroundColor: `${colors.info}10` }}>
-            <h2
+          <h2
               className="text-xl font-bold flex items-center"
               style={{ color: colors.deepNavy }}
-            >
+          >
               <History className="h-5 w-5 mr-2" style={{ color: colors.info }} />
-              Completed Orders
-            </h2>
+            Completed Orders
+          </h2>
           </div>
           <Table
             dataSource={clients.flatMap((client) => {
@@ -3509,12 +3509,12 @@ const renderOrderHistory = () => (
             >
               <LogOut size={20} />
             </button>
-            <button
-              onClick={toggleMobileMenu}
-              className="text-white p-2 rounded-md focus:outline-none"
-            >
-              <MenuIcon className="h-6 w-6" style={{ color: colors.gold }} />
-            </button>
+          <button
+            onClick={toggleMobileMenu}
+            className="text-white p-2 rounded-md focus:outline-none"
+          >
+            <MenuIcon className="h-6 w-6" style={{ color: colors.gold }} />
+          </button>
           </div>
         </header>
       </div>
@@ -3649,12 +3649,12 @@ const renderOrderHistory = () => (
         >
           <div className="flex items-center justify-between bg-[#050d3f] h-16 px-6">
             <div className="flex items-center space-x-4">
-              <h4
-                className="text-lg font-semibold"
+            <h4
+              className="text-lg font-semibold"
                 style={{ color: colors.gold }}
-              >
-                Sales Dashboard
-              </h4>
+            >
+              Sales Dashboard
+            </h4>
             </div>
             <div className="flex items-center space-x-4">
               <span style={{ color: colors.gold }}>

@@ -144,7 +144,7 @@ const TeamLogin = () => {
     console.log('Request data:', { ...requestData, password: '***' });
     console.log('Environment:', isDevelopment ? 'Development' : 'Production');
     console.log('Selected team:', selectedTeam);
-    
+
     const res = await axios.post(
       fullUrl,
       requestData,
@@ -183,16 +183,16 @@ const TeamLogin = () => {
     // Updated error handling to show specific message for invalid credentials
     if (err.response) {
       if (err.response.status === 401) {
-        setError("Invalid credentials. Please check your login details and try again.");
+      setError("Invalid credentials. Please check your login details and try again.");
       } else if (err.response.status === 404) {
         setError("Server endpoint not found. Please contact administrator.");
       } else if (err.response.status >= 500) {
         setError("Server error. Please try again later.");
-      } else {
-        const errorMessage = err.response?.data?.message || 
-                          err.response?.data?.error || 
+    } else {
+      const errorMessage = err.response?.data?.message || 
+                        err.response?.data?.error || 
                           `Login failed (Status: ${err.response.status}). Please try again.`;
-        setError(errorMessage);
+      setError(errorMessage);
       }
     } else if (err.request) {
       // Request was made but no response received

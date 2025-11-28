@@ -29,5 +29,8 @@ router.put('/update/:orderId', OrderController.updateOrder);
 // Delete an order
 router.delete('/delete/:orderId', OrderController.deleteOrder);
 
+// Sync orders from Client orders to Order collection
+router.post('/sync-from-clients', OrderController.syncOrdersFromClients);
+
 module.exports = router;
 

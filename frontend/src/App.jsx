@@ -17,18 +17,18 @@ const App = () => {
       <Route path='/salesteamdashboard' element={
         <ProtectedRoute allowedRoles={["salesteam"]}>
           <SalesTeamDashboard/>
-        </ProtectedRoute>
-      }/>
+          </ProtectedRoute>
+        }/>
       <Route path='/productiondashboard' element={
         <ProtectedRoute allowedRoles={["productionteam"]}>
           <ProductionTeam/>
-        </ProtectedRoute>
-      }/>
+          </ProtectedRoute>
+        }/> 
       <Route path='/accountsdashboard' element={
         <ProtectedRoute allowedRoles={["accounts"]}>
           <AccountsDashboard/>
         </ProtectedRoute>
-      }/>
+        }/>
       {/* Add more routes here when needed */}
     </Routes>
   );

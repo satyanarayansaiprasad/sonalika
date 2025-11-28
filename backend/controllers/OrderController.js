@@ -237,3 +237,93 @@ exports.deleteOrder = async (req, res) => {
   }
 };
 
+// Sync orders from Client orders to Order collection
+exports.syncOrdersFromClients = async (req, res) => {
+  try {
+    const Clienttss = require('../models/Clienttss');
+    const clients = await Clienttss.find();
+    
+    let syncedCount = 0;
+    let skippedCount = 0;
+    let errorCount = 0;
+
+    for (const client of clients) {
+      if (!client.orders || client.orders.size === 0) continue;
+
+      for (const [orderId, orderData] of client.orders.entries()) {
+        try {
+          // Check if order already exists in Order collection
+          const existingOrder = await Order.findOne({ orderId });
+          if (existingOrder) {
+            skippedCount++;
+            continue;
+          }
+
+          // Calculate material requirements
+          let totalGold = 0;
+          let totalDiamond = 0;
+          let totalSilver = 0;
+          let totalPlatinum = 0;
+
+          if (orderData.orderItems && Array.isArray(orderData.orderItems)) {
+            orderData.orderItems.forEach(item => {
+              totalGold += (parseFloat(item.netWeight) || 0) * (item.quantity || 1);
+              totalDiamond += (parseFloat(item.diaWeight) || 0) * (item.quantity || 1);
+            });
+          }
+
+          // Format order date
+          const orderDate = orderData.orderDate instanceof Date
+            ? orderData.orderDate.toISOString().split('T')[0]
+            : (orderData.orderDate || new Date().toISOString().split('T')[0]);
+
+          // Create order in Order collection
+          const newOrder = new Order({
+            orderId: orderId,
+            orderDate: orderDate,
+            clientName: client.name || 'Unknown Client',
+            description: orderData.orderDescription || `Order from ${client.name}`,
+            gold: {
+              quantity: totalGold || 0,
+              unit: 'grams'
+            },
+            diamond: {
+              quantity: totalDiamond || 0,
+              unit: 'carats'
+            },
+            silver: {
+              quantity: totalSilver || 0,
+              unit: 'grams'
+            },
+            platinum: {
+              quantity: totalPlatinum || 0,
+              unit: 'grams'
+            },
+            status: orderData.status === 'ongoing' ? 'pending' : 'pending'
+          });
+
+          await newOrder.save();
+          syncedCount++;
+        } catch (error) {
+          console.error(`Error syncing order ${orderId}:`, error);
+          errorCount++;
+        }
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Orders synced successfully',
+      synced: syncedCount,
+      skipped: skippedCount,
+      errors: errorCount
+    });
+  } catch (error) {
+    console.error('Sync error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+};
+

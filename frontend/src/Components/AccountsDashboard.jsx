@@ -508,16 +508,43 @@ const AccountsDashboard = () => {
             </h3>
             <p className="text-gray-600">Review and manage order requests</p>
           </div>
-          <motion.button
-            onClick={fetchOrders}
-            className="px-4 py-2 rounded-lg text-white transition-colors"
-            style={{ backgroundColor: colors.info }}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            disabled={loading}
-          >
-            {loading ? 'Refreshing...' : 'Refresh'}
-          </motion.button>
+          <div className="flex gap-2">
+            <motion.button
+              onClick={async () => {
+                try {
+                  setLoading(true);
+                  const apiBaseUrl = getApiBaseUrl();
+                  const response = await axios.post(`${apiBaseUrl}/api/orders/sync-from-clients`);
+                  if (response.data.success) {
+                    alert(`Synced ${response.data.synced} orders. Skipped ${response.data.skipped} existing orders.`);
+                    await fetchOrders();
+                  }
+                } catch (error) {
+                  console.error('Sync error:', error);
+                  alert('Failed to sync orders. Please try again.');
+                } finally {
+                  setLoading(false);
+                }
+              }}
+              className="px-4 py-2 rounded-lg text-white transition-colors"
+              style={{ backgroundColor: colors.warning }}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              disabled={loading}
+            >
+              {loading ? 'Syncing...' : 'Sync Orders'}
+            </motion.button>
+            <motion.button
+              onClick={fetchOrders}
+              className="px-4 py-2 rounded-lg text-white transition-colors"
+              style={{ backgroundColor: colors.info }}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              disabled={loading}
+            >
+              {loading ? 'Refreshing...' : 'Refresh'}
+            </motion.button>
+          </div>
         </div>
 
         <div className="overflow-x-auto">

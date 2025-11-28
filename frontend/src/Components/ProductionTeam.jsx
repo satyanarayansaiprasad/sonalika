@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FiMenu, FiX, FiHome, FiDatabase, FiShoppingBag, FiPlus, FiAward, FiChevronDown, FiChevronUp, FiTrash2, FiEdit2, FiCheckCircle, FiLogOut, FiClock } from 'react-icons/fi';
+import { FiMenu, FiX, FiHome, FiDatabase, FiShoppingBag, FiPlus, FiAward, FiChevronDown, FiChevronUp, FiTrash2, FiEdit2, FiCheckCircle, FiLogOut, FiClock, FiXCircle } from 'react-icons/fi';
 
 const API_BASE_URL = 'https://sonalika.onrender.com';
 
@@ -74,6 +74,14 @@ const ProductionDashboard = () => {
   });
   const [notification, setNotification] = useState({ show: false, message: '', isError: false });
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [acceptedOrders, setAcceptedOrders] = useState([]);
+  const [rejectedOrders, setRejectedOrders] = useState([]);
+  
+  // API Base URL
+  const getApiBaseUrl = () => {
+    const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    return import.meta.env.VITE_API_URL || (isDevelopment ? 'http://localhost:3001' : 'https://sonalika.onrender.com');
+  };
 
   // Logout handler
   const handleLogout = () => {
@@ -113,7 +121,70 @@ const ProductionDashboard = () => {
     fetchAllProductMasters();
     fetchAllDesignMasters();
     fetchAllCategories();
+    loadAcceptedOrders();
+    loadRejectedOrders();
+    
+    // Set up interval to check for new orders
+    const interval = setInterval(() => {
+      loadAcceptedOrders();
+      loadRejectedOrders();
+    }, 2000); // Check every 2 seconds
+    
+    return () => clearInterval(interval);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const loadAcceptedOrders = async () => {
+    try {
+      const apiBaseUrl = getApiBaseUrl();
+      const response = await axios.get(`${apiBaseUrl}/api/orders/accepted`);
+      if (response.data.success && response.data.data) {
+        // Transform DB orders to match frontend format
+        const transformedOrders = response.data.data.map(order => ({
+          id: order.orderId,
+          orderId: order.orderId,
+          orderDate: order.orderDate,
+          clientName: order.clientName,
+          description: order.description,
+          gold: order.gold,
+          diamond: order.diamond,
+          silver: order.silver,
+          platinum: order.platinum,
+          status: order.status,
+          acceptedDate: order.acceptedDate
+        }));
+        setAcceptedOrders(transformedOrders);
+      }
+    } catch (error) {
+      console.error('Error fetching accepted orders:', error);
+    }
+  };
+
+  const loadRejectedOrders = async () => {
+    try {
+      const apiBaseUrl = getApiBaseUrl();
+      const response = await axios.get(`${apiBaseUrl}/api/orders/rejected`);
+      if (response.data.success && response.data.data) {
+        // Transform DB orders to match frontend format
+        const transformedOrders = response.data.data.map(order => ({
+          id: order.orderId,
+          orderId: order.orderId,
+          orderDate: order.orderDate,
+          clientName: order.clientName,
+          description: order.description,
+          gold: order.gold,
+          diamond: order.diamond,
+          silver: order.silver,
+          platinum: order.platinum,
+          status: order.status,
+          rejectionReason: order.rejectionReason || '',
+          rejectedDate: order.rejectedDate
+        }));
+        setRejectedOrders(transformedOrders);
+      }
+    } catch (error) {
+      console.error('Error fetching rejected orders:', error);
+    }
+  };
 
 
   const showNotification = (message, isError = false) => {
@@ -1184,6 +1255,179 @@ const ProductionDashboard = () => {
     </div>
   );
 
+  const renderAcceptedOrders = () => {
+    const colors = {
+      gold: "#f9e79f",
+      darkGold: "#D4AF37",
+      deepNavy: "#00072D",
+      platinum: "#E5E4E2",
+      light: "#F8F8F8",
+      diamond: "rgba(255,255,255,0.95)",
+      success: "#10b981",
+      info: "#3b82f6",
+      warning: "#f59e0b",
+    };
+
+    return (
+      <div className="space-y-6">
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold mb-2" style={{ color: colors.deepNavy }}>
+            Accepted & Rejected Orders
+          </h1>
+          <p className="text-gray-600">Orders processed by Accounts department</p>
+        </div>
+
+        {/* Accepted Orders Section */}
+        <div className="mb-8">
+          <h2 className="text-2xl font-semibold mb-4" style={{ color: colors.success }}>
+            Accepted Orders ({acceptedOrders.length})
+          </h2>
+          {acceptedOrders.length === 0 ? (
+            <motion.div
+              className="bg-white rounded-xl shadow-lg p-12 text-center border-2"
+              style={{ borderColor: colors.gold }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <FiCheckCircle className="mx-auto text-6xl mb-4" style={{ color: colors.info }} />
+              <h3 className="text-xl font-semibold mb-2" style={{ color: colors.deepNavy }}>
+                No Accepted Orders
+              </h3>
+              <p className="text-gray-600">Accepted orders from Accounts will appear here</p>
+            </motion.div>
+          ) : (
+            <div className="overflow-x-auto">
+              <div className="bg-white rounded-xl shadow-lg border-2 overflow-hidden" style={{ borderColor: colors.success }}>
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr style={{ backgroundColor: colors.deepNavy, color: colors.gold }}>
+                      <th className="px-4 py-3 text-left border border-gray-300">Order ID</th>
+                      <th className="px-4 py-3 text-left border border-gray-300">Order Date</th>
+                      <th className="px-4 py-3 text-left border border-gray-300">Accepted Date</th>
+                      <th className="px-4 py-3 text-left border border-gray-300">Client Name</th>
+                      <th className="px-4 py-3 text-left border border-gray-300">Description</th>
+                      <th className="px-4 py-3 text-left border border-gray-300">Gold</th>
+                      <th className="px-4 py-3 text-left border border-gray-300">Diamond</th>
+                      <th className="px-4 py-3 text-left border border-gray-300">Silver</th>
+                      <th className="px-4 py-3 text-left border border-gray-300">Platinum</th>
+                      <th className="px-4 py-3 text-left border border-gray-300">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {acceptedOrders.map((order, index) => (
+                      <motion.tr
+                        key={order.id}
+                        className="hover:bg-gray-50"
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: index * 0.1 }}
+                        style={{ backgroundColor: '#d1fae5' }}
+                      >
+                        <td className="px-4 py-3 border border-gray-300 font-semibold">{order.orderId || order.id}</td>
+                        <td className="px-4 py-3 border border-gray-300">{order.orderDate}</td>
+                        <td className="px-4 py-3 border border-gray-300">
+                          {order.acceptedDate ? new Date(order.acceptedDate).toLocaleDateString() : '-'}
+                        </td>
+                        <td className="px-4 py-3 border border-gray-300">{order.clientName}</td>
+                        <td className="px-4 py-3 border border-gray-300">{order.description}</td>
+                        <td className="px-4 py-3 border border-gray-300">{order.gold.quantity} {order.gold.unit}</td>
+                        <td className="px-4 py-3 border border-gray-300">{order.diamond.quantity} {order.diamond.unit}</td>
+                        <td className="px-4 py-3 border border-gray-300">{order.silver.quantity} {order.silver.unit}</td>
+                        <td className="px-4 py-3 border border-gray-300">{order.platinum.quantity} {order.platinum.unit}</td>
+                        <td className="px-4 py-3 border border-gray-300">
+                          <span className="px-2 py-1 rounded text-xs font-semibold bg-green-100 text-green-800">
+                            ACCEPTED
+                          </span>
+                        </td>
+                      </motion.tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Rejected Orders Section */}
+        <div>
+          <h2 className="text-2xl font-semibold mb-4" style={{ color: '#ef4444' }}>
+            Rejected Orders ({rejectedOrders.length})
+          </h2>
+          {rejectedOrders.length === 0 ? (
+            <motion.div
+              className="bg-white rounded-xl shadow-lg p-12 text-center border-2"
+              style={{ borderColor: colors.gold }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <FiXCircle className="mx-auto text-6xl mb-4" style={{ color: '#ef4444' }} />
+              <h3 className="text-xl font-semibold mb-2" style={{ color: colors.deepNavy }}>
+                No Rejected Orders
+              </h3>
+              <p className="text-gray-600">Rejected orders from Accounts will appear here</p>
+            </motion.div>
+          ) : (
+            <div className="overflow-x-auto">
+              <div className="bg-white rounded-xl shadow-lg border-2 overflow-hidden" style={{ borderColor: '#ef4444' }}>
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr style={{ backgroundColor: colors.deepNavy, color: colors.gold }}>
+                      <th className="px-4 py-3 text-left border border-gray-300">Order ID</th>
+                      <th className="px-4 py-3 text-left border border-gray-300">Order Date</th>
+                      <th className="px-4 py-3 text-left border border-gray-300">Rejected Date</th>
+                      <th className="px-4 py-3 text-left border border-gray-300">Client Name</th>
+                      <th className="px-4 py-3 text-left border border-gray-300">Description</th>
+                      <th className="px-4 py-3 text-left border border-gray-300">Gold</th>
+                      <th className="px-4 py-3 text-left border border-gray-300">Diamond</th>
+                      <th className="px-4 py-3 text-left border border-gray-300">Silver</th>
+                      <th className="px-4 py-3 text-left border border-gray-300">Platinum</th>
+                      <th className="px-4 py-3 text-left border border-gray-300">Rejection Reason</th>
+                      <th className="px-4 py-3 text-left border border-gray-300">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rejectedOrders.map((order, index) => (
+                      <motion.tr
+                        key={order.id}
+                        className="hover:bg-gray-50"
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: index * 0.1 }}
+                        style={{ backgroundColor: '#fee2e2' }}
+                      >
+                        <td className="px-4 py-3 border border-gray-300 font-semibold">{order.orderId || order.id}</td>
+                        <td className="px-4 py-3 border border-gray-300">{order.orderDate}</td>
+                        <td className="px-4 py-3 border border-gray-300">
+                          {order.rejectedDate ? new Date(order.rejectedDate).toLocaleDateString() : '-'}
+                        </td>
+                        <td className="px-4 py-3 border border-gray-300">{order.clientName}</td>
+                        <td className="px-4 py-3 border border-gray-300">{order.description}</td>
+                        <td className="px-4 py-3 border border-gray-300">{order.gold.quantity} {order.gold.unit}</td>
+                        <td className="px-4 py-3 border border-gray-300">{order.diamond.quantity} {order.diamond.unit}</td>
+                        <td className="px-4 py-3 border border-gray-300">{order.silver.quantity} {order.silver.unit}</td>
+                        <td className="px-4 py-3 border border-gray-300">{order.platinum.quantity} {order.platinum.unit}</td>
+                        <td className="px-4 py-3 border border-gray-300">
+                          <div className="max-w-xs">
+                            <p className="text-sm font-medium text-red-800">{order.rejectionReason || 'Not enough materials available at accounts'}</p>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 border border-gray-300">
+                          <span className="px-2 py-1 rounded text-xs font-semibold bg-red-100 text-red-800">
+                            REJECTED
+                          </span>
+                        </td>
+                      </motion.tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="flex flex-col h-screen bg-gray-50">
       {/* Notification */}
@@ -1257,7 +1501,7 @@ const ProductionDashboard = () => {
               {!sidebarCollapsed && <span className="font-medium">Dashboard</span>}
             </motion.div>
             <motion.div 
-              className={`flex items-center px-4 py-4 cursor-pointer rounded-xl transition-all ${activeMenu === 'master' ? 'bg-white/10 shadow-lg' : 'hover:bg-white/5'}`}
+              className={`flex items-center px-4 py-4 cursor-pointer rounded-xl transition-all mb-2 ${activeMenu === 'master' ? 'bg-white/10 shadow-lg' : 'hover:bg-white/5'}`}
               onClick={() => {
                 setActiveMenu('master');
                 setMobileMenuOpen(false);
@@ -1269,6 +1513,22 @@ const ProductionDashboard = () => {
             >
               <FiDatabase className="mr-3 flex-shrink-0 text-lg" />
               {!sidebarCollapsed && <span className="font-medium">Master Data</span>}
+            </motion.div>
+            <motion.div 
+              className={`flex items-center px-4 py-4 cursor-pointer rounded-xl transition-all ${activeMenu === 'acceptedOrders' ? 'bg-white/10 shadow-lg' : 'hover:bg-white/5'}`}
+              onClick={() => {
+                setActiveMenu('acceptedOrders');
+                setMobileMenuOpen(false);
+                setMasterType(null);
+                loadAcceptedOrders();
+                loadRejectedOrders();
+              }}
+              title="Accepted Orders"
+              whileHover={{ scale: 1.02, x: 4 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <FiCheckCircle className="mr-3 flex-shrink-0 text-lg" />
+              {!sidebarCollapsed && <span className="font-medium">Accepted Orders</span>}
             </motion.div>
           </nav>
           {!sidebarCollapsed && (
@@ -1334,6 +1594,8 @@ const ProductionDashboard = () => {
               {masterType === 'design' && renderDesignMasterForm()}
             </>
           )}
+
+          {activeMenu === 'acceptedOrders' && renderAcceptedOrders()}
         </div>
       </div>
     </div>

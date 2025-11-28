@@ -5,17 +5,35 @@ exports.getAllOrders = async (req, res) => {
   try {
     const orders = await Order.find().sort({ createdAt: -1 });
     console.log('Found orders:', orders.length);
-    console.log('Orders data:', JSON.stringify(orders, null, 2));
-    res.status(200).json({ 
-      success: true, 
-      data: orders,
-      count: orders.length
+    
+    // Convert Mongoose documents to plain objects
+    const ordersArray = orders.map(order => order.toObject ? order.toObject() : order);
+    
+    console.log('Orders array length:', ordersArray.length);
+    if (ordersArray.length > 0) {
+      console.log('First order sample:', JSON.stringify(ordersArray[0], null, 2));
+    }
+    
+    const response = {
+      success: true,
+      data: ordersArray,
+      count: ordersArray.length
+    };
+    
+    console.log('Sending response with structure:', {
+      success: response.success,
+      dataLength: response.data.length,
+      count: response.count
     });
+    
+    res.status(200).json(response);
   } catch (error) {
     console.error('Error fetching orders:', error);
+    console.error('Error stack:', error.stack);
     res.status(500).json({ 
       success: false, 
-      error: error.message 
+      error: error.message,
+      details: error.stack
     });
   }
 };

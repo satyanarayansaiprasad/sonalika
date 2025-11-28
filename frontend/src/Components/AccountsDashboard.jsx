@@ -62,6 +62,14 @@ const AccountsDashboard = () => {
     }
   }, [navigate]);
 
+  // Debug: Log orders whenever they change
+  useEffect(() => {
+    console.log('Orders state updated. Count:', orders.length);
+    if (orders.length > 0) {
+      console.log('First order in state:', orders[0]);
+    }
+  }, [orders]);
+
   // Fetch inventory from DB
   const fetchInventory = async () => {
     try {
@@ -84,36 +92,88 @@ const AccountsDashboard = () => {
     try {
       setLoading(true);
       const apiBaseUrl = getApiBaseUrl();
-      console.log('Fetching orders from:', `${apiBaseUrl}/api/orders/all`);
-      const response = await axios.get(`${apiBaseUrl}/api/orders/all`);
-      console.log('Orders API response:', response.data);
+      const apiUrl = `${apiBaseUrl}/api/orders/all`;
+      console.log('Fetching orders from:', apiUrl);
       
-      if (response.data && response.data.success && response.data.data) {
+      const response = await axios.get(apiUrl);
+      console.log('Full API response:', response);
+      console.log('Response data:', response.data);
+      console.log('Response status:', response.status);
+      
+      // Handle different response structures
+      let ordersData = null;
+      
+      if (response.data) {
+        // Check if response.data is an array directly
+        if (Array.isArray(response.data)) {
+          ordersData = response.data;
+          console.log('Response is array directly, orders count:', ordersData.length);
+        }
+        // Check if response.data.data exists (standard structure)
+        else if (response.data.success && response.data.data) {
+          ordersData = response.data.data;
+          console.log('Response has data property, orders count:', ordersData.length);
+        }
+        // Check if response.data has orders array
+        else if (response.data.orders && Array.isArray(response.data.orders)) {
+          ordersData = response.data.orders;
+          console.log('Response has orders property, orders count:', ordersData.length);
+        }
+        // Check if response.data.success is true but no data property
+        else if (response.data.success) {
+          console.warn('Response has success=true but no data array found');
+          console.warn('Response structure:', JSON.stringify(response.data, null, 2));
+          ordersData = [];
+        }
+      }
+      
+      if (ordersData && Array.isArray(ordersData)) {
         // Transform DB orders to match frontend format
-        const transformedOrders = response.data.data.map(order => ({
-          id: order.orderId || order._id,
-          orderId: order.orderId || order._id,
-          orderDate: order.orderDate || '',
-          clientName: order.clientName || '',
-          description: order.description || '',
-          gold: order.gold || { quantity: 0, unit: 'grams' },
-          diamond: order.diamond || { quantity: 0, unit: 'carats' },
-          silver: order.silver || { quantity: 0, unit: 'grams' },
-          platinum: order.platinum || { quantity: 0, unit: 'grams' },
-          status: order.status || 'pending',
-          rejectionReason: order.rejectionReason || '',
-          acceptedDate: order.acceptedDate,
-          rejectedDate: order.rejectedDate
-        }));
+        const transformedOrders = ordersData.map((order, index) => {
+          // Handle both MongoDB _id and orderId
+          const orderId = order.orderId || order._id?.toString() || `order-${index}`;
+          
+          return {
+            id: orderId,
+            orderId: orderId,
+            orderDate: order.orderDate || '',
+            clientName: order.clientName || '',
+            description: order.description || '',
+            gold: order.gold || { quantity: 0, unit: 'grams' },
+            diamond: order.diamond || { quantity: 0, unit: 'carats' },
+            silver: order.silver || { quantity: 0, unit: 'grams' },
+            platinum: order.platinum || { quantity: 0, unit: 'grams' },
+            status: order.status || 'pending',
+            rejectionReason: order.rejectionReason || '',
+            acceptedDate: order.acceptedDate,
+            rejectedDate: order.rejectedDate
+          };
+        });
+        
         console.log('Transformed orders:', transformedOrders);
+        console.log('Setting orders count:', transformedOrders.length);
         setOrders(transformedOrders);
       } else {
-        console.warn('Unexpected response format:', response.data);
+        console.warn('No valid orders data found in response');
+        console.warn('Response structure:', JSON.stringify(response.data, null, 2));
         setOrders([]);
       }
     } catch (error) {
       console.error('Error fetching orders:', error);
+      console.error('Error message:', error.message);
       console.error('Error response:', error.response?.data);
+      console.error('Error status:', error.response?.status);
+      console.error('Error config:', error.config);
+      
+      // Show user-friendly error
+      if (error.response) {
+        console.error(`Server responded with status ${error.response.status}:`, error.response.data);
+      } else if (error.request) {
+        console.error('No response received from server. Check if backend is running.');
+      } else {
+        console.error('Error setting up request:', error.message);
+      }
+      
       setOrders([]);
     } finally {
       setLoading(false);

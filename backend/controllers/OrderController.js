@@ -4,11 +4,15 @@ const Order = require('../models/Order');
 exports.getAllOrders = async (req, res) => {
   try {
     const orders = await Order.find().sort({ createdAt: -1 });
+    console.log('Found orders:', orders.length);
+    console.log('Orders data:', JSON.stringify(orders, null, 2));
     res.status(200).json({ 
       success: true, 
-      data: orders 
+      data: orders,
+      count: orders.length
     });
   } catch (error) {
+    console.error('Error fetching orders:', error);
     res.status(500).json({ 
       success: false, 
       error: error.message 

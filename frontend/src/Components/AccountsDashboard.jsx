@@ -84,28 +84,37 @@ const AccountsDashboard = () => {
     try {
       setLoading(true);
       const apiBaseUrl = getApiBaseUrl();
+      console.log('Fetching orders from:', `${apiBaseUrl}/api/orders/all`);
       const response = await axios.get(`${apiBaseUrl}/api/orders/all`);
-      if (response.data.success && response.data.data) {
+      console.log('Orders API response:', response.data);
+      
+      if (response.data && response.data.success && response.data.data) {
         // Transform DB orders to match frontend format
         const transformedOrders = response.data.data.map(order => ({
-          id: order.orderId,
-          orderId: order.orderId,
-          orderDate: order.orderDate,
-          clientName: order.clientName,
-          description: order.description,
-          gold: order.gold,
-          diamond: order.diamond,
-          silver: order.silver,
-          platinum: order.platinum,
-          status: order.status,
+          id: order.orderId || order._id,
+          orderId: order.orderId || order._id,
+          orderDate: order.orderDate || '',
+          clientName: order.clientName || '',
+          description: order.description || '',
+          gold: order.gold || { quantity: 0, unit: 'grams' },
+          diamond: order.diamond || { quantity: 0, unit: 'carats' },
+          silver: order.silver || { quantity: 0, unit: 'grams' },
+          platinum: order.platinum || { quantity: 0, unit: 'grams' },
+          status: order.status || 'pending',
           rejectionReason: order.rejectionReason || '',
           acceptedDate: order.acceptedDate,
           rejectedDate: order.rejectedDate
         }));
+        console.log('Transformed orders:', transformedOrders);
         setOrders(transformedOrders);
+      } else {
+        console.warn('Unexpected response format:', response.data);
+        setOrders([]);
       }
     } catch (error) {
       console.error('Error fetching orders:', error);
+      console.error('Error response:', error.response?.data);
+      setOrders([]);
     } finally {
       setLoading(false);
     }
@@ -432,11 +441,23 @@ const AccountsDashboard = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
       >
-        <div className="mb-6">
-          <h3 className="text-3xl font-bold mb-2" style={{ color: colors.deepNavy }}>
-            All Orders
-          </h3>
-          <p className="text-gray-600">Review and manage order requests</p>
+        <div className="mb-6 flex justify-between items-center">
+          <div>
+            <h3 className="text-3xl font-bold mb-2" style={{ color: colors.deepNavy }}>
+              All Orders ({orders.length})
+            </h3>
+            <p className="text-gray-600">Review and manage order requests</p>
+          </div>
+          <motion.button
+            onClick={fetchOrders}
+            className="px-4 py-2 rounded-lg text-white transition-colors"
+            style={{ backgroundColor: colors.info }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            disabled={loading}
+          >
+            {loading ? 'Refreshing...' : 'Refresh'}
+          </motion.button>
         </div>
 
         <div className="overflow-x-auto">
@@ -456,70 +477,89 @@ const AccountsDashboard = () => {
               </tr>
             </thead>
             <tbody>
-              {orders.map((order, index) => (
-                <motion.tr
-                  key={order.id}
-                  className="hover:bg-gray-50"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  style={{
-                    backgroundColor: order.status === 'accepted' ? '#d1fae5' : 
-                                   order.status === 'rejected' ? '#fee2e2' : 'white'
-                  }}
-                >
-                  <td className="px-4 py-3 border border-gray-300 font-semibold">{order.orderId || order.id}</td>
-                  <td className="px-4 py-3 border border-gray-300">{order.orderDate}</td>
-                  <td className="px-4 py-3 border border-gray-300">{order.clientName}</td>
-                  <td className="px-4 py-3 border border-gray-300">{order.description}</td>
-                  <td className="px-4 py-3 border border-gray-300">{order.gold.quantity} {order.gold.unit}</td>
-                  <td className="px-4 py-3 border border-gray-300">{order.diamond.quantity} {order.diamond.unit}</td>
-                  <td className="px-4 py-3 border border-gray-300">{order.silver.quantity} {order.silver.unit}</td>
-                  <td className="px-4 py-3 border border-gray-300">{order.platinum.quantity} {order.platinum.unit}</td>
-                  <td className="px-4 py-3 border border-gray-300">
-                    <span className={`px-2 py-1 rounded text-xs font-semibold ${
-                      order.status === 'accepted' ? 'bg-green-100 text-green-800' :
-                      order.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                      'bg-yellow-100 text-yellow-800'
-                    }`}>
-                      {order.status.toUpperCase()}
-                    </span>
+              {loading && orders.length === 0 ? (
+                <tr>
+                  <td colSpan="10" className="px-4 py-8 text-center text-gray-500">
+                    Loading orders...
                   </td>
-                  <td className="px-4 py-3 border border-gray-300">
-                    {order.status === 'pending' ? (
-                      <div className="flex gap-2 justify-center">
-                        <motion.button
-                          onClick={() => handleAcceptOrder(order.orderId || order.id)}
-                          className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 transition-colors flex items-center gap-1"
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                        >
-                          <CheckCircle size={16} />
-                          Accept
-                        </motion.button>
-                        <motion.button
-                          onClick={() => handleRejectClick(order.orderId || order.id)}
-                          className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors flex items-center gap-1"
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                        >
-                          <XCircle size={16} />
-                          Reject
-                        </motion.button>
-                      </div>
-                    ) : (
-                      <span className="text-gray-400 text-sm">-</span>
-                    )}
+                </tr>
+              ) : orders.length === 0 ? (
+                <tr>
+                  <td colSpan="10" className="px-4 py-8 text-center text-gray-500">
+                    No orders available
                   </td>
-                </motion.tr>
-              ))}
+                </tr>
+              ) : (
+                orders.map((order, index) => {
+                  const orderId = order.orderId || order.id || `order-${index}`;
+                  const gold = order.gold || { quantity: 0, unit: 'grams' };
+                  const diamond = order.diamond || { quantity: 0, unit: 'carats' };
+                  const silver = order.silver || { quantity: 0, unit: 'grams' };
+                  const platinum = order.platinum || { quantity: 0, unit: 'grams' };
+                  
+                  return (
+                    <motion.tr
+                      key={orderId}
+                      className="hover:bg-gray-50"
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                      style={{
+                        backgroundColor: order.status === 'accepted' ? '#d1fae5' : 
+                                       order.status === 'rejected' ? '#fee2e2' : 'white'
+                      }}
+                    >
+                      <td className="px-4 py-3 border border-gray-300 font-semibold">{orderId}</td>
+                      <td className="px-4 py-3 border border-gray-300">{order.orderDate || '-'}</td>
+                      <td className="px-4 py-3 border border-gray-300">{order.clientName || '-'}</td>
+                      <td className="px-4 py-3 border border-gray-300">{order.description || '-'}</td>
+                      <td className="px-4 py-3 border border-gray-300">{gold.quantity} {gold.unit}</td>
+                      <td className="px-4 py-3 border border-gray-300">{diamond.quantity} {diamond.unit}</td>
+                      <td className="px-4 py-3 border border-gray-300">{silver.quantity} {silver.unit}</td>
+                      <td className="px-4 py-3 border border-gray-300">{platinum.quantity} {platinum.unit}</td>
+                      <td className="px-4 py-3 border border-gray-300">
+                        <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                          order.status === 'accepted' ? 'bg-green-100 text-green-800' :
+                          order.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                          'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {(order.status || 'pending').toUpperCase()}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 border border-gray-300">
+                        {order.status === 'pending' ? (
+                          <div className="flex gap-2 justify-center">
+                            <motion.button
+                              onClick={() => handleAcceptOrder(orderId)}
+                              className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 transition-colors flex items-center gap-1"
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                              disabled={loading}
+                            >
+                              <CheckCircle size={16} />
+                              Accept
+                            </motion.button>
+                            <motion.button
+                              onClick={() => handleRejectClick(orderId)}
+                              className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors flex items-center gap-1"
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                              disabled={loading}
+                            >
+                              <XCircle size={16} />
+                              Reject
+                            </motion.button>
+                          </div>
+                        ) : (
+                          <span className="text-gray-400 text-sm">-</span>
+                        )}
+                      </td>
+                    </motion.tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
-          {orders.length === 0 && (
-            <div className="text-center py-8 text-gray-500">
-              <p>No orders available</p>
-            </div>
-          )}
         </div>
       </motion.div>
     );

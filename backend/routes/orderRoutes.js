@@ -2,6 +2,15 @@ const express = require('express');
 const router = express.Router();
 const OrderController = require('../controllers/OrderController');
 
+// Test endpoint to verify route is working
+router.get('/test', (req, res) => {
+  res.json({ 
+    success: true, 
+    message: 'Orders route is working!',
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Get all orders
 router.get('/all', OrderController.getAllOrders);
 

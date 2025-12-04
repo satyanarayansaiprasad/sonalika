@@ -94,6 +94,14 @@ app.use('/api/pdmaster', pteamRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/inventory', inventoryRoutes);
 
+// Log all registered routes for debugging
+console.log('✅ Routes registered:');
+console.log('  - /api/admin');
+console.log('  - /api/team');
+console.log('  - /api/pdmaster');
+console.log('  - /api/orders');
+console.log('  - /api/inventory');
+
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.json({ 

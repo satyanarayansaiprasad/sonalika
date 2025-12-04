@@ -172,9 +172,18 @@ const AccountsDashboard = () => {
       
       // Show user-friendly error
       if (error.response) {
-        console.error(`Server responded with status ${error.response.status}:`, error.response.data);
+        const status = error.response.status;
+        const statusText = error.response.statusText || 'Unknown Error';
+        console.error(`Server responded with status ${status} (${statusText}):`, error.response.data);
+        
+        if (status === 404) {
+          console.warn('⚠️ Route not found. The backend may not have the latest code deployed.');
+          console.warn('Please ensure the backend server has been restarted with the latest code.');
+          console.warn('Expected endpoint:', `${apiBaseUrl}/api/orders/all`);
+        }
       } else if (error.request) {
         console.error('No response received from server. Check if backend is running.');
+        console.error('Request URL:', error.config?.url);
       } else {
         console.error('Error setting up request:', error.message);
       }

@@ -49,6 +49,25 @@ const orderSchema = new mongoose.Schema({
   rejectedDate: { 
     type: Date 
   },
+  orderItems: [ // Array to store detailed order items from Sales
+    {
+      srNo: Number,
+      styleNo: String,
+      diamondClarity: String,
+      diamondColor: String,
+      quantity: Number, // This quantity refers to the number of pieces of this specific item
+      grossWeight: Number,
+      netWeight: Number,
+      diaWeight: Number,
+      goldPurity: String,
+      goldColor: String,
+      pcs: Number, // This pcs refers to diamond pieces in this item
+      mmSize: Number,
+      seiveSize: String,
+      sieveSizeRange: String,
+      remark: String
+    }
+  ],
   createdAt: { 
     type: Date, 
     default: Date.now 

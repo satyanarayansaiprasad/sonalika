@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FiMenu, FiX, FiHome, FiDatabase, FiShoppingBag, FiPlus, FiAward, FiChevronDown, FiChevronUp, FiTrash2, FiEdit2, FiCheckCircle, FiLogOut, FiClock, FiXCircle, FiBuilding } from 'react-icons/fi';
+import { FiMenu, FiX, FiHome, FiDatabase, FiShoppingBag, FiPlus, FiAward, FiChevronDown, FiChevronUp, FiTrash2, FiEdit2, FiCheckCircle, FiLogOut, FiClock, FiXCircle, FiBriefcase } from 'react-icons/fi';
 
 const API_BASE_URL = 'https://sonalika.onrender.com';
 
@@ -1571,7 +1571,7 @@ const ProductionDashboard = () => {
               </div>
             ) : departments.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
-                <FiBuilding className="mx-auto text-4xl mb-2 opacity-50" />
+                <FiBriefcase className="mx-auto text-4xl mb-2 opacity-50" />
                 <p>No departments found. Add your first department!</p>
               </div>
             ) : (
@@ -1764,7 +1764,7 @@ const ProductionDashboard = () => {
               whileHover={{ scale: 1.02, x: 4 }}
               whileTap={{ scale: 0.98 }}
             >
-              <FiBuilding className="mr-3 flex-shrink-0 text-lg" />
+              <FiBriefcase className="mr-3 flex-shrink-0 text-lg" />
               {!sidebarCollapsed && <span className="font-medium">Departments</span>}
             </motion.div>
           </nav>

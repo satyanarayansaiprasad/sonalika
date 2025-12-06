@@ -102,12 +102,14 @@ try {
   const pteamRoutes = require('./routes/pteamRoutes');
   const orderRoutes = require('./routes/orderRoutes');
   const inventoryRoutes = require('./routes/inventoryRoutes');
+  const departmentRoutes = require('./routes/departmentRoutes');
 
   app.use('/api/admin', adminRoutes);
   app.use('/api/team', teamRoutes);
   app.use('/api/pdmaster', pteamRoutes);
   app.use('/api/orders', orderRoutes);
   app.use('/api/inventory', inventoryRoutes);
+  app.use('/api/departments', departmentRoutes);
 
   // Log all registered routes for debugging
   console.log('✅ Routes registered:');
@@ -116,6 +118,7 @@ try {
   console.log('  - /api/pdmaster');
   console.log('  - /api/orders');
   console.log('  - /api/inventory');
+  console.log('  - /api/departments');
 } catch (error) {
   console.error('❌ Error loading routes:', error);
   console.error('Stack:', error.stack);

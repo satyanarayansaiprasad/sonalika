@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FiMenu, FiX, FiHome, FiDatabase, FiShoppingBag, FiPlus, FiAward, FiChevronDown, FiChevronUp, FiTrash2, FiEdit2, FiCheckCircle, FiLogOut, FiClock, FiXCircle } from 'react-icons/fi';
+import { FiMenu, FiX, FiHome, FiDatabase, FiShoppingBag, FiPlus, FiAward, FiChevronDown, FiChevronUp, FiTrash2, FiEdit2, FiCheckCircle, FiLogOut, FiClock, FiXCircle, FiBuilding } from 'react-icons/fi';
 
 const API_BASE_URL = 'https://sonalika.onrender.com';
 
@@ -76,6 +76,15 @@ const ProductionDashboard = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [acceptedOrders, setAcceptedOrders] = useState([]);
   const [rejectedOrders, setRejectedOrders] = useState([]);
+  const [departments, setDepartments] = useState([]);
+  const [showDepartmentForm, setShowDepartmentForm] = useState(false);
+  const [editingDepartment, setEditingDepartment] = useState(null);
+  const [departmentForm, setDepartmentForm] = useState({
+    name: '',
+    description: '',
+    code: '',
+    isActive: true
+  });
   
   // API Base URL
   const getApiBaseUrl = () => {
@@ -184,6 +193,104 @@ const ProductionDashboard = () => {
     } catch (error) {
       console.error('Error fetching rejected orders:', error);
     }
+  };
+
+  // Departments Management Functions
+  const fetchDepartments = async () => {
+    try {
+      setLoading(true);
+      const apiBaseUrl = getApiBaseUrl();
+      const response = await axios.get(`${apiBaseUrl}/api/departments/all`);
+      if (response.data.success && response.data.data) {
+        setDepartments(response.data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching departments:', error);
+      showNotification('Failed to fetch departments', true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreateDepartment = async () => {
+    try {
+      if (!departmentForm.name.trim()) {
+        showNotification('Department name is required', true);
+        return;
+      }
+
+      const apiBaseUrl = getApiBaseUrl();
+      const response = await axios.post(`${apiBaseUrl}/api/departments/create`, departmentForm);
+      
+      if (response.data.success) {
+        showNotification('Department created successfully');
+        setDepartmentForm({ name: '', description: '', code: '', isActive: true });
+        setShowDepartmentForm(false);
+        fetchDepartments();
+      }
+    } catch (error) {
+      console.error('Error creating department:', error);
+      showNotification(error.response?.data?.error || 'Failed to create department', true);
+    }
+  };
+
+  const handleUpdateDepartment = async () => {
+    try {
+      if (!departmentForm.name.trim()) {
+        showNotification('Department name is required', true);
+        return;
+      }
+
+      const apiBaseUrl = getApiBaseUrl();
+      const response = await axios.put(`${apiBaseUrl}/api/departments/update/${editingDepartment._id}`, departmentForm);
+      
+      if (response.data.success) {
+        showNotification('Department updated successfully');
+        setDepartmentForm({ name: '', description: '', code: '', isActive: true });
+        setEditingDepartment(null);
+        setShowDepartmentForm(false);
+        fetchDepartments();
+      }
+    } catch (error) {
+      console.error('Error updating department:', error);
+      showNotification(error.response?.data?.error || 'Failed to update department', true);
+    }
+  };
+
+  const handleDeleteDepartment = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this department?')) {
+      return;
+    }
+
+    try {
+      const apiBaseUrl = getApiBaseUrl();
+      const response = await axios.delete(`${apiBaseUrl}/api/departments/delete/${id}`);
+      
+      if (response.data.success) {
+        showNotification('Department deleted successfully');
+        fetchDepartments();
+      }
+    } catch (error) {
+      console.error('Error deleting department:', error);
+      showNotification(error.response?.data?.error || 'Failed to delete department', true);
+    }
+  };
+
+  const handleEditDepartment = (department) => {
+    setEditingDepartment(department);
+    setDepartmentForm({
+      name: department.name,
+      description: department.description || '',
+      code: department.code || '',
+      isActive: department.isActive !== undefined ? department.isActive : true
+    });
+    setShowDepartmentForm(true);
+  };
+
+  const handleCancelForm = () => {
+    setDepartmentForm({ name: '', description: '', code: '', isActive: true });
+    setEditingDepartment(null);
+    setShowDepartmentForm(false);
   };
 
 
@@ -1428,6 +1535,188 @@ const ProductionDashboard = () => {
     );
   };
 
+  const renderDepartments = () => {
+    return (
+      <div className="space-y-6">
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white rounded-xl shadow-lg p-6"
+        >
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold text-gray-800">Departments Management</h2>
+            <motion.button
+              onClick={() => {
+                setShowDepartmentForm(true);
+                setEditingDepartment(null);
+                setDepartmentForm({ name: '', description: '', code: '', isActive: true });
+              }}
+              className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <FiPlus />
+              <span>Add Department</span>
+            </motion.button>
+          </div>
+
+          {/* Department Form */}
+          {showDepartmentForm && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200"
+            >
+              <h3 className="text-lg font-semibold mb-4 text-gray-700">
+                {editingDepartment ? 'Edit Department' : 'Create New Department'}
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Department Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={departmentForm.name}
+                    onChange={(e) => setDepartmentForm({ ...departmentForm, name: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Enter department name"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Department Code
+                  </label>
+                  <input
+                    type="text"
+                    value={departmentForm.code}
+                    onChange={(e) => setDepartmentForm({ ...departmentForm, code: e.target.value.toUpperCase() })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Enter code (optional)"
+                    maxLength={10}
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Description
+                  </label>
+                  <textarea
+                    value={departmentForm.description}
+                    onChange={(e) => setDepartmentForm({ ...departmentForm, description: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Enter department description"
+                    rows={3}
+                  />
+                </div>
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="isActive"
+                    checked={departmentForm.isActive}
+                    onChange={(e) => setDepartmentForm({ ...departmentForm, isActive: e.target.checked })}
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <label htmlFor="isActive" className="ml-2 text-sm font-medium text-gray-700">
+                    Active
+                  </label>
+                </div>
+              </div>
+              <div className="flex justify-end space-x-3 mt-4">
+                <button
+                  onClick={handleCancelForm}
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={editingDepartment ? handleUpdateDepartment : handleCreateDepartment}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  {editingDepartment ? 'Update' : 'Create'}
+                </button>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Departments Table */}
+          {loading ? (
+            <div className="text-center py-8">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <p className="mt-2 text-gray-600">Loading departments...</p>
+            </div>
+          ) : departments.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <FiBuilding className="mx-auto text-4xl mb-2 opacity-50" />
+              <p>No departments found. Create your first department!</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="bg-gray-100">
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border border-gray-300">Name</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border border-gray-300">Code</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border border-gray-300">Description</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border border-gray-300">Status</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border border-gray-300">Created</th>
+                    <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700 border border-gray-300">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {departments.map((dept, index) => (
+                    <motion.tr
+                      key={dept._id || index}
+                      className="hover:bg-gray-50"
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                    >
+                      <td className="px-4 py-3 border border-gray-300 font-medium text-gray-800">{dept.name}</td>
+                      <td className="px-4 py-3 border border-gray-300 text-gray-600">{dept.code || '-'}</td>
+                      <td className="px-4 py-3 border border-gray-300 text-gray-600">{dept.description || '-'}</td>
+                      <td className="px-4 py-3 border border-gray-300">
+                        <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                          dept.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          {dept.isActive ? 'Active' : 'Inactive'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 border border-gray-300 text-gray-600 text-sm">
+                        {dept.createdAt ? new Date(dept.createdAt).toLocaleDateString() : '-'}
+                      </td>
+                      <td className="px-4 py-3 border border-gray-300">
+                        <div className="flex justify-center space-x-2">
+                          <motion.button
+                            onClick={() => handleEditDepartment(dept)}
+                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            title="Edit"
+                          >
+                            <FiEdit2 />
+                          </motion.button>
+                          <motion.button
+                            onClick={() => handleDeleteDepartment(dept._id)}
+                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            title="Delete"
+                          >
+                            <FiTrash2 />
+                          </motion.button>
+                        </div>
+                      </td>
+                    </motion.tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </motion.div>
+      </div>
+    );
+  };
+
   return (
     <div className="flex flex-col h-screen bg-gray-50">
       {/* Notification */}
@@ -1530,6 +1819,21 @@ const ProductionDashboard = () => {
               <FiCheckCircle className="mr-3 flex-shrink-0 text-lg" />
               {!sidebarCollapsed && <span className="font-medium">Accepted Orders</span>}
             </motion.div>
+            <motion.div 
+              className={`flex items-center px-4 py-4 cursor-pointer rounded-xl transition-all mb-2 ${activeMenu === 'departments' ? 'bg-white/10 shadow-lg' : 'hover:bg-white/5'}`}
+              onClick={() => {
+                setActiveMenu('departments');
+                setMobileMenuOpen(false);
+                setMasterType(null);
+                fetchDepartments();
+              }}
+              title="Departments"
+              whileHover={{ scale: 1.02, x: 4 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <FiBuilding className="mr-3 flex-shrink-0 text-lg" />
+              {!sidebarCollapsed && <span className="font-medium">Departments</span>}
+            </motion.div>
           </nav>
           {!sidebarCollapsed && (
             <div className="p-4 text-xs text-white/40 border-t border-white/10 text-center">
@@ -1596,6 +1900,8 @@ const ProductionDashboard = () => {
           )}
 
           {activeMenu === 'acceptedOrders' && renderAcceptedOrders()}
+
+          {activeMenu === 'departments' && renderDepartments()}
         </div>
       </div>
     </div>

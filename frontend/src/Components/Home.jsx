@@ -341,68 +341,118 @@ const Home = () => {
                 </motion.button>
                 </div>
 
-                {/* Right Side - Production Team Departments */}
+                {/* Right Side - Track Orders */}
                 <div className="space-y-4">
-                  <motion.h3
-                    className="text-xl font-serif mb-4"
-                    style={{
-                      color: colors.gold,
-                      textShadow: `0 0 10px ${colors.gold}40`,
-                    }}
+                  <motion.div
+                    className="flex items-center justify-between mb-6"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.8 }}
                   >
-                    Production Departments
-                  </motion.h3>
+                    <motion.h3
+                      className="text-2xl font-serif"
+                      style={{
+                        color: colors.gold,
+                        textShadow: `0 0 10px ${colors.gold}40`,
+                      }}
+                    >
+                      Track Orders
+                    </motion.h3>
+                    <div className="h-px flex-1 mx-4" style={{ background: `linear-gradient(90deg, transparent, ${colors.gold}40, transparent)` }}></div>
+                  </motion.div>
                   
                   {loadingDepartments ? (
-                    <div className="text-center py-8">
-                      <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderColor: colors.gold }}></div>
-                      <p className="mt-2" style={{ color: colors.platinum }}>Loading departments...</p>
+                    <div className="text-center py-12">
+                      <div className="inline-block animate-spin rounded-full h-10 w-10 border-b-2" style={{ borderColor: colors.gold }}></div>
+                      <p className="mt-4 text-sm" style={{ color: colors.platinum }}>Loading departments...</p>
                     </div>
                   ) : departments.length === 0 ? (
-                    <div className="text-center py-8" style={{ color: colors.platinum }}>
-                      <p className="opacity-70">No departments available</p>
+                    <div className="text-center py-12" style={{ color: colors.platinum }}>
+                      <svg className="w-16 h-16 mx-auto mb-4 opacity-50" fill="none" viewBox="0 0 24 24" stroke={colors.gold}>
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                      </svg>
+                      <p className="opacity-70 text-sm">No departments available</p>
                     </div>
                   ) : (
-                    <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
+                    <div 
+                      className="space-y-2 max-h-[500px] overflow-y-auto pr-2"
+                      style={{
+                        scrollbarWidth: 'thin',
+                        scrollbarColor: `${colors.gold}40 transparent`
+                      }}
+                    >
                       {departments.map((dept, index) => (
                         <motion.div
                           key={dept._id || index}
-                          className="p-4 rounded-lg relative overflow-hidden group"
+                          className="p-5 rounded-xl relative overflow-hidden group cursor-pointer"
                           style={{
-                            background: `linear-gradient(135deg, ${colors.gold}15 0%, transparent 100%)`,
-                            border: `1px solid ${colors.gold}40`,
+                            background: `linear-gradient(135deg, ${colors.deepNavy} 0%, ${colors.deepNavy}DD 100%)`,
+                            border: `1.5px solid ${colors.gold}30`,
                             color: colors.gold,
+                            transition: 'all 0.3s ease',
                           }}
                           initial={{ opacity: 0, x: 20 }}
                           animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: 1.0 + index * 0.1 }}
+                          transition={{ delay: 1.0 + index * 0.05 }}
                           whileHover={{
-                            background: `linear-gradient(135deg, ${colors.gold}25 0%, transparent 100%)`,
                             borderColor: colors.gold,
-                            boxShadow: `0 5px 20px ${colors.gold}20`,
+                            boxShadow: `0 8px 30px ${colors.gold}25`,
+                            transform: 'translateX(-4px)',
                           }}
                         >
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-3">
-                              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke={colors.gold}>
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                              </svg>
-                              <span className="font-medium">{dept.name}</span>
+                          {/* Decorative corner accent */}
+                          <div 
+                            className="absolute top-0 right-0 w-20 h-20 opacity-10"
+                            style={{
+                              background: `radial-gradient(circle at top right, ${colors.gold}, transparent)`,
+                            }}
+                          ></div>
+                          
+                          <div className="flex items-start justify-between relative z-10">
+                            <div className="flex items-start space-x-4 flex-1">
+                              <div 
+                                className="p-2 rounded-lg flex-shrink-0"
+                                style={{ 
+                                  backgroundColor: `${colors.gold}15`,
+                                  border: `1px solid ${colors.gold}30`
+                                }}
+                              >
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke={colors.gold}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                </svg>
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <h4 className="font-semibold text-lg mb-1" style={{ color: colors.gold }}>
+                                  {dept.name}
+                                </h4>
+                                {dept.description && (
+                                  <p className="text-sm mt-1 leading-relaxed" style={{ color: colors.platinum, opacity: 0.8 }}>
+                                    {dept.description}
+                                  </p>
+                                )}
+                              </div>
                             </div>
                             {dept.code && (
-                              <span className="text-xs opacity-70 px-2 py-1 rounded" style={{ backgroundColor: `${colors.gold}20` }}>
+                              <div 
+                                className="px-3 py-1 rounded-full text-xs font-medium flex-shrink-0 ml-3"
+                                style={{ 
+                                  backgroundColor: `${colors.gold}20`,
+                                  color: colors.gold,
+                                  border: `1px solid ${colors.gold}40`
+                                }}
+                              >
                                 {dept.code}
-                              </span>
+                              </div>
                             )}
                           </div>
-                          {dept.description && (
-                            <p className="text-sm mt-2 opacity-80" style={{ color: colors.platinum }}>
-                              {dept.description}
-                            </p>
-                          )}
+                          
+                          {/* Hover effect indicator */}
+                          <div 
+                            className="absolute bottom-0 left-0 h-1 bg-gradient-to-r from-transparent via-transparent to-transparent group-hover:via-gold transition-all duration-300"
+                            style={{
+                              width: '0%',
+                            }}
+                          ></div>
                         </motion.div>
                       ))}
                     </div>

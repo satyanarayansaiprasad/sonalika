@@ -77,14 +77,9 @@ const ProductionDashboard = () => {
   const [acceptedOrders, setAcceptedOrders] = useState([]);
   const [rejectedOrders, setRejectedOrders] = useState([]);
   const [departments, setDepartments] = useState([]);
-  const [showDepartmentForm, setShowDepartmentForm] = useState(false);
-  const [editingDepartment, setEditingDepartment] = useState(null);
-  const [departmentForm, setDepartmentForm] = useState({
-    name: '',
-    description: '',
-    code: '',
-    isActive: true
-  });
+  const [newDepartmentName, setNewDepartmentName] = useState('');
+  const [editingDepartmentId, setEditingDepartmentId] = useState(null);
+  const [editingDepartmentName, setEditingDepartmentName] = useState('');
   
   // API Base URL
   const getApiBaseUrl = () => {
@@ -214,18 +209,21 @@ const ProductionDashboard = () => {
 
   const handleCreateDepartment = async () => {
     try {
-      if (!departmentForm.name.trim()) {
+      if (!newDepartmentName.trim()) {
         showNotification('Department name is required', true);
         return;
       }
 
       const apiBaseUrl = getApiBaseUrl();
-      const response = await axios.post(`${apiBaseUrl}/api/departments/create`, departmentForm);
+      const response = await axios.post(`${apiBaseUrl}/api/departments/create`, {
+        name: newDepartmentName.trim(),
+        description: '',
+        isActive: true
+      });
       
       if (response.data.success) {
         showNotification('Department created successfully');
-        setDepartmentForm({ name: '', description: '', code: '', isActive: true });
-        setShowDepartmentForm(false);
+        setNewDepartmentName('');
         fetchDepartments();
       }
     } catch (error) {
@@ -234,21 +232,22 @@ const ProductionDashboard = () => {
     }
   };
 
-  const handleUpdateDepartment = async () => {
+  const handleUpdateDepartment = async (id) => {
     try {
-      if (!departmentForm.name.trim()) {
+      if (!editingDepartmentName.trim()) {
         showNotification('Department name is required', true);
         return;
       }
 
       const apiBaseUrl = getApiBaseUrl();
-      const response = await axios.put(`${apiBaseUrl}/api/departments/update/${editingDepartment._id}`, departmentForm);
+      const response = await axios.put(`${apiBaseUrl}/api/departments/update/${id}`, {
+        name: editingDepartmentName.trim()
+      });
       
       if (response.data.success) {
         showNotification('Department updated successfully');
-        setDepartmentForm({ name: '', description: '', code: '', isActive: true });
-        setEditingDepartment(null);
-        setShowDepartmentForm(false);
+        setEditingDepartmentId(null);
+        setEditingDepartmentName('');
         fetchDepartments();
       }
     } catch (error) {
@@ -277,20 +276,13 @@ const ProductionDashboard = () => {
   };
 
   const handleEditDepartment = (department) => {
-    setEditingDepartment(department);
-    setDepartmentForm({
-      name: department.name,
-      description: department.description || '',
-      code: department.code || '',
-      isActive: department.isActive !== undefined ? department.isActive : true
-    });
-    setShowDepartmentForm(true);
+    setEditingDepartmentId(department._id);
+    setEditingDepartmentName(department.name);
   };
 
-  const handleCancelForm = () => {
-    setDepartmentForm({ name: '', description: '', code: '', isActive: true });
-    setEditingDepartment(null);
-    setShowDepartmentForm(false);
+  const handleCancelEdit = () => {
+    setEditingDepartmentId(null);
+    setEditingDepartmentName('');
   };
 
 
@@ -1543,149 +1535,90 @@ const ProductionDashboard = () => {
           animate={{ opacity: 1, y: 0 }}
           className="bg-white rounded-xl shadow-lg p-6"
         >
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-800">Departments Management</h2>
-            <motion.button
-              onClick={() => {
-                setShowDepartmentForm(true);
-                setEditingDepartment(null);
-                setDepartmentForm({ name: '', description: '', code: '', isActive: true });
+          <h2 className="text-2xl font-bold text-gray-800 mb-6">Add Department</h2>
+          
+          {/* Simple Add Department Form */}
+          <div className="mb-6 flex gap-3">
+            <input
+              type="text"
+              value={newDepartmentName}
+              onChange={(e) => setNewDepartmentName(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter') {
+                  handleCreateDepartment();
+                }
               }}
-              className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Enter department name"
+            />
+            <motion.button
+              onClick={handleCreateDepartment}
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
-              <FiPlus />
-              <span>Add Department</span>
+              Add
             </motion.button>
           </div>
 
-          {/* Department Form */}
-          {showDepartmentForm && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200"
-            >
-              <h3 className="text-lg font-semibold mb-4 text-gray-700">
-                {editingDepartment ? 'Edit Department' : 'Create New Department'}
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Department Name <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={departmentForm.name}
-                    onChange={(e) => setDepartmentForm({ ...departmentForm, name: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Enter department name"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Department Code
-                  </label>
-                  <input
-                    type="text"
-                    value={departmentForm.code}
-                    onChange={(e) => setDepartmentForm({ ...departmentForm, code: e.target.value.toUpperCase() })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Enter code (optional)"
-                    maxLength={10}
-                  />
-                </div>
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Description
-                  </label>
-                  <textarea
-                    value={departmentForm.description}
-                    onChange={(e) => setDepartmentForm({ ...departmentForm, description: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Enter department description"
-                    rows={3}
-                  />
-                </div>
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="isActive"
-                    checked={departmentForm.isActive}
-                    onChange={(e) => setDepartmentForm({ ...departmentForm, isActive: e.target.checked })}
-                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                  />
-                  <label htmlFor="isActive" className="ml-2 text-sm font-medium text-gray-700">
-                    Active
-                  </label>
-                </div>
+          {/* Departments List */}
+          <div className="mt-8">
+            <h3 className="text-lg font-semibold text-gray-700 mb-4">Departments</h3>
+            {loading ? (
+              <div className="text-center py-8">
+                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                <p className="mt-2 text-gray-600">Loading departments...</p>
               </div>
-              <div className="flex justify-end space-x-3 mt-4">
-                <button
-                  onClick={handleCancelForm}
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={editingDepartment ? handleUpdateDepartment : handleCreateDepartment}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  {editingDepartment ? 'Update' : 'Create'}
-                </button>
+            ) : departments.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <FiBuilding className="mx-auto text-4xl mb-2 opacity-50" />
+                <p>No departments found. Add your first department!</p>
               </div>
-            </motion.div>
-          )}
-
-          {/* Departments Table */}
-          {loading ? (
-            <div className="text-center py-8">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-              <p className="mt-2 text-gray-600">Loading departments...</p>
-            </div>
-          ) : departments.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <FiBuilding className="mx-auto text-4xl mb-2 opacity-50" />
-              <p>No departments found. Create your first department!</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="bg-gray-100">
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border border-gray-300">Name</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border border-gray-300">Code</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border border-gray-300">Description</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border border-gray-300">Status</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border border-gray-300">Created</th>
-                    <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700 border border-gray-300">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {departments.map((dept, index) => (
-                    <motion.tr
-                      key={dept._id || index}
-                      className="hover:bg-gray-50"
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                    >
-                      <td className="px-4 py-3 border border-gray-300 font-medium text-gray-800">{dept.name}</td>
-                      <td className="px-4 py-3 border border-gray-300 text-gray-600">{dept.code || '-'}</td>
-                      <td className="px-4 py-3 border border-gray-300 text-gray-600">{dept.description || '-'}</td>
-                      <td className="px-4 py-3 border border-gray-300">
-                        <span className={`px-2 py-1 rounded text-xs font-semibold ${
-                          dept.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                        }`}>
-                          {dept.isActive ? 'Active' : 'Inactive'}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 border border-gray-300 text-gray-600 text-sm">
-                        {dept.createdAt ? new Date(dept.createdAt).toLocaleDateString() : '-'}
-                      </td>
-                      <td className="px-4 py-3 border border-gray-300">
-                        <div className="flex justify-center space-x-2">
+            ) : (
+              <div className="space-y-2">
+                {departments.map((dept, index) => (
+                  <motion.div
+                    key={dept._id || index}
+                    className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                  >
+                    {editingDepartmentId === dept._id ? (
+                      <div className="flex items-center gap-3 flex-1">
+                        <input
+                          type="text"
+                          value={editingDepartmentName}
+                          onChange={(e) => setEditingDepartmentName(e.target.value)}
+                          onKeyPress={(e) => {
+                            if (e.key === 'Enter') {
+                              handleUpdateDepartment(dept._id);
+                            }
+                          }}
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          autoFocus
+                        />
+                        <motion.button
+                          onClick={() => handleUpdateDepartment(dept._id)}
+                          className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                        >
+                          Save
+                        </motion.button>
+                        <motion.button
+                          onClick={handleCancelEdit}
+                          className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors text-sm"
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                        >
+                          Cancel
+                        </motion.button>
+                      </div>
+                    ) : (
+                      <>
+                        <span className="text-gray-800 font-medium flex-1">{dept.name}</span>
+                        <div className="flex items-center gap-2">
                           <motion.button
                             onClick={() => handleEditDepartment(dept)}
                             className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
@@ -1705,13 +1638,13 @@ const ProductionDashboard = () => {
                             <FiTrash2 />
                           </motion.button>
                         </div>
-                      </td>
-                    </motion.tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+                      </>
+                    )}
+                  </motion.div>
+                ))}
+              </div>
+            )}
+          </div>
         </motion.div>
       </div>
     );

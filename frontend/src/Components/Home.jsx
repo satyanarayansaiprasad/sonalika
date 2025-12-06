@@ -64,7 +64,22 @@ const Home = () => {
       }
     } catch (error) {
       console.error('Error fetching departments:', error);
-      console.error('Error details:', error.response?.data || error.message);
+      console.error('Error response:', error.response);
+      console.error('Error status:', error.response?.status);
+      console.error('Error data:', error.response?.data);
+      console.error('Error message:', error.message);
+      
+      if (error.response) {
+        // Server responded with error
+        console.error(`Server error ${error.response.status}:`, error.response.data);
+      } else if (error.request) {
+        // Request was made but no response received
+        console.error('No response from server. Check if backend is running.');
+      } else {
+        // Error setting up request
+        console.error('Request setup error:', error.message);
+      }
+      
       setDepartments([]);
     } finally {
       setLoadingDepartments(false);

@@ -236,23 +236,30 @@ const Home = () => {
                 />
               </motion.div>
 
-              <motion.h2
-                className="text-3xl font-serif text-center mb-10"
+              {/* Two Column Layout - Separate Sections */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Left Side - Select Department Section */}
+                <motion.div
+                  className="p-8 rounded-xl relative overflow-hidden"
+                  style={{
+                    backgroundColor: `${colors.deepNavy}CC`,
+                    border: `2px solid ${colors.gold}40`,
+                    boxShadow: `0 5px 25px ${colors.gold}10`,
+                  }}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.6 }}
+                >
+                  <motion.h2
+                    className="text-2xl font-serif mb-8 text-center"
                     style={{
-                  color: colors.gold,
-                  textShadow: `0 0 10px ${colors.gold}40`,
-                }}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.6 }}
-              >
-                SELECT DEPARTMENT
-              </motion.h2>
-
-              {/* Two Column Layout */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Left Side - Main Department Buttons */}
-                <div className="space-y-6">
+                      color: colors.gold,
+                      textShadow: `0 0 10px ${colors.gold}40`,
+                    }}
+                  >
+                    SELECT DEPARTMENT
+                  </motion.h2>
+                  <div className="space-y-6">
                 {/* Production Department */}
     <motion.button
                   onClick={() => {
@@ -457,7 +464,8 @@ const Home = () => {
                       ))}
                     </div>
                   )}
-                </div>
+                  </div>
+                </motion.div>
               </div>
             </motion.div>
           )}

@@ -1767,6 +1767,20 @@ const ProductionDashboard = () => {
               <FiBriefcase className="mr-3 flex-shrink-0 text-lg" />
               {!sidebarCollapsed && <span className="font-medium">Departments</span>}
             </motion.div>
+            <motion.div 
+              className={`flex items-center px-4 py-4 cursor-pointer rounded-xl transition-all mb-2 ${activeMenu === 'trackOrder' ? 'bg-white/10 shadow-lg' : 'hover:bg-white/5'}`}
+              onClick={() => {
+                setActiveMenu('trackOrder');
+                setMobileMenuOpen(false);
+                setMasterType(null);
+              }}
+              title="Track Order"
+              whileHover={{ scale: 1.02, x: 4 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <FiShoppingBag className="mr-3 flex-shrink-0 text-lg" />
+              {!sidebarCollapsed && <span className="font-medium">Track Order</span>}
+            </motion.div>
           </nav>
           {!sidebarCollapsed && (
             <div className="p-4 text-xs text-white/40 border-t border-white/10 text-center">
@@ -1835,6 +1849,8 @@ const ProductionDashboard = () => {
           {activeMenu === 'acceptedOrders' && renderAcceptedOrders()}
 
           {activeMenu === 'departments' && renderDepartments()}
+
+          {activeMenu === 'trackOrder' && renderTrackOrder()}
         </div>
       </div>
     </div>

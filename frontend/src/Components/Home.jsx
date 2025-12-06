@@ -1,4 +1,4 @@
-4import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import SonalikaLogo from "./SonalikaLogo.png";

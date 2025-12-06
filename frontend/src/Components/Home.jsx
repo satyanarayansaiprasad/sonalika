@@ -346,15 +346,26 @@ const Home = () => {
                     ACCOUNTS
                   </span>
                 </motion.button>
-                </div>
+                  </div>
+                </motion.div>
 
-                {/* Right Side - Track Orders */}
-                <div className="space-y-4">
+                {/* Right Side - Track Orders Section */}
+                <motion.div
+                  className="p-8 rounded-xl relative overflow-hidden"
+                  style={{
+                    backgroundColor: `${colors.deepNavy}CC`,
+                    border: `2px solid ${colors.gold}40`,
+                    boxShadow: `0 5px 25px ${colors.gold}10`,
+                  }}
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.8 }}
+                >
                   <motion.div
                     className="flex items-center justify-between mb-6"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    transition={{ delay: 0.8 }}
+                    transition={{ delay: 0.9 }}
                   >
                     <motion.h3
                       className="text-2xl font-serif"
@@ -367,6 +378,7 @@ const Home = () => {
                     </motion.h3>
                     <div className="h-px flex-1 mx-4" style={{ background: `linear-gradient(90deg, transparent, ${colors.gold}40, transparent)` }}></div>
                   </motion.div>
+                  <div className="space-y-4">
                   
                   {loadingDepartments ? (
                     <div className="text-center py-12">

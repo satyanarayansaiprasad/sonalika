@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 import SonalikaLogo from "./SonalikaLogo.png";
 const Home = () => {
   const [step, setStep] = useState("branding");
   const navigate = useNavigate();
+  const [departments, setDepartments] = useState([]);
+  const [loadingDepartments, setLoadingDepartments] = useState(false);
 
   // Premium gold and jewel tones color palette
   const colors = {
@@ -17,11 +20,39 @@ const Home = () => {
     light: "#F8F8F8",
     diamond: "rgba(255,255,255,0.9)",
   };
+  // API Base URL
+  const getApiBaseUrl = () => {
+    const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    return import.meta.env.VITE_API_URL || (isDevelopment ? 'http://localhost:3001' : 'https://sonalika.onrender.com');
+  };
+
+  // Fetch departments from API
+  const fetchDepartments = async () => {
+    try {
+      setLoadingDepartments(true);
+      const apiBaseUrl = getApiBaseUrl();
+      const response = await axios.get(`${apiBaseUrl}/api/departments/all`);
+      if (response.data.success && response.data.data) {
+        setDepartments(response.data.data.filter(dept => dept.isActive !== false));
+      }
+    } catch (error) {
+      console.error('Error fetching departments:', error);
+    } finally {
+      setLoadingDepartments(false);
+    }
+  };
+
   useEffect(() => {
     const timer = setTimeout(() => {
       if (step === "branding") setStep("departments");
     }, 3500);
     return () => clearTimeout(timer);
+  }, [step]);
+
+  useEffect(() => {
+    if (step === "departments") {
+      fetchDepartments();
+    }
   }, [step]);
   // Enhanced animations
   const fadeIn = {
@@ -165,7 +196,7 @@ const Home = () => {
           {step === "departments" && (
             <motion.div
               key="departments"
-              className="p-10 rounded-2xl relative overflow-hidden"
+              className="w-full max-w-7xl p-10 rounded-2xl relative overflow-hidden"
               style={{
                 backgroundColor: `${colors.deepNavy}DD`,
                 border: `1px solid ${colors.gold}60`,
@@ -218,7 +249,10 @@ const Home = () => {
                 SELECT DEPARTMENT
               </motion.h2>
 
-              <div className="space-y-6">
+              {/* Two Column Layout */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Left Side - Main Department Buttons */}
+                <div className="space-y-6">
                 {/* Production Department */}
     <motion.button
                   onClick={() => {
@@ -305,6 +339,75 @@ const Home = () => {
                     ACCOUNTS
                   </span>
                 </motion.button>
+                </div>
+
+                {/* Right Side - Production Team Departments */}
+                <div className="space-y-4">
+                  <motion.h3
+                    className="text-xl font-serif mb-4"
+                    style={{
+                      color: colors.gold,
+                      textShadow: `0 0 10px ${colors.gold}40`,
+                    }}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.8 }}
+                  >
+                    Production Departments
+                  </motion.h3>
+                  
+                  {loadingDepartments ? (
+                    <div className="text-center py-8">
+                      <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderColor: colors.gold }}></div>
+                      <p className="mt-2" style={{ color: colors.platinum }}>Loading departments...</p>
+                    </div>
+                  ) : departments.length === 0 ? (
+                    <div className="text-center py-8" style={{ color: colors.platinum }}>
+                      <p className="opacity-70">No departments available</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
+                      {departments.map((dept, index) => (
+                        <motion.div
+                          key={dept._id || index}
+                          className="p-4 rounded-lg relative overflow-hidden group"
+                          style={{
+                            background: `linear-gradient(135deg, ${colors.gold}15 0%, transparent 100%)`,
+                            border: `1px solid ${colors.gold}40`,
+                            color: colors.gold,
+                          }}
+                          initial={{ opacity: 0, x: 20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: 1.0 + index * 0.1 }}
+                          whileHover={{
+                            background: `linear-gradient(135deg, ${colors.gold}25 0%, transparent 100%)`,
+                            borderColor: colors.gold,
+                            boxShadow: `0 5px 20px ${colors.gold}20`,
+                          }}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-3">
+                              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke={colors.gold}>
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                              </svg>
+                              <span className="font-medium">{dept.name}</span>
+                            </div>
+                            {dept.code && (
+                              <span className="text-xs opacity-70 px-2 py-1 rounded" style={{ backgroundColor: `${colors.gold}20` }}>
+                                {dept.code}
+                              </span>
+                            )}
+                          </div>
+                          {dept.description && (
+                            <p className="text-sm mt-2 opacity-80" style={{ color: colors.platinum }}>
+                              {dept.description}
+                            </p>
+                          )}
+                        </motion.div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </motion.div>
           )}

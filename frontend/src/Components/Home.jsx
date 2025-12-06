@@ -49,11 +49,13 @@ const Home = () => {
         }
         
         if (departmentsData && Array.isArray(departmentsData)) {
-          const activeDepartments = departmentsData.filter(dept => dept.isActive !== false);
-          console.log('Setting departments:', activeDepartments);
-          setDepartments(activeDepartments);
+          // Show all departments (don't filter by isActive for now)
+          console.log('All departments from API:', departmentsData);
+          console.log('Setting departments count:', departmentsData.length);
+          setDepartments(departmentsData);
         } else {
           console.warn('No valid departments data found in response');
+          console.warn('Response structure:', JSON.stringify(response.data, null, 2));
           setDepartments([]);
         }
       } else {

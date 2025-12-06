@@ -8,13 +8,26 @@ const app = express();
 const port = process.env.PORT || 3001;
 
 // MongoDB connection (using URI from .env)
+// Use connection options that prevent hanging
 mongoose
   .connect(process.env.MONGO_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
+    serverSelectionTimeoutMS: 5000, // Timeout after 5s
+    socketTimeoutMS: 45000, // Close sockets after 45 seconds of inactivity
+    maxPoolSize: 10, // Maintain up to 10 socket connections
+    minPoolSize: 2, // Maintain a minimum of 2 socket connections
+    bufferCommands: false, // Disable mongoose buffering
+    bufferMaxEntries: 0, // Disable mongoose buffering
   })
-  .then(() => console.log('MongoDB connected successfully'))
-  .catch((err) => console.error('MongoDB connection error:', err));
+  .then(() => {
+    console.log('✅ MongoDB connected successfully');
+  })
+  .catch((err) => {
+    console.error('❌ MongoDB connection error:', err);
+    // Don't exit - let server start even if DB connection fails initially
+    // Render will retry the connection
+  });
 
 // Load allowed origins from .env and split into an array
 const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [
@@ -82,31 +95,40 @@ app.use(
 );
 
 // Routes - using your existing route files
-const adminRoutes = require('./routes/adminRoutes');
-const teamRoutes = require('./routes/teamRoutes');
-const pteamRoutes = require('./routes/pteamRoutes');
-const orderRoutes = require('./routes/orderRoutes');
-const inventoryRoutes = require('./routes/inventoryRoutes');
+// Wrap in try-catch to prevent server crash if routes fail to load
+try {
+  const adminRoutes = require('./routes/adminRoutes');
+  const teamRoutes = require('./routes/teamRoutes');
+  const pteamRoutes = require('./routes/pteamRoutes');
+  const orderRoutes = require('./routes/orderRoutes');
+  const inventoryRoutes = require('./routes/inventoryRoutes');
 
-app.use('/api/admin', adminRoutes);
-app.use('/api/team', teamRoutes);
-app.use('/api/pdmaster', pteamRoutes);
-app.use('/api/orders', orderRoutes);
-app.use('/api/inventory', inventoryRoutes);
+  app.use('/api/admin', adminRoutes);
+  app.use('/api/team', teamRoutes);
+  app.use('/api/pdmaster', pteamRoutes);
+  app.use('/api/orders', orderRoutes);
+  app.use('/api/inventory', inventoryRoutes);
 
-// Log all registered routes for debugging
-console.log('✅ Routes registered:');
-console.log('  - /api/admin');
-console.log('  - /api/team');
-console.log('  - /api/pdmaster');
-console.log('  - /api/orders');
-console.log('  - /api/inventory');
+  // Log all registered routes for debugging
+  console.log('✅ Routes registered:');
+  console.log('  - /api/admin');
+  console.log('  - /api/team');
+  console.log('  - /api/pdmaster');
+  console.log('  - /api/orders');
+  console.log('  - /api/inventory');
+} catch (error) {
+  console.error('❌ Error loading routes:', error);
+  console.error('Stack:', error.stack);
+  // Don't exit - let server start with basic routes
+}
 
-// Health check endpoint
+// Health check endpoint (must respond quickly for Render)
 app.get('/health', (req, res) => {
-  res.json({ 
+  const dbStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
+  res.status(200).json({ 
     status: 'OK', 
     message: 'Sonalika Backend is running',
+    database: dbStatus,
     timestamp: new Date().toISOString()
   });
 });
@@ -138,8 +160,31 @@ app.use((err, req, res, next) => {
 });
 
 // Start server
-app.listen(port, () => {
-  console.log(`✅ Server is running on http://localhost:${port}`);
+const server = app.listen(port, () => {
+  console.log(`✅ Server is running on port ${port}`);
+  console.log(`✅ Health check available at /health`);
+  console.log(`✅ Routes available at /api/*`);
+});
+
+// Handle server errors gracefully
+server.on('error', (error) => {
+  if (error.code === 'EADDRINUSE') {
+    console.error(`❌ Port ${port} is already in use`);
+  } else {
+    console.error('❌ Server error:', error);
+  }
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM signal received: closing HTTP server');
+  server.close(() => {
+    console.log('HTTP server closed');
+    mongoose.connection.close(false, () => {
+      console.log('MongoDB connection closed');
+      process.exit(0);
+    });
+  });
 });
 
 // For Vercel deployments (optional)

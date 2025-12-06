@@ -31,12 +31,39 @@ const Home = () => {
     try {
       setLoadingDepartments(true);
       const apiBaseUrl = getApiBaseUrl();
+      console.log('Fetching departments from:', `${apiBaseUrl}/api/departments/all`);
       const response = await axios.get(`${apiBaseUrl}/api/departments/all`);
-      if (response.data.success && response.data.data) {
-        setDepartments(response.data.data.filter(dept => dept.isActive !== false));
+      console.log('Departments API response:', response);
+      console.log('Response data:', response.data);
+      
+      if (response.data) {
+        // Handle different response structures
+        let departmentsData = null;
+        
+        if (response.data.success && response.data.data) {
+          departmentsData = response.data.data;
+        } else if (Array.isArray(response.data)) {
+          departmentsData = response.data;
+        } else if (response.data.data && Array.isArray(response.data.data)) {
+          departmentsData = response.data.data;
+        }
+        
+        if (departmentsData && Array.isArray(departmentsData)) {
+          const activeDepartments = departmentsData.filter(dept => dept.isActive !== false);
+          console.log('Setting departments:', activeDepartments);
+          setDepartments(activeDepartments);
+        } else {
+          console.warn('No valid departments data found in response');
+          setDepartments([]);
+        }
+      } else {
+        console.warn('No data in response');
+        setDepartments([]);
       }
     } catch (error) {
       console.error('Error fetching departments:', error);
+      console.error('Error details:', error.response?.data || error.message);
+      setDepartments([]);
     } finally {
       setLoadingDepartments(false);
     }

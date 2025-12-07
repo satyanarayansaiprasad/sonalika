@@ -3,8 +3,14 @@ const Department = require('../models/Department');
 // Get all departments
 exports.getAllDepartments = async (req, res) => {
   try {
+    // Fetch all departments without any filters to show all previously added departments
     const departments = await Department.find().sort({ createdAt: -1 });
-    const departmentsArray = departments.map(dept => dept.toObject ? dept.toObject() : dept);
+    console.log(`Found ${departments.length} departments in database`);
+    const departmentsArray = departments.map(dept => {
+      const deptObj = dept.toObject ? dept.toObject() : dept;
+      console.log('Department:', deptObj.name, 'isActive:', deptObj.isActive);
+      return deptObj;
+    });
     
     res.status(200).json({
       success: true,

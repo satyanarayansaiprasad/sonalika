@@ -97,16 +97,16 @@ app.use(
 // Routes - using your existing route files
 // Wrap in try-catch to prevent server crash if routes fail to load
 try {
-  const adminRoutes = require('./routes/adminRoutes');
-  const teamRoutes = require('./routes/teamRoutes');
-  const pteamRoutes = require('./routes/pteamRoutes');
+const adminRoutes = require('./routes/adminRoutes');
+const teamRoutes = require('./routes/teamRoutes');
+const pteamRoutes = require('./routes/pteamRoutes');
   const orderRoutes = require('./routes/orderRoutes');
   const inventoryRoutes = require('./routes/inventoryRoutes');
   const departmentRoutes = require('./routes/departmentRoutes');
 
-  app.use('/api/admin', adminRoutes);
-  app.use('/api/team', teamRoutes);
-  app.use('/api/pdmaster', pteamRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/team', teamRoutes);
+app.use('/api/pdmaster', pteamRoutes);
   app.use('/api/orders', orderRoutes);
   app.use('/api/inventory', inventoryRoutes);
   app.use('/api/departments', departmentRoutes);

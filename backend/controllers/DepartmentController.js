@@ -56,16 +56,18 @@ exports.createDepartment = async (req, res) => {
       });
     }
     
-    // Check if department with same name already exists
+    // Check if department with same name already exists (case-insensitive, exact full text match)
+    const trimmedName = name.trim();
+    // Escape special regex characters and match entire string case-insensitively
+    const escapedName = trimmedName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const existingDept = await Department.findOne({ 
-      name: name.trim(),
-      isActive: true 
+      name: { $regex: new RegExp(`^${escapedName}$`, 'i') }
     });
     
     if (existingDept) {
       return res.status(400).json({
         success: false,
-        error: 'Department with this name already exists'
+        error: `Department "${trimmedName}" already exists`
       });
     }
     
@@ -119,17 +121,20 @@ exports.updateDepartment = async (req, res) => {
       });
     }
     
-    // Check if name is being changed and if new name already exists
+    // Check if name is being changed and if new name already exists (case-insensitive, exact full text match)
     if (name && name.trim() !== department.name) {
+      const trimmedName = name.trim();
+      // Escape special regex characters and match entire string case-insensitively
+      const escapedName = trimmedName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const existingDept = await Department.findOne({ 
-        name: name.trim(),
+        name: { $regex: new RegExp(`^${escapedName}$`, 'i') },
         _id: { $ne: departmentId }
       });
       
       if (existingDept) {
         return res.status(400).json({
           success: false,
-          error: 'Department with this name already exists'
+          error: `Department "${trimmedName}" already exists`
         });
       }
     }

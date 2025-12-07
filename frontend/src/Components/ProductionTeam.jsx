@@ -603,15 +603,15 @@ const ProductionDashboard = () => {
     };
 
     return (
-      <div className="space-y-6">
+    <div className="space-y-6">
         <div className="mb-6">
           <h1 className="text-3xl font-bold mb-2" style={{ color: colors.deepNavy }}>
             Production Dashboard
           </h1>
           <p className="text-gray-600">Manage your product and design masters efficiently</p>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <motion.div 
             className="rounded-xl shadow-lg p-6 border-2 relative overflow-hidden group cursor-pointer"
             style={{
@@ -630,13 +630,13 @@ const ProductionDashboard = () => {
               <div className="flex items-center justify-between mb-4">
                 <div className="p-4 rounded-xl bg-white bg-opacity-20">
                   <FiShoppingBag className="text-2xl" style={{ color: colors.gold }} />
-                </div>
-              </div>
+            </div>
+            </div>
               <h3 className="text-sm font-medium opacity-80 mb-2">Product Masters</h3>
               <p className="text-4xl font-bold" style={{ color: colors.gold }}>{productMasters.length}</p>
-            </div>
+          </div>
           </motion.div>
-          
+        
           <motion.div 
             className="rounded-xl shadow-lg p-6 border-2 relative overflow-hidden group cursor-pointer"
             style={{
@@ -655,13 +655,13 @@ const ProductionDashboard = () => {
               <div className="flex items-center justify-between mb-4">
                 <div className="p-4 rounded-xl bg-white bg-opacity-20">
                   <FiAward className="text-2xl" style={{ color: colors.gold }} />
-                </div>
-              </div>
+            </div>
+            </div>
               <h3 className="text-sm font-medium opacity-80 mb-2">Design Masters</h3>
               <p className="text-4xl font-bold" style={{ color: colors.gold }}>{designMasters.length}</p>
-            </div>
+          </div>
           </motion.div>
-        </div>
+      </div>
 
         <motion.div 
           className="bg-white rounded-xl shadow-lg p-6 border-2"
@@ -675,7 +675,7 @@ const ProductionDashboard = () => {
             <h2 className="text-xl font-bold" style={{ color: colors.deepNavy }}>Recent Activity</h2>
           </div>
           <div className="space-y-3">
-            {productMasters.slice(0, 3).map((product, index) => (
+          {productMasters.slice(0, 3).map((product, index) => (
               <motion.div 
                 key={`product-${index}`}
                 className="flex items-center p-4 hover:bg-gray-50 rounded-lg transition-all border border-transparent hover:border-gray-200"
@@ -686,17 +686,17 @@ const ProductionDashboard = () => {
               >
                 <div className="p-3 rounded-xl mr-4" style={{ backgroundColor: `${colors.info}15` }}>
                   <FiShoppingBag className="text-xl" style={{ color: colors.info }} />
-                </div>
+              </div>
                 <div className="flex-1">
                   <p className="font-semibold text-gray-800">New Product Added</p>
                   <p className="text-sm text-gray-600">{product.category} - {product.serialNumber}</p>
-                </div>
+              </div>
                 <div className="text-sm text-gray-400 font-medium">
-                  Just now
-                </div>
+                Just now
+              </div>
               </motion.div>
-            ))}
-            {designMasters.slice(0, 3).map((design, index) => (
+          ))}
+          {designMasters.slice(0, 3).map((design, index) => (
               <motion.div 
                 key={`design-${index}`}
                 className="flex items-center p-4 hover:bg-gray-50 rounded-lg transition-all border border-transparent hover:border-gray-200"
@@ -707,25 +707,25 @@ const ProductionDashboard = () => {
               >
                 <div className="p-3 rounded-xl mr-4" style={{ backgroundColor: `${colors.warning}15` }}>
                   <FiAward className="text-xl" style={{ color: colors.warning }} />
-                </div>
+              </div>
                 <div className="flex-1">
                   <p className="font-semibold text-gray-800">New Design Added</p>
                   <p className="text-sm text-gray-600">{design.serialNumber} - {design.styleNumber || 'N/A'}</p>
-                </div>
+              </div>
                 <div className="text-sm text-gray-400 font-medium">
-                  Just now
-                </div>
+                Just now
+              </div>
               </motion.div>
-            ))}
+          ))}
             {productMasters.length === 0 && designMasters.length === 0 && (
               <div className="text-center py-8 text-gray-500">
                 <p>No recent activity</p>
-              </div>
+        </div>
             )}
-          </div>
-        </motion.div>
       </div>
-    );
+        </motion.div>
+    </div>
+  );
   };
 
   const renderProductMasterForm = () => (
@@ -1705,7 +1705,7 @@ const ProductionDashboard = () => {
             >
               {sidebarCollapsed ? <FiMenu className="text-xl" /> : <FiX className="text-xl" />}
             </motion.button>
-          </div>
+            </div>
           </div>
           <nav className="mt-6 flex-1 overflow-y-auto px-2">
             <motion.div 
@@ -1784,8 +1784,8 @@ const ProductionDashboard = () => {
           </nav>
           {!sidebarCollapsed && (
             <div className="p-4 text-xs text-white/40 border-t border-white/10 text-center">
-              PageTraffics
-            </div>
+           PageTraffics
+          </div>
           )}
         </motion.div>
 

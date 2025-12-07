@@ -283,7 +283,7 @@ const Home = () => {
               {/* Two Column Layout - Separate Sections */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Left Side - Select Department Section */}
-                <motion.div
+                  <motion.div
                   className="p-8 rounded-xl relative overflow-hidden"
                   style={{
                     backgroundColor: `${colors.deepNavy}CC`,
@@ -521,7 +521,7 @@ const Home = () => {
                     </div>
                   )}
                   </div>
-                </motion.div>
+              </motion.div>
               </div>
             </motion.div>
           )}

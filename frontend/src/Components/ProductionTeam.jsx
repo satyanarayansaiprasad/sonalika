@@ -85,6 +85,7 @@ const ProductionDashboard = () => {
   const [designsByDepartment, setDesignsByDepartment] = useState([]);
   const [loadingDesigns, setLoadingDesigns] = useState(false);
   const [editingDesignDepartment, setEditingDesignDepartment] = useState(null);
+  const [selectedOrderForTracking, setSelectedOrderForTracking] = useState(null);
   
   // API Base URL
   const getApiBaseUrl = () => {
@@ -113,10 +114,10 @@ const ProductionDashboard = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeMenu]);
 
-  // Fetch designs by department when trackOrder tab becomes active
+  // Fetch departments when trackOrder tab becomes active (for dropdown)
   useEffect(() => {
-    if (activeMenu === 'trackOrder') {
-      fetchDesignsByDepartment();
+    if (activeMenu === 'trackOrder' && departments.length === 0) {
+      fetchDepartments();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeMenu]);
@@ -225,11 +226,26 @@ const ProductionDashboard = () => {
       }
     } catch (error) {
       console.error('Error fetching designs by department:', error);
-      showNotification('Failed to fetch designs', true);
+      console.error('Error response:', error.response);
+      // Don't show error notification if it's a 404 - might be deployment issue
+      if (error.response?.status !== 404) {
+        showNotification('Failed to fetch designs', true);
+      }
       setDesignsByDepartment([]);
     } finally {
       setLoadingDesigns(false);
     }
+  };
+
+  const handleTrackOrder = (order) => {
+    setSelectedOrderForTracking(order);
+    // Fetch designs for this order
+    fetchDesignsByDepartment(order.orderId);
+  };
+
+  const handleBackToOrders = () => {
+    setSelectedOrderForTracking(null);
+    setDesignsByDepartment([]);
   };
 
   const handleUpdateDesignDepartment = async (designId, departmentId) => {
@@ -1625,6 +1641,195 @@ const ProductionDashboard = () => {
   };
 
   const renderTrackOrder = () => {
+    // If an order is selected for tracking, show the tracking UI
+    if (selectedOrderForTracking) {
+      return (
+        <div className="space-y-6">
+          {/* Back Button and Order Info */}
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white rounded-xl shadow-lg p-6"
+          >
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <motion.button
+                  onClick={handleBackToOrders}
+                  className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors mb-4"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <FiChevronUp className="rotate-[-90deg]" />
+                  Back to Orders
+                </motion.button>
+                <h2 className="text-2xl font-bold text-gray-800">Track Order</h2>
+                <div className="mt-2 space-y-1">
+                  <p className="text-gray-600"><span className="font-semibold">Order ID:</span> {selectedOrderForTracking.orderId}</p>
+                  <p className="text-gray-600"><span className="font-semibold">Client:</span> {selectedOrderForTracking.clientName}</p>
+                  <p className="text-gray-600"><span className="font-semibold">Date:</span> {selectedOrderForTracking.orderDate}</p>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Designs by Department */}
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white rounded-xl shadow-lg p-6"
+          >
+            <h3 className="text-xl font-bold text-gray-800 mb-6">Designs by Department</h3>
+            
+            {loadingDesigns ? (
+              <div className="text-center py-12">
+                <div className="inline-block animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
+                <p className="mt-4 text-gray-600">Loading designs...</p>
+              </div>
+            ) : designsByDepartment.length === 0 ? (
+              <div className="text-center py-12 text-gray-500">
+                <FiBriefcase className="mx-auto text-4xl mb-2 opacity-50" />
+                <p>No designs found for this order. Create designs and assign them to departments.</p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {designsByDepartment.map((deptGroup, index) => (
+                  <motion.div
+                    key={deptGroup.department?._id || 'unassigned'}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                    className="border border-gray-200 rounded-lg overflow-hidden"
+                  >
+                    {/* Department Header */}
+                    <div 
+                      className="px-6 py-4 bg-gradient-to-r from-blue-50 to-blue-100 border-b border-gray-200"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          {deptGroup.department?.serialNumber && (
+                            <span className="px-3 py-1 bg-blue-600 text-white rounded-full text-sm font-semibold">
+                              SL: {deptGroup.department.serialNumber}
+                            </span>
+                          )}
+                          <h3 className="text-xl font-bold text-gray-800">
+                            {deptGroup.department?.name || 'Unassigned'}
+                          </h3>
+                          <span className="px-3 py-1 bg-gray-200 text-gray-700 rounded-full text-sm">
+                            {deptGroup.designs.length} {deptGroup.designs.length === 1 ? 'Design' : 'Designs'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Designs Grid */}
+                    {deptGroup.designs.length === 0 ? (
+                      <div className="px-6 py-8 text-center text-gray-400">
+                        <p>No designs assigned to this department</p>
+                      </div>
+                    ) : (
+                      <div className="p-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {deptGroup.designs.map((design) => (
+                            <motion.div
+                              key={design._id}
+                              initial={{ opacity: 0, scale: 0.95 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow"
+                            >
+                              {/* Design Image */}
+                              <div className="relative h-48 bg-gray-100">
+                                <img
+                                  src={design.imageFile}
+                                  alt={design.styleNumber}
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    e.target.src = 'https://via.placeholder.com/300x200?text=No+Image';
+                                  }}
+                                />
+                              </div>
+
+                              {/* Design Details */}
+                              <div className="p-4">
+                                <div className="flex items-start justify-between mb-2">
+                                  <div>
+                                    <h4 className="font-semibold text-gray-800">{design.styleNumber}</h4>
+                                    <p className="text-sm text-gray-500">Serial: {design.serialNumber}</p>
+                                  </div>
+                                  {editingDesignDepartment === design._id ? (
+                                    <select
+                                      value={design.department?._id || ''}
+                                      onChange={(e) => {
+                                        handleUpdateDesignDepartment(design._id, e.target.value);
+                                        setEditingDesignDepartment(null);
+                                      }}
+                                      onBlur={() => setEditingDesignDepartment(null)}
+                                      className="text-xs border border-gray-300 rounded px-2 py-1"
+                                      autoFocus
+                                    >
+                                      <option value="">Unassigned</option>
+                                      {departments.map((dept) => (
+                                        <option key={dept._id} value={dept._id}>
+                                          {dept.name}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  ) : (
+                                    <motion.button
+                                      onClick={async () => {
+                                        if (departments.length === 0) {
+                                          await fetchDepartments();
+                                        }
+                                        setEditingDesignDepartment(design._id);
+                                      }}
+                                      className="p-1 text-blue-600 hover:bg-blue-50 rounded"
+                                      whileHover={{ scale: 1.1 }}
+                                      whileTap={{ scale: 0.9 }}
+                                      title="Change Department"
+                                    >
+                                      <FiEdit2 size={14} />
+                                    </motion.button>
+                                  )}
+                                </div>
+
+                                {/* Design Specifications */}
+                                <div className="mt-3 space-y-1 text-xs text-gray-600">
+                                  <div className="flex justify-between">
+                                    <span>Gross Wt:</span>
+                                    <span className="font-medium">{design.grossWt}g</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span>Net Wt:</span>
+                                    <span className="font-medium">{design.netWt}g</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span>Diamond Wt:</span>
+                                    <span className="font-medium">{design.diaWt}ct</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span>Clarity:</span>
+                                    <span className="font-medium">{design.clarity}</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span>Color:</span>
+                                    <span className="font-medium">{design.color}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </motion.div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </motion.div>
+                ))}
+              </div>
+            )}
+          </motion.div>
+        </div>
+      );
+    }
+
+    // Show accepted orders list
     return (
       <div className="space-y-6">
         <motion.div
@@ -1632,150 +1837,53 @@ const ProductionDashboard = () => {
           animate={{ opacity: 1, y: 0 }}
           className="bg-white rounded-xl shadow-lg p-6"
         >
-          <h2 className="text-2xl font-bold text-gray-800 mb-6">Track Designs by Department</h2>
+          <h2 className="text-2xl font-bold text-gray-800 mb-6">Track Orders</h2>
+          <p className="text-gray-600 mb-6">Select an order to track its designs by department</p>
           
-          {loadingDesigns ? (
-            <div className="text-center py-12">
-              <div className="inline-block animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
-              <p className="mt-4 text-gray-600">Loading designs...</p>
-            </div>
-          ) : designsByDepartment.length === 0 ? (
+          {acceptedOrders.length === 0 ? (
             <div className="text-center py-12 text-gray-500">
-              <FiBriefcase className="mx-auto text-4xl mb-2 opacity-50" />
-              <p>No designs found. Create designs and assign them to departments.</p>
+              <FiShoppingBag className="mx-auto text-4xl mb-2 opacity-50" />
+              <p>No accepted orders found. Orders will appear here after being accepted by the Accounts department.</p>
             </div>
           ) : (
-            <div className="space-y-6">
-              {designsByDepartment.map((deptGroup, index) => (
-                <motion.div
-                  key={deptGroup.department?._id || 'unassigned'}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  className="border border-gray-200 rounded-lg overflow-hidden"
-                >
-                  {/* Department Header */}
-                  <div 
-                    className="px-6 py-4 bg-gradient-to-r from-blue-50 to-blue-100 border-b border-gray-200"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        {deptGroup.department?.serialNumber && (
-                          <span className="px-3 py-1 bg-blue-600 text-white rounded-full text-sm font-semibold">
-                            SL: {deptGroup.department.serialNumber}
-                          </span>
-                        )}
-                        <h3 className="text-xl font-bold text-gray-800">
-                          {deptGroup.department?.name || 'Unassigned'}
-                        </h3>
-                        <span className="px-3 py-1 bg-gray-200 text-gray-700 rounded-full text-sm">
-                          {deptGroup.designs.length} {deptGroup.designs.length === 1 ? 'Design' : 'Designs'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Designs Grid */}
-                  {deptGroup.designs.length === 0 ? (
-                    <div className="px-6 py-8 text-center text-gray-400">
-                      <p>No designs assigned to this department</p>
-                    </div>
-                  ) : (
-                    <div className="p-6">
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {deptGroup.designs.map((design) => (
-                          <motion.div
-                            key={design._id}
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow"
-                          >
-                            {/* Design Image */}
-                            <div className="relative h-48 bg-gray-100">
-                              <img
-                                src={design.imageFile}
-                                alt={design.styleNumber}
-                                className="w-full h-full object-cover"
-                                onError={(e) => {
-                                  e.target.src = 'https://via.placeholder.com/300x200?text=No+Image';
-                                }}
-                              />
-                            </div>
-
-                            {/* Design Details */}
-                            <div className="p-4">
-                              <div className="flex items-start justify-between mb-2">
-                                <div>
-                                  <h4 className="font-semibold text-gray-800">{design.styleNumber}</h4>
-                                  <p className="text-sm text-gray-500">Serial: {design.serialNumber}</p>
-                                </div>
-                                {editingDesignDepartment === design._id ? (
-                                  <select
-                                    value={design.department?._id || ''}
-                                    onChange={(e) => {
-                                      handleUpdateDesignDepartment(design._id, e.target.value);
-                                      setEditingDesignDepartment(null);
-                                    }}
-                                    onBlur={() => setEditingDesignDepartment(null)}
-                                    className="text-xs border border-gray-300 rounded px-2 py-1"
-                                    autoFocus
-                                  >
-                                    <option value="">Unassigned</option>
-                                    {departments.map((dept) => (
-                                      <option key={dept._id} value={dept._id}>
-                                        {dept.name}
-                                      </option>
-                                    ))}
-                                  </select>
-                                ) : (
-                                  <motion.button
-                                    onClick={async () => {
-                                      if (departments.length === 0) {
-                                        await fetchDepartments();
-                                      }
-                                      setEditingDesignDepartment(design._id);
-                                    }}
-                                    className="p-1 text-blue-600 hover:bg-blue-50 rounded"
-                                    whileHover={{ scale: 1.1 }}
-                                    whileTap={{ scale: 0.9 }}
-                                    title="Change Department"
-                                  >
-                                    <FiEdit2 size={14} />
-                                  </motion.button>
-                                )}
-                              </div>
-
-                              {/* Design Specifications */}
-                              <div className="mt-3 space-y-1 text-xs text-gray-600">
-                                <div className="flex justify-between">
-                                  <span>Gross Wt:</span>
-                                  <span className="font-medium">{design.grossWt}g</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span>Net Wt:</span>
-                                  <span className="font-medium">{design.netWt}g</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span>Diamond Wt:</span>
-                                  <span className="font-medium">{design.diaWt}ct</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span>Clarity:</span>
-                                  <span className="font-medium">{design.clarity}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span>Color:</span>
-                                  <span className="font-medium">{design.color}</span>
-                                </div>
-                              </div>
-                            </div>
-                          </motion.div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </motion.div>
-              ))}
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="bg-gray-50">
+                    <th className="px-4 py-3 text-left border border-gray-300 font-semibold text-gray-700">Order ID</th>
+                    <th className="px-4 py-3 text-left border border-gray-300 font-semibold text-gray-700">Client Name</th>
+                    <th className="px-4 py-3 text-left border border-gray-300 font-semibold text-gray-700">Order Date</th>
+                    <th className="px-4 py-3 text-left border border-gray-300 font-semibold text-gray-700">Description</th>
+                    <th className="px-4 py-3 text-center border border-gray-300 font-semibold text-gray-700">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {acceptedOrders.map((order, index) => (
+                    <motion.tr
+                      key={order.id}
+                      className="hover:bg-gray-50"
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                    >
+                      <td className="px-4 py-3 border border-gray-300 font-medium text-gray-800">{order.orderId}</td>
+                      <td className="px-4 py-3 border border-gray-300 text-gray-700">{order.clientName}</td>
+                      <td className="px-4 py-3 border border-gray-300 text-gray-600">{order.orderDate}</td>
+                      <td className="px-4 py-3 border border-gray-300 text-gray-600">{order.description || '-'}</td>
+                      <td className="px-4 py-3 border border-gray-300 text-center">
+                        <motion.button
+                          onClick={() => handleTrackOrder(order)}
+                          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                        >
+                          Track
+                        </motion.button>
+                      </td>
+                    </motion.tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </motion.div>

@@ -58,7 +58,11 @@ exports.getOrdersByStatus = async (req, res) => {
 // Get accepted orders
 exports.getAcceptedOrders = async (req, res) => {
   try {
-    const orders = await Order.find({ status: 'accepted' }).sort({ acceptedDate: -1 });
+    const orders = await Order.find({ status: 'accepted' })
+      .populate('currentDepartment', 'name serialNumber')
+      .populate('departmentStatus.department', 'name serialNumber')
+      .populate('pendingMessages.department', 'name serialNumber')
+      .sort({ acceptedDate: -1 });
     res.status(200).json({ 
       success: true, 
       data: orders 
@@ -108,6 +112,7 @@ exports.createOrder = async (req, res) => {
 // Accept an order
 exports.acceptOrder = async (req, res) => {
   try {
+    const Department = require('../models/Department');
     const { orderId } = req.params;
     const order = await Order.findOne({ orderId });
     
@@ -125,14 +130,36 @@ exports.acceptOrder = async (req, res) => {
       });
     }
 
+    // Find department with SL number 1
+    const firstDepartment = await Department.findOne({ serialNumber: 1 });
+    
+    if (!firstDepartment) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'No department with SL number 1 found. Please create a department with SL number 1 first.' 
+      });
+    }
+
     order.status = 'accepted';
     order.acceptedDate = new Date();
+    order.currentDepartment = firstDepartment._id;
+    
+    // Initialize department status for first department
+    order.departmentStatus = [{
+      department: firstDepartment._id,
+      status: 'in_progress',
+      completedAt: null
+    }];
+    
     await order.save();
+    
+    // Populate department info
+    await order.populate('currentDepartment', 'name serialNumber');
 
     res.status(200).json({ 
       success: true, 
       data: order,
-      message: 'Order accepted successfully' 
+      message: 'Order accepted successfully and assigned to first department' 
     });
   } catch (error) {
     res.status(500).json({ 
@@ -324,6 +351,233 @@ exports.syncOrdersFromClients = async (req, res) => {
     res.status(500).json({
       success: false,
       error: error.message
+    });
+  }
+};
+
+// Get completed orders
+exports.getCompletedOrders = async (req, res) => {
+  try {
+    const orders = await Order.find({ status: 'completed' })
+      .populate('currentDepartment', 'name serialNumber')
+      .populate('departmentStatus.department', 'name serialNumber')
+      .sort({ completedDate: -1 });
+    res.status(200).json({ 
+      success: true, 
+      data: orders 
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+};
+
+// Move order to next department
+exports.moveToNextDepartment = async (req, res) => {
+  try {
+    const Department = require('../models/Department');
+    const { orderId } = req.params;
+    
+    const order = await Order.findOne({ orderId }).populate('currentDepartment', 'serialNumber');
+    
+    if (!order) {
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Order not found' 
+      });
+    }
+
+    if (order.status !== 'accepted') {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Order must be accepted to move between departments' 
+      });
+    }
+
+    if (!order.currentDepartment) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Order has no current department assigned' 
+      });
+    }
+
+    // Mark current department as completed
+    const currentDeptStatus = order.departmentStatus.find(
+      ds => ds.department.toString() === order.currentDepartment._id.toString()
+    );
+    if (currentDeptStatus) {
+      currentDeptStatus.status = 'completed';
+      currentDeptStatus.completedAt = new Date();
+    }
+
+    // Find next department by serial number
+    const currentSerialNumber = order.currentDepartment.serialNumber;
+    const nextDepartment = await Department.findOne({ 
+      serialNumber: currentSerialNumber + 1 
+    }).sort({ serialNumber: 1 });
+
+    if (!nextDepartment) {
+      // No more departments - mark order as completed
+      order.status = 'completed';
+      order.completedDate = new Date();
+      order.currentDepartment = null;
+    } else {
+      // Move to next department
+      order.currentDepartment = nextDepartment._id;
+      
+      // Add status for new department
+      const existingStatus = order.departmentStatus.find(
+        ds => ds.department.toString() === nextDepartment._id.toString()
+      );
+      if (!existingStatus) {
+        order.departmentStatus.push({
+          department: nextDepartment._id,
+          status: 'in_progress',
+          completedAt: null
+        });
+      } else {
+        existingStatus.status = 'in_progress';
+      }
+    }
+
+    await order.save();
+    await order.populate('currentDepartment', 'name serialNumber');
+    await order.populate('departmentStatus.department', 'name serialNumber');
+
+    res.status(200).json({ 
+      success: true, 
+      data: order,
+      message: nextDepartment ? 'Order moved to next department' : 'Order completed successfully'
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+};
+
+// Mark order as pending in current department
+exports.markOrderPending = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { message } = req.body;
+    
+    if (!message || message.trim() === '') {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Pending message is required' 
+      });
+    }
+
+    const order = await Order.findOne({ orderId }).populate('currentDepartment');
+    
+    if (!order) {
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Order not found' 
+      });
+    }
+
+    if (!order.currentDepartment) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Order has no current department assigned' 
+      });
+    }
+
+    // Update department status to blocked
+    const deptStatus = order.departmentStatus.find(
+      ds => ds.department.toString() === order.currentDepartment._id.toString()
+    );
+    if (deptStatus) {
+      deptStatus.status = 'blocked';
+      deptStatus.pendingMessage = message.trim();
+    }
+
+    // Add to pending messages
+    order.pendingMessages.push({
+      department: order.currentDepartment._id,
+      message: message.trim(),
+      createdAt: new Date()
+    });
+
+    await order.save();
+    await order.populate('currentDepartment', 'name serialNumber');
+    await order.populate('departmentStatus.department', 'name serialNumber');
+    await order.populate('pendingMessages.department', 'name serialNumber');
+
+    res.status(200).json({ 
+      success: true, 
+      data: order,
+      message: 'Order marked as pending' 
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+};
+
+// Resolve pending order
+exports.resolvePending = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { resolvedMessage } = req.body;
+    
+    const order = await Order.findOne({ orderId }).populate('currentDepartment');
+    
+    if (!order) {
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Order not found' 
+      });
+    }
+
+    if (!order.currentDepartment) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Order has no current department assigned' 
+      });
+    }
+
+    // Update department status back to in_progress
+    const deptStatus = order.departmentStatus.find(
+      ds => ds.department.toString() === order.currentDepartment._id.toString()
+    );
+    if (deptStatus) {
+      deptStatus.status = 'in_progress';
+      deptStatus.resolvedAt = new Date();
+      deptStatus.resolvedBy = req.body.resolvedBy || 'Production Team';
+      deptStatus.resolvedMessage = resolvedMessage || '';
+    }
+
+    // Mark pending messages as resolved
+    order.pendingMessages.forEach(pm => {
+      if (pm.department.toString() === order.currentDepartment._id.toString() && !pm.resolvedAt) {
+        pm.resolvedAt = new Date();
+        pm.resolvedBy = req.body.resolvedBy || 'Production Team';
+        pm.resolvedMessage = resolvedMessage || '';
+      }
+    });
+
+    await order.save();
+    await order.populate('currentDepartment', 'name serialNumber');
+    await order.populate('departmentStatus.department', 'name serialNumber');
+    await order.populate('pendingMessages.department', 'name serialNumber');
+
+    res.status(200).json({ 
+      success: true, 
+      data: order,
+      message: 'Pending order resolved' 
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
     });
   }
 };

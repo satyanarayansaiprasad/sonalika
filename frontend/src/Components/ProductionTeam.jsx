@@ -86,6 +86,12 @@ const ProductionDashboard = () => {
   const [loadingDesigns, setLoadingDesigns] = useState(false);
   const [editingDesignDepartment, setEditingDesignDepartment] = useState(null);
   const [selectedOrderForTracking, setSelectedOrderForTracking] = useState(null);
+  const [pendingModalOpen, setPendingModalOpen] = useState(false);
+  const [pendingMessage, setPendingMessage] = useState('');
+  const [selectedDepartmentForAction, setSelectedDepartmentForAction] = useState(null);
+  const [resolveModalOpen, setResolveModalOpen] = useState(false);
+  const [resolveMessage, setResolveMessage] = useState('');
+  const [completedOrders, setCompletedOrders] = useState([]);
   
   // API Base URL
   const getApiBaseUrl = () => {
@@ -149,11 +155,13 @@ const ProductionDashboard = () => {
     fetchAllCategories();
     loadAcceptedOrders();
     loadRejectedOrders();
+    loadCompletedOrders();
     
     // Set up interval to check for new orders
     const interval = setInterval(() => {
       loadAcceptedOrders();
       loadRejectedOrders();
+      loadCompletedOrders();
     }, 2000); // Check every 2 seconds
     
     return () => clearInterval(interval);
@@ -176,7 +184,10 @@ const ProductionDashboard = () => {
           silver: order.silver,
           platinum: order.platinum,
           status: order.status,
-          acceptedDate: order.acceptedDate
+          acceptedDate: order.acceptedDate,
+          currentDepartment: order.currentDepartment,
+          departmentStatus: order.departmentStatus || [],
+          pendingMessages: order.pendingMessages || []
         }));
         setAcceptedOrders(transformedOrders);
       }
@@ -237,8 +248,35 @@ const ProductionDashboard = () => {
     }
   };
 
-  const handleTrackOrder = (order) => {
-    setSelectedOrderForTracking(order);
+  const handleTrackOrder = async (order) => {
+    // Fetch fresh order data with department info
+    try {
+      const apiBaseUrl = getApiBaseUrl();
+      const response = await axios.get(`${apiBaseUrl}/api/orders/accepted`);
+      if (response.data.success && response.data.data) {
+        const freshOrder = response.data.data.find(o => o.orderId === order.orderId);
+        if (freshOrder) {
+          setSelectedOrderForTracking({
+            id: freshOrder.orderId,
+            orderId: freshOrder.orderId,
+            orderDate: freshOrder.orderDate,
+            clientName: freshOrder.clientName,
+            description: freshOrder.description,
+            status: freshOrder.status,
+            currentDepartment: freshOrder.currentDepartment,
+            departmentStatus: freshOrder.departmentStatus || [],
+            pendingMessages: freshOrder.pendingMessages || []
+          });
+        } else {
+          setSelectedOrderForTracking(order);
+        }
+      } else {
+        setSelectedOrderForTracking(order);
+      }
+    } catch (error) {
+      console.error('Error fetching order details:', error);
+      setSelectedOrderForTracking(order);
+    }
     // Fetch designs for this order
     fetchDesignsByDepartment(order.orderId);
   };
@@ -246,6 +284,123 @@ const ProductionDashboard = () => {
   const handleBackToOrders = () => {
     setSelectedOrderForTracking(null);
     setDesignsByDepartment([]);
+  };
+
+  const handleMoveToNext = async (orderId) => {
+    try {
+      const apiBaseUrl = getApiBaseUrl();
+      const response = await axios.put(`${apiBaseUrl}/api/orders/move-to-next/${orderId}`);
+      
+      if (response.data.success) {
+        showNotification(response.data.message || 'Order moved to next department');
+        await loadAcceptedOrders();
+        await loadCompletedOrders();
+        if (selectedOrderForTracking) {
+          const updatedOrder = response.data.data;
+          setSelectedOrderForTracking({
+            ...selectedOrderForTracking,
+            currentDepartment: updatedOrder.currentDepartment,
+            departmentStatus: updatedOrder.departmentStatus,
+            status: updatedOrder.status
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error moving order:', error);
+      showNotification(error.response?.data?.error || 'Failed to move order', true);
+    }
+  };
+
+  const handleMarkPending = (dept) => {
+    setSelectedDepartmentForAction(dept);
+    setPendingModalOpen(true);
+  };
+
+  const handleSubmitPending = async () => {
+    if (!pendingMessage.trim()) {
+      showNotification('Please enter a pending reason', true);
+      return;
+    }
+
+    try {
+      const apiBaseUrl = getApiBaseUrl();
+      const response = await axios.put(
+        `${apiBaseUrl}/api/orders/mark-pending/${selectedOrderForTracking.orderId}`,
+        { message: pendingMessage.trim() }
+      );
+      
+      if (response.data.success) {
+        showNotification('Order marked as pending');
+        setPendingModalOpen(false);
+        setPendingMessage('');
+        await loadAcceptedOrders();
+        if (selectedOrderForTracking) {
+          const updatedOrder = response.data.data;
+          setSelectedOrderForTracking({
+            ...selectedOrderForTracking,
+            departmentStatus: updatedOrder.departmentStatus,
+            pendingMessages: updatedOrder.pendingMessages
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error marking pending:', error);
+      showNotification(error.response?.data?.error || 'Failed to mark as pending', true);
+    }
+  };
+
+  const handleResolvePending = () => {
+    setResolveModalOpen(true);
+  };
+
+  const handleSubmitResolve = async () => {
+    try {
+      const apiBaseUrl = getApiBaseUrl();
+      const response = await axios.put(
+        `${apiBaseUrl}/api/orders/resolve-pending/${selectedOrderForTracking.orderId}`,
+        { resolvedMessage: resolveMessage.trim() || 'Issue resolved' }
+      );
+      
+      if (response.data.success) {
+        showNotification('Pending issue resolved');
+        setResolveModalOpen(false);
+        setResolveMessage('');
+        await loadAcceptedOrders();
+        if (selectedOrderForTracking) {
+          const updatedOrder = response.data.data;
+          setSelectedOrderForTracking({
+            ...selectedOrderForTracking,
+            departmentStatus: updatedOrder.departmentStatus,
+            pendingMessages: updatedOrder.pendingMessages
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error resolving pending:', error);
+      showNotification(error.response?.data?.error || 'Failed to resolve pending', true);
+    }
+  };
+
+  const loadCompletedOrders = async () => {
+    try {
+      const apiBaseUrl = getApiBaseUrl();
+      const response = await axios.get(`${apiBaseUrl}/api/orders/completed`);
+      if (response.data.success && response.data.data) {
+        const transformedOrders = response.data.data.map(order => ({
+          id: order.orderId,
+          orderId: order.orderId,
+          orderDate: order.orderDate,
+          clientName: order.clientName,
+          description: order.description,
+          status: order.status,
+          completedDate: order.completedDate,
+          departmentStatus: order.departmentStatus || []
+        }));
+        setCompletedOrders(transformedOrders);
+      }
+    } catch (error) {
+      console.error('Error fetching completed orders:', error);
+    }
   };
 
   const handleUpdateDesignDepartment = async (designId, departmentId) => {
@@ -1640,6 +1795,62 @@ const ProductionDashboard = () => {
     );
   };
 
+  const renderCompletedOrders = () => {
+    return (
+      <div className="space-y-6">
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white rounded-xl shadow-lg p-6"
+        >
+          <h2 className="text-2xl font-bold text-gray-800 mb-6">Complete Orders</h2>
+          
+          {completedOrders.length === 0 ? (
+            <div className="text-center py-12 text-gray-500">
+              <FiCheckCircle className="mx-auto text-4xl mb-2 opacity-50" />
+              <p>No completed orders found.</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="bg-gradient-to-r from-green-50 to-green-100">
+                    <th className="px-6 py-4 text-left border border-gray-200 font-semibold text-gray-700">Order No</th>
+                    <th className="px-6 py-4 text-left border border-gray-200 font-semibold text-gray-700">Client Name</th>
+                    <th className="px-6 py-4 text-left border border-gray-200 font-semibold text-gray-700">Completed Date</th>
+                    <th className="px-6 py-4 text-center border border-gray-200 font-semibold text-gray-700">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {completedOrders.map((order, index) => (
+                    <motion.tr
+                      key={order.id}
+                      className="hover:bg-green-50 transition-colors"
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                    >
+                      <td className="px-6 py-4 border border-gray-200 font-semibold text-gray-800">{order.orderId}</td>
+                      <td className="px-6 py-4 border border-gray-200 text-gray-700">{order.clientName}</td>
+                      <td className="px-6 py-4 border border-gray-200 text-gray-600">
+                        {order.completedDate ? new Date(order.completedDate).toLocaleDateString() : '-'}
+                      </td>
+                      <td className="px-6 py-4 border border-gray-200 text-center">
+                        <span className="px-3 py-1 bg-green-200 text-green-800 rounded-full text-sm font-semibold">
+                          Complete
+                        </span>
+                      </td>
+                    </motion.tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </motion.div>
+      </div>
+    );
+  };
+
   const renderTrackOrder = () => {
     // If an order is selected for tracking, show the tracking UI
     if (selectedOrderForTracking) {
@@ -1670,11 +1881,20 @@ const ProductionDashboard = () => {
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-3xl font-bold mb-2">Track Your Order</h2>
-                <div className="mt-4 space-y-2">
-                  <p className="text-blue-100"><span className="font-semibold text-white">Order ID:</span> {selectedOrderForTracking.orderId}</p>
-                  <p className="text-blue-100"><span className="font-semibold text-white">Client:</span> {selectedOrderForTracking.clientName}</p>
-                  <p className="text-blue-100"><span className="font-semibold text-white">Order Date:</span> {selectedOrderForTracking.orderDate}</p>
-                </div>
+                {selectedOrderForTracking.status === 'completed' ? (
+                  <div className="mt-4 p-4 bg-green-500/20 rounded-lg border border-green-400">
+                    <p className="text-green-100 font-semibold text-lg flex items-center gap-2">
+                      <FiCheckCircle className="text-xl" />
+                      Order Completed Successfully!
+                    </p>
+                  </div>
+                ) : (
+                  <div className="mt-4 space-y-2">
+                    <p className="text-blue-100"><span className="font-semibold text-white">Order ID:</span> {selectedOrderForTracking.orderId}</p>
+                    <p className="text-blue-100"><span className="font-semibold text-white">Client:</span> {selectedOrderForTracking.clientName}</p>
+                    <p className="text-blue-100"><span className="font-semibold text-white">Order Date:</span> {selectedOrderForTracking.orderDate}</p>
+                  </div>
+                )}
               </div>
               <div className="hidden md:block">
                 <FiPackage className="text-8xl opacity-20" />
@@ -1706,7 +1926,7 @@ const ProductionDashboard = () => {
                     className="absolute top-0 left-0 w-full bg-gradient-to-b from-green-500 via-blue-500 to-gray-300"
                     initial={{ height: '0%' }}
                     animate={{ 
-                      height: `${(designsByDepartment.filter(g => g.designs.length > 0).length / sortedDepartments.length) * 100}%` 
+                      height: `${(selectedOrderForTracking.departmentStatus?.filter(ds => ds.status === 'completed').length || 0) / sortedDepartments.length * 100}%` 
                     }}
                     transition={{ duration: 1, ease: "easeOut" }}
                     style={{ borderRadius: '4px' }}
@@ -1715,15 +1935,21 @@ const ProductionDashboard = () => {
                 
                 <div className="space-y-6">
                   {sortedDepartments.map((dept, index) => {
-                    // Check if this department has designs for this order
-                    const hasDesigns = designsByDepartment.some(
-                      group => group.department?._id === dept._id && group.designs.length > 0
+                    // Get department status from order
+                    const deptStatus = selectedOrderForTracking.departmentStatus?.find(
+                      ds => ds.department?._id === dept._id || ds.department === dept._id
                     );
-                    const isCompleted = hasDesigns;
-                    const prevCompleted = index > 0 && designsByDepartment.some(
-                      group => group.department?._id === sortedDepartments[index - 1]._id && group.designs.length > 0
+                    const isCurrentDept = selectedOrderForTracking.currentDepartment?._id === dept._id || 
+                                         selectedOrderForTracking.currentDepartment === dept._id;
+                    const isCompleted = deptStatus?.status === 'completed';
+                    const isBlocked = deptStatus?.status === 'blocked';
+                    const isInProgress = deptStatus?.status === 'in_progress' || isCurrentDept;
+                    const isActive = isCurrentDept || isInProgress;
+                    
+                    // Get pending message for this department
+                    const pendingMsg = selectedOrderForTracking.pendingMessages?.find(
+                      pm => (pm.department?._id === dept._id || pm.department === dept._id) && !pm.resolvedAt
                     );
-                    const isActive = isCompleted || (index === 0) || (prevCompleted && !isCompleted);
 
                     return (
                       <motion.div
@@ -1744,6 +1970,8 @@ const ProductionDashboard = () => {
                               w-12 h-12 rounded-full flex items-center justify-center
                               ${isCompleted 
                                 ? 'bg-green-500' 
+                                : isBlocked
+                                ? 'bg-red-500'
                                 : isActive 
                                 ? 'bg-blue-500' 
                                 : 'bg-gray-300'
@@ -1765,6 +1993,8 @@ const ProductionDashboard = () => {
                               >
                                 <FiCheckCircle className="text-white text-xl" />
                               </motion.div>
+                            ) : isBlocked ? (
+                              <FiXCircle className="text-white text-xl" />
                             ) : isActive ? (
                               <motion.div
                                 animate={{ rotate: 360 }}
@@ -1782,7 +2012,7 @@ const ProductionDashboard = () => {
                           </motion.div>
                           
                           {/* Pulse animation for active */}
-                          {isActive && !isCompleted && (
+                          {isActive && !isCompleted && !isBlocked && (
                             <motion.div
                               className={`absolute inset-0 rounded-full bg-blue-500`}
                               animate={{ 
@@ -1804,6 +2034,8 @@ const ProductionDashboard = () => {
                             flex-1 p-4 rounded-lg border-l-4 transition-all duration-300
                             ${isCompleted 
                               ? 'bg-green-50 border-green-500 shadow-sm' 
+                              : isBlocked
+                              ? 'bg-red-50 border-red-500 shadow-md'
                               : isActive 
                               ? 'bg-blue-50 border-blue-500 shadow-md' 
                               : 'bg-gray-50 border-gray-300'
@@ -1813,14 +2045,14 @@ const ProductionDashboard = () => {
                           transition={{ type: "spring", stiffness: 300 }}
                         >
                           <div className="flex items-center justify-between">
-                            <div>
+                            <div className="flex-1">
                               <h4 className={`
                                 text-lg font-semibold mb-1
-                                ${isCompleted ? 'text-green-800' : isActive ? 'text-blue-800' : 'text-gray-600'}
+                                ${isCompleted ? 'text-green-800' : isBlocked ? 'text-red-800' : isActive ? 'text-blue-800' : 'text-gray-600'}
                               `}>
                                 {dept.name}
                               </h4>
-                              <div className="flex items-center gap-3">
+                              <div className="flex items-center gap-3 flex-wrap">
                                 {isCompleted ? (
                                   <motion.span
                                     className="text-sm text-green-700 font-medium"
@@ -1829,6 +2061,14 @@ const ProductionDashboard = () => {
                                     transition={{ delay: index * 0.15 + 0.4 }}
                                   >
                                     ✓ Completed
+                                  </motion.span>
+                                ) : isBlocked ? (
+                                  <motion.span
+                                    className="text-sm text-red-700 font-medium"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                  >
+                                    ⚠ Pending
                                   </motion.span>
                                 ) : isActive ? (
                                   <motion.span
@@ -1848,18 +2088,57 @@ const ProductionDashboard = () => {
                                     Pending
                                   </span>
                                 )}
-                                {isCompleted && designsByDepartment.find(g => g.department?._id === dept._id)?.designs.length > 0 && (
-                                  <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded">
-                                    {designsByDepartment.find(g => g.department?._id === dept._id)?.designs.length} items
-                                  </span>
+                                {pendingMsg && (
+                                  <div className="text-xs text-red-600 bg-red-50 px-2 py-1 rounded border border-red-200">
+                                    <p className="font-medium">Pending: {pendingMsg.message}</p>
+                                    {pendingMsg.resolvedAt && (
+                                      <p className="text-green-600 mt-1">Resolved: {pendingMsg.resolvedMessage}</p>
+                                    )}
+                                  </div>
                                 )}
                               </div>
+                              {/* Show OK/Pending buttons for current department */}
+                              {isCurrentDept && selectedOrderForTracking.status === 'accepted' && (
+                                <div className="mt-3 flex gap-2">
+                                  {isBlocked ? (
+                                    <motion.button
+                                      onClick={handleResolvePending}
+                                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+                                      whileHover={{ scale: 1.05 }}
+                                      whileTap={{ scale: 0.95 }}
+                                    >
+                                      Resolve & Continue
+                                    </motion.button>
+                                  ) : (
+                                    <>
+                                      <motion.button
+                                        onClick={() => handleMoveToNext(selectedOrderForTracking.orderId)}
+                                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+                                        whileHover={{ scale: 1.05 }}
+                                        whileTap={{ scale: 0.95 }}
+                                      >
+                                        OK
+                                      </motion.button>
+                                      <motion.button
+                                        onClick={() => handleMarkPending(dept)}
+                                        className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm font-medium"
+                                        whileHover={{ scale: 1.05 }}
+                                        whileTap={{ scale: 0.95 }}
+                                      >
+                                        Pending
+                                      </motion.button>
+                                    </>
+                                  )}
+                                </div>
+                              )}
                             </div>
                             {dept.serialNumber && (
                               <span className={`
                                 px-3 py-1 rounded-full text-xs font-semibold
                                 ${isCompleted 
                                   ? 'bg-green-200 text-green-800' 
+                                  : isBlocked
+                                  ? 'bg-red-200 text-red-800'
                                   : isActive 
                                   ? 'bg-blue-200 text-blue-800' 
                                   : 'bg-gray-200 text-gray-600'
@@ -2221,6 +2500,20 @@ const ProductionDashboard = () => {
               <FiShoppingBag className="mr-3 flex-shrink-0 text-lg" />
               {!sidebarCollapsed && <span className="font-medium">Track Order</span>}
             </motion.div>
+            <motion.div 
+              className={`flex items-center px-4 py-4 cursor-pointer rounded-xl transition-all mb-2 ${activeMenu === 'completedOrders' ? 'bg-white/10 shadow-lg' : 'hover:bg-white/5'}`}
+              onClick={() => {
+                setActiveMenu('completedOrders');
+                setMobileMenuOpen(false);
+                setMasterType(null);
+              }}
+              title="Complete Orders"
+              whileHover={{ scale: 1.02, x: 4 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <FiCheckCircle className="mr-3 flex-shrink-0 text-lg" />
+              {!sidebarCollapsed && <span className="font-medium">Complete Orders</span>}
+            </motion.div>
           </nav>
           {!sidebarCollapsed && (
             <div className="p-4 text-xs text-white/40 border-t border-white/10 text-center">
@@ -2291,8 +2584,98 @@ const ProductionDashboard = () => {
           {activeMenu === 'departments' && renderDepartments()}
 
           {activeMenu === 'trackOrder' && renderTrackOrder()}
+
+          {activeMenu === 'completedOrders' && renderCompletedOrders()}
         </div>
       </div>
+
+      {/* Pending Message Modal */}
+      {pendingModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full"
+          >
+            <h3 className="text-xl font-bold text-gray-800 mb-4">Mark Order as Pending</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Department: <span className="font-semibold">{selectedDepartmentForAction?.name}</span>
+            </p>
+            <textarea
+              value={pendingMessage}
+              onChange={(e) => setPendingMessage(e.target.value)}
+              placeholder="Enter reason why this order is pending..."
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none"
+              rows={4}
+            />
+            <div className="flex gap-3 mt-6">
+              <motion.button
+                onClick={handleSubmitPending}
+                className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                Submit
+              </motion.button>
+              <motion.button
+                onClick={() => {
+                  setPendingModalOpen(false);
+                  setPendingMessage('');
+                }}
+                className="flex-1 px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                Cancel
+              </motion.button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Resolve Pending Modal */}
+      {resolveModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full"
+          >
+            <h3 className="text-xl font-bold text-gray-800 mb-4">Resolve Pending Issue</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Enter resolution message (optional):
+            </p>
+            <textarea
+              value={resolveMessage}
+              onChange={(e) => setResolveMessage(e.target.value)}
+              placeholder="Enter resolution message..."
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
+              rows={4}
+            />
+            <div className="flex gap-3 mt-6">
+              <motion.button
+                onClick={handleSubmitResolve}
+                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                Resolve
+              </motion.button>
+              <motion.button
+                onClick={() => {
+                  setResolveModalOpen(false);
+                  setResolveMessage('');
+                }}
+                className="flex-1 px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                Cancel
+              </motion.button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 };

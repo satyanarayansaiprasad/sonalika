@@ -23,6 +23,9 @@ router.get('/accepted', OrderController.getAcceptedOrders);
 // Get rejected orders
 router.get('/rejected', OrderController.getRejectedOrders);
 
+// Get completed orders
+router.get('/completed', OrderController.getCompletedOrders);
+
 // Create a new order
 router.post('/create', OrderController.createOrder);
 
@@ -40,6 +43,15 @@ router.delete('/delete/:orderId', OrderController.deleteOrder);
 
 // Sync orders from Client orders to Order collection
 router.post('/sync-from-clients', OrderController.syncOrdersFromClients);
+
+// Move order to next department
+router.put('/move-to-next/:orderId', OrderController.moveToNextDepartment);
+
+// Mark order as pending in current department
+router.put('/mark-pending/:orderId', OrderController.markOrderPending);
+
+// Resolve pending order
+router.put('/resolve-pending/:orderId', OrderController.resolvePending);
 
 module.exports = router;
 

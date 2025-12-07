@@ -36,7 +36,7 @@ const orderSchema = new mongoose.Schema({
   },
   status: { 
     type: String, 
-    enum: ['pending', 'accepted', 'rejected'], 
+    enum: ['pending', 'accepted', 'rejected', 'completed'], 
     default: 'pending' 
   },
   rejectionReason: { 
@@ -49,6 +49,44 @@ const orderSchema = new mongoose.Schema({
   rejectedDate: { 
     type: Date 
   },
+  completedDate: {
+    type: Date
+  },
+  currentDepartment: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Department',
+    default: null
+  },
+  departmentStatus: [{
+    department: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Department'
+    },
+    status: {
+      type: String,
+      enum: ['pending', 'in_progress', 'completed', 'blocked'],
+      default: 'pending'
+    },
+    completedAt: Date,
+    pendingMessage: String,
+    resolvedAt: Date,
+    resolvedBy: String,
+    resolvedMessage: String
+  }],
+  pendingMessages: [{
+    department: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Department'
+    },
+    message: String,
+    createdAt: {
+      type: Date,
+      default: Date.now
+    },
+    resolvedAt: Date,
+    resolvedBy: String,
+    resolvedMessage: String
+  }],
   orderItems: [ // Array to store detailed order items from Sales
     {
       srNo: Number,

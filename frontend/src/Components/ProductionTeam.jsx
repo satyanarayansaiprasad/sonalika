@@ -1682,17 +1682,12 @@ const ProductionDashboard = () => {
             </div>
           </motion.div>
 
-          {/* Tracking Timeline */}
+          {/* Tracking Timeline - Simple Animated Design */}
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-xl shadow-lg p-6"
+            className="bg-white rounded-xl shadow-lg p-8"
           >
-            <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-              <FiMapPin className="text-blue-600" />
-              Order Progress
-            </h3>
-            
             {loadingDesigns ? (
               <div className="text-center py-12">
                 <div className="inline-block animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
@@ -1705,107 +1700,176 @@ const ProductionDashboard = () => {
               </div>
             ) : (
               <div className="relative">
-                {/* Timeline Line */}
-                <div className="absolute left-8 top-0 bottom-0 w-0.5 bg-gray-200"></div>
+                {/* Animated Progress Line */}
+                <div className="absolute left-6 top-0 bottom-0 w-1 bg-gray-200">
+                  <motion.div
+                    className="absolute top-0 left-0 w-full bg-gradient-to-b from-green-500 via-blue-500 to-gray-300"
+                    initial={{ height: '0%' }}
+                    animate={{ 
+                      height: `${(designsByDepartment.filter(g => g.designs.length > 0).length / sortedDepartments.length) * 100}%` 
+                    }}
+                    transition={{ duration: 1, ease: "easeOut" }}
+                    style={{ borderRadius: '4px' }}
+                  />
+                </div>
                 
-                <div className="space-y-8">
+                <div className="space-y-6">
                   {sortedDepartments.map((dept, index) => {
                     // Check if this department has designs for this order
                     const hasDesigns = designsByDepartment.some(
                       group => group.department?._id === dept._id && group.designs.length > 0
                     );
                     const isCompleted = hasDesigns;
-                    const isActive = index === 0 || (sortedDepartments[index - 1] && 
-                      designsByDepartment.some(
-                        group => group.department?._id === sortedDepartments[index - 1]._id && group.designs.length > 0
-                      ));
+                    const prevCompleted = index > 0 && designsByDepartment.some(
+                      group => group.department?._id === sortedDepartments[index - 1]._id && group.designs.length > 0
+                    );
+                    const isActive = isCompleted || (index === 0) || (prevCompleted && !isCompleted);
 
                     return (
                       <motion.div
                         key={dept._id}
-                        initial={{ opacity: 0, x: -20 }}
+                        initial={{ opacity: 0, x: -50 }}
                         animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: index * 0.1 }}
-                        className="relative flex items-start gap-6"
+                        transition={{ 
+                          delay: index * 0.15,
+                          type: "spring",
+                          stiffness: 100
+                        }}
+                        className="relative flex items-center gap-4"
                       >
-                        {/* Timeline Icon */}
-                        <div className="relative z-10">
-                          <div className={`
-                            w-16 h-16 rounded-full flex items-center justify-center
-                            ${isCompleted 
-                              ? 'bg-green-500 shadow-lg shadow-green-200' 
-                              : isActive 
-                              ? 'bg-blue-500 shadow-lg shadow-blue-200 animate-pulse' 
-                              : 'bg-gray-300'
-                            }
-                            transition-all duration-300
-                          `}>
+                        {/* Animated Status Circle */}
+                        <div className="relative z-10 flex-shrink-0">
+                          <motion.div
+                            className={`
+                              w-12 h-12 rounded-full flex items-center justify-center
+                              ${isCompleted 
+                                ? 'bg-green-500' 
+                                : isActive 
+                                ? 'bg-blue-500' 
+                                : 'bg-gray-300'
+                              }
+                            `}
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            transition={{ 
+                              delay: index * 0.15 + 0.2,
+                              type: "spring",
+                              stiffness: 200
+                            }}
+                          >
                             {isCompleted ? (
-                              <FiCheckCircle className="text-white text-2xl" />
+                              <motion.div
+                                initial={{ scale: 0, rotate: -180 }}
+                                animate={{ scale: 1, rotate: 0 }}
+                                transition={{ delay: index * 0.15 + 0.3 }}
+                              >
+                                <FiCheckCircle className="text-white text-xl" />
+                              </motion.div>
                             ) : isActive ? (
-                              <FiClock className="text-white text-2xl animate-spin" />
+                              <motion.div
+                                animate={{ rotate: 360 }}
+                                transition={{ 
+                                  duration: 2,
+                                  repeat: Infinity,
+                                  ease: "linear"
+                                }}
+                              >
+                                <FiClock className="text-white text-xl" />
+                              </motion.div>
                             ) : (
-                              <FiPackage className="text-white text-xl" />
+                              <FiPackage className="text-white text-lg" />
                             )}
-                          </div>
+                          </motion.div>
+                          
+                          {/* Pulse animation for active */}
+                          {isActive && !isCompleted && (
+                            <motion.div
+                              className={`absolute inset-0 rounded-full bg-blue-500`}
+                              animate={{ 
+                                scale: [1, 1.5, 1],
+                                opacity: [0.5, 0, 0.5]
+                              }}
+                              transition={{ 
+                                duration: 2,
+                                repeat: Infinity,
+                                ease: "easeInOut"
+                              }}
+                            />
+                          )}
                         </div>
 
-                        {/* Department Info */}
-                        <div className="flex-1 pt-2">
-                          <div className={`
-                            p-4 rounded-lg border-2 transition-all duration-300
+                        {/* Department Info Card */}
+                        <motion.div
+                          className={`
+                            flex-1 p-4 rounded-lg border-l-4 transition-all duration-300
                             ${isCompleted 
-                              ? 'bg-green-50 border-green-200 shadow-md' 
+                              ? 'bg-green-50 border-green-500 shadow-sm' 
                               : isActive 
-                              ? 'bg-blue-50 border-blue-300 shadow-lg' 
-                              : 'bg-gray-50 border-gray-200'
+                              ? 'bg-blue-50 border-blue-500 shadow-md' 
+                              : 'bg-gray-50 border-gray-300'
                             }
-                          `}>
-                            <div className="flex items-center justify-between mb-2">
+                          `}
+                          whileHover={{ scale: 1.02, x: 5 }}
+                          transition={{ type: "spring", stiffness: 300 }}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div>
                               <h4 className={`
-                                text-lg font-bold
+                                text-lg font-semibold mb-1
                                 ${isCompleted ? 'text-green-800' : isActive ? 'text-blue-800' : 'text-gray-600'}
                               `}>
                                 {dept.name}
                               </h4>
-                              {dept.serialNumber && (
-                                <span className={`
-                                  px-3 py-1 rounded-full text-xs font-semibold
-                                  ${isCompleted 
-                                    ? 'bg-green-200 text-green-800' 
-                                    : isActive 
-                                    ? 'bg-blue-200 text-blue-800' 
-                                    : 'bg-gray-200 text-gray-600'
-                                  }
-                                `}>
-                                  SL: {dept.serialNumber}
-                                </span>
-                              )}
-                            </div>
-                            
-                            {isCompleted ? (
-                              <div className="flex items-center gap-2 text-green-700">
-                                <FiCheckCircle className="text-sm" />
-                                <span className="text-sm font-medium">Completed</span>
-                                {designsByDepartment.find(g => g.department?._id === dept._id)?.designs.length > 0 && (
-                                  <span className="text-xs text-green-600 ml-2">
-                                    ({designsByDepartment.find(g => g.department?._id === dept._id)?.designs.length} designs)
+                              <div className="flex items-center gap-3">
+                                {isCompleted ? (
+                                  <motion.span
+                                    className="text-sm text-green-700 font-medium"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    transition={{ delay: index * 0.15 + 0.4 }}
+                                  >
+                                    ✓ Completed
+                                  </motion.span>
+                                ) : isActive ? (
+                                  <motion.span
+                                    className="text-sm text-blue-700 font-medium"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: [0.5, 1, 0.5] }}
+                                    transition={{ 
+                                      duration: 1.5,
+                                      repeat: Infinity,
+                                      delay: index * 0.15
+                                    }}
+                                  >
+                                    In Progress...
+                                  </motion.span>
+                                ) : (
+                                  <span className="text-sm text-gray-500">
+                                    Pending
+                                  </span>
+                                )}
+                                {isCompleted && designsByDepartment.find(g => g.department?._id === dept._id)?.designs.length > 0 && (
+                                  <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded">
+                                    {designsByDepartment.find(g => g.department?._id === dept._id)?.designs.length} items
                                   </span>
                                 )}
                               </div>
-                            ) : isActive ? (
-                              <div className="flex items-center gap-2 text-blue-700">
-                                <FiClock className="text-sm animate-spin" />
-                                <span className="text-sm font-medium">In Progress</span>
-                              </div>
-                            ) : (
-                              <div className="flex items-center gap-2 text-gray-500">
-                                <FiPackage className="text-sm" />
-                                <span className="text-sm">Pending</span>
-                              </div>
+                            </div>
+                            {dept.serialNumber && (
+                              <span className={`
+                                px-3 py-1 rounded-full text-xs font-semibold
+                                ${isCompleted 
+                                  ? 'bg-green-200 text-green-800' 
+                                  : isActive 
+                                  ? 'bg-blue-200 text-blue-800' 
+                                  : 'bg-gray-200 text-gray-600'
+                                }
+                              `}>
+                                #{dept.serialNumber}
+                              </span>
                             )}
                           </div>
-                        </div>
+                        </motion.div>
                       </motion.div>
                     );
                   })}

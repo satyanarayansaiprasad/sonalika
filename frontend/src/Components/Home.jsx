@@ -49,10 +49,27 @@ const Home = () => {
         }
         
         if (departmentsData && Array.isArray(departmentsData)) {
-          // Show all departments (don't filter by isActive for now)
-          console.log('All departments from API:', departmentsData);
-          console.log('Setting departments count:', departmentsData.length);
-          setDepartments(departmentsData);
+          // Sort departments by serialNumber (ascending), then by createdAt for those without serialNumber
+          const sortedDepartments = [...departmentsData].sort((a, b) => {
+            // If both have serial numbers, sort by serial number
+            if (a.serialNumber !== null && a.serialNumber !== undefined && 
+                b.serialNumber !== null && b.serialNumber !== undefined) {
+              return a.serialNumber - b.serialNumber;
+            }
+            // If only a has serial number, it comes first
+            if (a.serialNumber !== null && a.serialNumber !== undefined) {
+              return -1;
+            }
+            // If only b has serial number, it comes first
+            if (b.serialNumber !== null && b.serialNumber !== undefined) {
+              return 1;
+            }
+            // If neither has serial number, sort by createdAt (newest first)
+            return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+          });
+          console.log('All departments from API:', sortedDepartments);
+          console.log('Setting departments count:', sortedDepartments.length);
+          setDepartments(sortedDepartments);
         } else {
           console.warn('No valid departments data found in response');
           console.warn('Response structure:', JSON.stringify(response.data, null, 2));
@@ -485,9 +502,23 @@ const Home = () => {
                                 </svg>
                               </div>
                               <div className="flex-1 min-w-0">
-                                <h4 className="font-semibold text-lg mb-1" style={{ color: colors.gold }}>
-                                  {dept.name}
-                                </h4>
+                                <div className="flex items-center gap-2 mb-1">
+                                  {dept.serialNumber && (
+                                    <span 
+                                      className="px-2 py-1 rounded text-xs font-bold"
+                                      style={{ 
+                                        backgroundColor: `${colors.gold}30`,
+                                        color: colors.gold,
+                                        border: `1px solid ${colors.gold}50`
+                                      }}
+                                    >
+                                      SL: {dept.serialNumber}
+                                    </span>
+                                  )}
+                                  <h4 className="font-semibold text-lg" style={{ color: colors.gold }}>
+                                    {dept.name}
+                                  </h4>
+                                </div>
                                 {dept.description && (
                                   <p className="text-sm mt-1 leading-relaxed" style={{ color: colors.platinum, opacity: 0.8 }}>
                                     {dept.description}

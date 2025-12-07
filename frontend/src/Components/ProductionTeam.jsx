@@ -100,6 +100,14 @@ const ProductionDashboard = () => {
     localStorage.setItem('masterType', masterType);
   }, [activeMenu, masterType]);
 
+  // Fetch departments when departments tab becomes active
+  useEffect(() => {
+    if (activeMenu === 'departments') {
+      fetchDepartments();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeMenu]);
+
   const [productForm, setProductForm] = useState({
     category: '',
     sizeType: '',
@@ -195,13 +203,25 @@ const ProductionDashboard = () => {
     try {
       setLoading(true);
       const apiBaseUrl = getApiBaseUrl();
+      console.log('Fetching departments from:', `${apiBaseUrl}/api/departments/all`);
       const response = await axios.get(`${apiBaseUrl}/api/departments/all`);
-      if (response.data.success && response.data.data) {
+      console.log('Departments API response:', response.data);
+      
+      if (response.data && response.data.success && response.data.data) {
+        console.log('Setting departments:', response.data.data);
         setDepartments(response.data.data);
+      } else if (Array.isArray(response.data)) {
+        console.log('Response is array, setting departments:', response.data);
+        setDepartments(response.data);
+      } else {
+        console.warn('Unexpected response structure:', response.data);
+        setDepartments([]);
       }
     } catch (error) {
       console.error('Error fetching departments:', error);
+      console.error('Error details:', error.response?.data);
       showNotification('Failed to fetch departments', true);
+      setDepartments([]);
     } finally {
       setLoading(false);
     }
@@ -1523,6 +1543,21 @@ const ProductionDashboard = () => {
             </div>
           )}
         </div>
+      </div>
+    );
+  };
+
+  const renderTrackOrder = () => {
+    return (
+      <div className="space-y-6">
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white rounded-xl shadow-lg p-6"
+        >
+          <h2 className="text-2xl font-bold text-gray-800 mb-6">Track Order</h2>
+          {/* Content will be added here later */}
+        </motion.div>
       </div>
     );
   };

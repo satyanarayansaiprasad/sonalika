@@ -3,12 +3,15 @@ const Department = require('../models/Department');
 // Get all departments
 exports.getAllDepartments = async (req, res) => {
   try {
-    // Fetch all departments without any filters to show all previously added departments
-    const departments = await Department.find().sort({ createdAt: -1 });
+    // Fetch all departments sorted by serialNumber (ascending), then by createdAt for those without serialNumber
+    const departments = await Department.find().sort({ 
+      serialNumber: 1, 
+      createdAt: -1 
+    });
     console.log(`Found ${departments.length} departments in database`);
     const departmentsArray = departments.map(dept => {
       const deptObj = dept.toObject ? dept.toObject() : dept;
-      console.log('Department:', deptObj.name, 'isActive:', deptObj.isActive);
+      console.log('Department:', deptObj.name, 'Serial No:', deptObj.serialNumber, 'isActive:', deptObj.isActive);
       return deptObj;
     });
     
@@ -53,7 +56,7 @@ exports.getDepartmentById = async (req, res) => {
 // Create a new department
 exports.createDepartment = async (req, res) => {
   try {
-    const { name, description, code, isActive } = req.body;
+    const { name, description, code, isActive, serialNumber } = req.body;
     
     if (!name || name.trim() === '') {
       return res.status(400).json({
@@ -77,10 +80,20 @@ exports.createDepartment = async (req, res) => {
       });
     }
     
+    // If serialNumber not provided, get the next available number
+    let finalSerialNumber = serialNumber !== undefined && serialNumber !== null ? parseInt(serialNumber) : null;
+    if (finalSerialNumber === null) {
+      const maxSerial = await Department.findOne().sort({ serialNumber: -1 });
+      finalSerialNumber = maxSerial && maxSerial.serialNumber !== null && maxSerial.serialNumber !== undefined 
+        ? maxSerial.serialNumber + 1 
+        : 1;
+    }
+    
     const departmentData = {
       name: name.trim(),
       description: description || '',
-      isActive: isActive !== undefined ? isActive : true
+      isActive: isActive !== undefined ? isActive : true,
+      serialNumber: finalSerialNumber
     };
     
     if (code && code.trim() !== '') {
@@ -116,7 +129,7 @@ exports.createDepartment = async (req, res) => {
 // Update a department
 exports.updateDepartment = async (req, res) => {
   try {
-    const { name, description, code, isActive } = req.body;
+    const { name, description, code, isActive, serialNumber } = req.body;
     const departmentId = req.params.id;
     
     const department = await Department.findById(departmentId);
@@ -150,6 +163,9 @@ exports.updateDepartment = async (req, res) => {
     if (description !== undefined) department.description = description;
     if (code) department.code = code.trim().toUpperCase();
     if (isActive !== undefined) department.isActive = isActive;
+    if (serialNumber !== undefined && serialNumber !== null) {
+      department.serialNumber = parseInt(serialNumber);
+    }
     
     department.updatedAt = Date.now();
     await department.save();

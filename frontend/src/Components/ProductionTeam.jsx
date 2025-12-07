@@ -78,8 +78,10 @@ const ProductionDashboard = () => {
   const [rejectedOrders, setRejectedOrders] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [newDepartmentName, setNewDepartmentName] = useState('');
+  const [newDepartmentSerialNumber, setNewDepartmentSerialNumber] = useState('');
   const [editingDepartmentId, setEditingDepartmentId] = useState(null);
   const [editingDepartmentName, setEditingDepartmentName] = useState('');
+  const [editingDepartmentSerialNumber, setEditingDepartmentSerialNumber] = useState('');
   
   // API Base URL
   const getApiBaseUrl = () => {
@@ -235,15 +237,26 @@ const ProductionDashboard = () => {
       }
 
       const apiBaseUrl = getApiBaseUrl();
-      const response = await axios.post(`${apiBaseUrl}/api/departments/create`, {
+      const requestData = {
         name: newDepartmentName.trim(),
         description: '',
         isActive: true
-      });
+      };
+      
+      // Add serialNumber if provided
+      if (newDepartmentSerialNumber.trim() !== '') {
+        const serialNum = parseInt(newDepartmentSerialNumber.trim());
+        if (!isNaN(serialNum) && serialNum > 0) {
+          requestData.serialNumber = serialNum;
+        }
+      }
+      
+      const response = await axios.post(`${apiBaseUrl}/api/departments/create`, requestData);
       
       if (response.data.success) {
         showNotification('Department created successfully');
         setNewDepartmentName('');
+        setNewDepartmentSerialNumber('');
         fetchDepartments();
       }
     } catch (error) {
@@ -260,14 +273,25 @@ const ProductionDashboard = () => {
       }
 
       const apiBaseUrl = getApiBaseUrl();
-      const response = await axios.put(`${apiBaseUrl}/api/departments/update/${id}`, {
+      const requestData = {
         name: editingDepartmentName.trim()
-      });
+      };
+      
+      // Add serialNumber if provided
+      if (editingDepartmentSerialNumber.trim() !== '') {
+        const serialNum = parseInt(editingDepartmentSerialNumber.trim());
+        if (!isNaN(serialNum) && serialNum > 0) {
+          requestData.serialNumber = serialNum;
+        }
+      }
+      
+      const response = await axios.put(`${apiBaseUrl}/api/departments/update/${id}`, requestData);
       
       if (response.data.success) {
         showNotification('Department updated successfully');
         setEditingDepartmentId(null);
         setEditingDepartmentName('');
+        setEditingDepartmentSerialNumber('');
         fetchDepartments();
       }
     } catch (error) {
@@ -298,11 +322,13 @@ const ProductionDashboard = () => {
   const handleEditDepartment = (department) => {
     setEditingDepartmentId(department._id);
     setEditingDepartmentName(department.name);
+    setEditingDepartmentSerialNumber(department.serialNumber || '');
   };
 
   const handleCancelEdit = () => {
     setEditingDepartmentId(null);
     setEditingDepartmentName('');
+    setEditingDepartmentSerialNumber('');
   };
 
 
@@ -1573,27 +1599,43 @@ const ProductionDashboard = () => {
           <h2 className="text-2xl font-bold text-gray-800 mb-6">Add Department</h2>
           
           {/* Simple Add Department Form */}
-          <div className="mb-6 flex gap-3">
-            <input
-              type="text"
-              value={newDepartmentName}
-              onChange={(e) => setNewDepartmentName(e.target.value)}
-              onKeyPress={(e) => {
-                if (e.key === 'Enter') {
-                  handleCreateDepartment();
-                }
-              }}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Enter department name"
-            />
-            <motion.button
-              onClick={handleCreateDepartment}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              Add
-            </motion.button>
+          <div className="mb-6 space-y-3">
+            <div className="flex gap-3">
+              <input
+                type="text"
+                value={newDepartmentName}
+                onChange={(e) => setNewDepartmentName(e.target.value)}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    handleCreateDepartment();
+                  }
+                }}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Enter department name"
+              />
+              <input
+                type="number"
+                value={newDepartmentSerialNumber}
+                onChange={(e) => setNewDepartmentSerialNumber(e.target.value)}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    handleCreateDepartment();
+                  }
+                }}
+                className="w-32 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="SL No"
+                min="1"
+              />
+              <motion.button
+                onClick={handleCreateDepartment}
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                Add
+              </motion.button>
+            </div>
+            <p className="text-sm text-gray-500">Note: If SL No is not provided, it will be auto-assigned</p>
           </div>
 
           {/* Departments List */}
@@ -1633,6 +1675,14 @@ const ProductionDashboard = () => {
                           className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                           autoFocus
                         />
+                        <input
+                          type="number"
+                          value={editingDepartmentSerialNumber}
+                          onChange={(e) => setEditingDepartmentSerialNumber(e.target.value)}
+                          className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="SL No"
+                          min="1"
+                        />
                         <motion.button
                           onClick={() => handleUpdateDepartment(dept._id)}
                           className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
@@ -1652,7 +1702,10 @@ const ProductionDashboard = () => {
                       </div>
                     ) : (
                       <>
-                        <span className="text-gray-800 font-medium flex-1">{dept.name}</span>
+                        <div className="flex items-center gap-3 flex-1">
+                          <span className="text-gray-600 font-medium w-16">SL: {dept.serialNumber || '-'}</span>
+                          <span className="text-gray-800 font-medium flex-1">{dept.name}</span>
+                        </div>
                         <div className="flex items-center gap-2">
                           <motion.button
                             onClick={() => handleEditDepartment(dept)}

@@ -22,6 +22,10 @@ const departmentSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
+  serialNumber: {
+    type: Number,
+    default: null
+  },
   createdAt: { 
     type: Date, 
     default: Date.now 

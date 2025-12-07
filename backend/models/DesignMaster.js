@@ -13,6 +13,11 @@ const DesignMasterSchema = new mongoose.Schema({
   seiveSize: { type: String, default: '' },
   sieveSizeRange: { type: String, default: '' },
   imageFile: { type: String, required: true },
+  department: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Department',
+    default: null
+  },
   createdAt: { type: Date, default: Date.now }
 });
 

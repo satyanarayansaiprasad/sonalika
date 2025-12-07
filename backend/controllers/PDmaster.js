@@ -96,7 +96,8 @@ exports.createDesignMaster = async (req, res) => {
       category,
       mmSize,
       seiveSize,
-      sieveSizeRange
+      sieveSizeRange,
+      department
     } = req.body;
 
 
@@ -149,7 +150,8 @@ exports.createDesignMaster = async (req, res) => {
       mmSize: mmSize && mmSize !== '' ? parseFloat(mmSize) : 0,
       seiveSize: seiveSize && seiveSize !== '' ? String(seiveSize) : '',
       sieveSizeRange: sieveSizeRange && sieveSizeRange !== '' ? String(sieveSizeRange) : '',
-      imageFile: imageUrl
+      imageFile: imageUrl,
+      department: department && department !== '' ? department : null
     };
 
     const newDesign = await DesignMaster.create(designData);
@@ -183,12 +185,95 @@ exports.getAllProductMasters = async (req, res) => {
 // Get all Design Masters
 exports.getAllDesignMasters = async (req, res) => {
   try {
-    const allDesigns = await DesignMaster.find().sort({ createdAt: -1 });
+    const allDesigns = await DesignMaster.find()
+      .populate('department', 'name serialNumber')
+      .sort({ createdAt: -1 });
     
     res.status(200).json({ success: true, data: allDesigns });
   } catch (err) {
     console.error('Error fetching Design Masters:', err);
     res.status(500).json({ success: false, message: 'Server Error' });
+  }
+};
+
+// Get designs grouped by department
+exports.getDesignsByDepartment = async (req, res) => {
+  try {
+    const Department = require('../models/Department');
+    
+    // Get all departments sorted by serialNumber
+    const departments = await Department.find()
+      .sort({ serialNumber: 1, createdAt: -1 });
+    
+    // Get all designs with populated department
+    const allDesigns = await DesignMaster.find()
+      .populate('department', 'name serialNumber')
+      .sort({ createdAt: -1 });
+    
+    // Group designs by department
+    const designsByDepartment = departments.map(dept => ({
+      department: {
+        _id: dept._id,
+        name: dept.name,
+        serialNumber: dept.serialNumber
+      },
+      designs: allDesigns.filter(design => 
+        design.department && design.department._id.toString() === dept._id.toString()
+      )
+    }));
+    
+    // Add unassigned designs (designs without department)
+    const unassignedDesigns = allDesigns.filter(design => !design.department);
+    if (unassignedDesigns.length > 0) {
+      designsByDepartment.push({
+        department: {
+          _id: null,
+          name: 'Unassigned',
+          serialNumber: null
+        },
+        designs: unassignedDesigns
+      });
+    }
+    
+    res.status(200).json({ success: true, data: designsByDepartment });
+  } catch (err) {
+    console.error('Error fetching designs by department:', err);
+    res.status(500).json({ success: false, message: 'Server Error', error: err.message });
+  }
+};
+
+// Update design department
+exports.updateDesignDepartment = async (req, res) => {
+  try {
+    const { designId } = req.params;
+    const { departmentId } = req.body;
+    
+    const design = await DesignMaster.findById(designId);
+    if (!design) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Design not found' 
+      });
+    }
+    
+    design.department = departmentId && departmentId !== '' ? departmentId : null;
+    await design.save();
+    
+    const updatedDesign = await DesignMaster.findById(designId)
+      .populate('department', 'name serialNumber');
+    
+    res.status(200).json({ 
+      success: true, 
+      message: 'Design department updated successfully',
+      data: updatedDesign 
+    });
+  } catch (err) {
+    console.error('Error updating design department:', err);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Server Error',
+      error: err.message 
+    });
   }
 };
 

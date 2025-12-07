@@ -11,7 +11,9 @@ const {
   getAllCategorySizes,
   getCategorySize,
   updateCategorySize,
-  deleteCategorySize
+  deleteCategorySize,
+  getDesignsByDepartment,
+  updateDesignDepartment
 } = require('../controllers/PDmaster');
 
 const upload = require('../middleware/multer');
@@ -21,6 +23,8 @@ router.post('/createDesignMaster', upload.single('image'),createDesignMaster);
 router.get('/getAllProductMasters', getAllProductMasters);
 router.get('/getAllDesignMasters', getAllDesignMasters);
 router.get('/getStyleNumbers', getStyleNumbers);
+router.get('/getDesignsByDepartment', getDesignsByDepartment);
+router.put('/updateDesignDepartment/:designId', updateDesignDepartment);
 
 
 router.post('/category-size', addCategorySize);

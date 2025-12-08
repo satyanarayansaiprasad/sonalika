@@ -26,6 +26,9 @@ router.get('/rejected', OrderController.getRejectedOrders);
 // Get completed orders
 router.get('/completed', OrderController.getCompletedOrders);
 
+// Get orders by department
+router.get('/department/:departmentId', OrderController.getOrdersByDepartment);
+
 // Create a new order
 router.post('/create', OrderController.createOrder);
 

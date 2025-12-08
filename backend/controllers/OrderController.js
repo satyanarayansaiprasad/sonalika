@@ -390,6 +390,33 @@ exports.getCompletedOrders = async (req, res) => {
   }
 };
 
+// Get orders by department
+exports.getOrdersByDepartment = async (req, res) => {
+  try {
+    const { departmentId } = req.params;
+    
+    // Find orders where currentDepartment matches the departmentId
+    const orders = await Order.find({ 
+      currentDepartment: departmentId,
+      status: 'accepted' // Only show accepted orders
+    })
+      .populate('currentDepartment', 'name serialNumber')
+      .populate('departmentStatus.department', 'name serialNumber')
+      .populate('pendingMessages.department', 'name serialNumber')
+      .sort({ acceptedDate: -1 });
+    
+    res.status(200).json({ 
+      success: true, 
+      data: orders 
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+};
+
 // Move order to next department
 exports.moveToNextDepartment = async (req, res) => {
   try {

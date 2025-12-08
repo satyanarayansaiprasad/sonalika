@@ -2,12 +2,21 @@ import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { FiX, FiCheckCircle, FiClock, FiXCircle, FiPackage } from "react-icons/fi";
 import SonalikaLogo from "./SonalikaLogo.png";
 const Home = () => {
   const [step, setStep] = useState("branding");
   const navigate = useNavigate();
   const [departments, setDepartments] = useState([]);
   const [loadingDepartments, setLoadingDepartments] = useState(false);
+  const [selectedDepartment, setSelectedDepartment] = useState(null);
+  const [departmentOrders, setDepartmentOrders] = useState([]);
+  const [loadingOrders, setLoadingOrders] = useState(false);
+  const [pendingModalOpen, setPendingModalOpen] = useState(false);
+  const [pendingMessage, setPendingMessage] = useState('');
+  const [selectedOrderForAction, setSelectedOrderForAction] = useState(null);
+  const [resolveModalOpen, setResolveModalOpen] = useState(false);
+  const [resolveMessage, setResolveMessage] = useState('');
 
   // Premium gold and jewel tones color palette
   const colors = {
@@ -24,6 +33,114 @@ const Home = () => {
   const getApiBaseUrl = () => {
     const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
     return import.meta.env.VITE_API_URL || (isDevelopment ? 'http://localhost:3001' : 'https://sonalika.onrender.com');
+  };
+
+  // Fetch orders for a specific department
+  const fetchOrdersByDepartment = async (departmentId) => {
+    try {
+      setLoadingOrders(true);
+      const apiBaseUrl = getApiBaseUrl();
+      const response = await axios.get(`${apiBaseUrl}/api/orders/department/${departmentId}`);
+      if (response.data.success) {
+        setDepartmentOrders(response.data.data || []);
+      } else {
+        setDepartmentOrders([]);
+      }
+    } catch (error) {
+      console.error('Error fetching orders by department:', error);
+      setDepartmentOrders([]);
+    } finally {
+      setLoadingOrders(false);
+    }
+  };
+
+  // Handle department click
+  const handleDepartmentClick = async (dept) => {
+    setSelectedDepartment(dept);
+    await fetchOrdersByDepartment(dept._id);
+  };
+
+  // Handle move to next department
+  const handleMoveToNext = async (orderId) => {
+    try {
+      const apiBaseUrl = getApiBaseUrl();
+      const response = await axios.put(`${apiBaseUrl}/api/orders/move-to-next/${orderId}`);
+      if (response.data.success) {
+        // Refresh orders for the department
+        if (selectedDepartment) {
+          await fetchOrdersByDepartment(selectedDepartment._id);
+        }
+        alert(response.data.message || 'Order moved to next department');
+      }
+    } catch (error) {
+      console.error('Error moving order:', error);
+      alert(error.response?.data?.error || 'Failed to move order');
+    }
+  };
+
+  // Handle mark pending
+  const handleMarkPending = (order) => {
+    setSelectedOrderForAction(order);
+    setPendingModalOpen(true);
+  };
+
+  // Handle submit pending
+  const handleSubmitPending = async () => {
+    if (!pendingMessage.trim()) {
+      alert('Please enter a pending reason');
+      return;
+    }
+
+    try {
+      const apiBaseUrl = getApiBaseUrl();
+      const response = await axios.put(
+        `${apiBaseUrl}/api/orders/mark-pending/${selectedOrderForAction.orderId}`,
+        { message: pendingMessage.trim() }
+      );
+      
+      if (response.data.success) {
+        alert('Order marked as pending');
+        setPendingModalOpen(false);
+        setPendingMessage('');
+        setSelectedOrderForAction(null);
+        if (selectedDepartment) {
+          await fetchOrdersByDepartment(selectedDepartment._id);
+        }
+      }
+    } catch (error) {
+      console.error('Error marking pending:', error);
+      alert(error.response?.data?.error || 'Failed to mark as pending');
+    }
+  };
+
+  // Handle resolve pending
+  const handleResolvePending = (order) => {
+    setSelectedOrderForAction(order);
+    setResolveModalOpen(true);
+  };
+
+  // Handle submit resolve
+  const handleSubmitResolve = async () => {
+    try {
+      const apiBaseUrl = getApiBaseUrl();
+      const response = await axios.put(
+        `${apiBaseUrl}/api/orders/resolve-pending/${selectedOrderForAction.orderId}`,
+        { resolvedMessage: resolveMessage.trim() || 'Issue resolved' }
+      );
+      
+      if (response.data.success) {
+        alert('Pending issue resolved');
+        setResolveModalOpen(false);
+        setResolveMessage('');
+        setSelectedOrderForAction(null);
+        if (selectedDepartment) {
+          await fetchOrdersByDepartment(selectedDepartment._id);
+        }
+      }
+    } catch (error) {
+      console.error('Error resolving pending:', error);
+      alert(error.response?.data?.error || 'Failed to resolve pending');
+    }
   };
 
   // Fetch departments from API
@@ -479,6 +596,7 @@ const Home = () => {
                             boxShadow: `0 8px 30px ${colors.gold}25`,
                             transform: 'translateX(-4px)',
                           }}
+                          onClick={() => handleDepartmentClick(dept)}
                         >
                           {/* Decorative corner accent */}
                           <div 
@@ -558,6 +676,302 @@ const Home = () => {
           )}
         </AnimatePresence>
       </div>
+
+      {/* Department Orders Modal */}
+      <AnimatePresence>
+        {selectedDepartment && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+            onClick={() => setSelectedDepartment(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col"
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                background: `linear-gradient(135deg, ${colors.deepNavy} 0%, ${colors.deepNavy}EE 100%)`,
+                border: `2px solid ${colors.gold}`
+              }}
+            >
+              {/* Modal Header */}
+              <div className="p-6 border-b" style={{ borderColor: `${colors.gold}30` }}>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-2xl font-bold" style={{ color: colors.gold }}>
+                      {selectedDepartment.name}
+                    </h2>
+                    {selectedDepartment.serialNumber && (
+                      <p className="text-sm mt-1" style={{ color: colors.platinum, opacity: 0.8 }}>
+                        Serial Number: {selectedDepartment.serialNumber}
+                      </p>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => setSelectedDepartment(null)}
+                    className="p-2 rounded-lg hover:bg-opacity-20 transition-colors"
+                    style={{ color: colors.gold }}
+                  >
+                    <FiX className="text-2xl" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Modal Content */}
+              <div className="flex-1 overflow-y-auto p-6">
+                {loadingOrders ? (
+                  <div className="text-center py-12">
+                    <div className="inline-block animate-spin rounded-full h-10 w-10 border-b-2" style={{ borderColor: colors.gold }}></div>
+                    <p className="mt-4 text-sm" style={{ color: colors.platinum }}>Loading orders...</p>
+                  </div>
+                ) : departmentOrders.length === 0 ? (
+                  <div className="text-center py-12" style={{ color: colors.platinum }}>
+                    <FiPackage className="mx-auto text-4xl mb-4 opacity-50" />
+                    <p className="opacity-70">No orders currently in this department</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {departmentOrders.map((order) => {
+                      const deptStatus = order.departmentStatus?.find(
+                        ds => {
+                          const dsDeptId = ds.department?._id ? String(ds.department._id) : String(ds.department);
+                          return dsDeptId === String(selectedDepartment._id);
+                        }
+                      );
+                      const isBlocked = deptStatus?.status === 'blocked';
+                      const pendingMsg = order.pendingMessages?.find(
+                        pm => {
+                          const pmDeptId = pm.department?._id ? String(pm.department._id) : String(pm.department);
+                          return pmDeptId === String(selectedDepartment._id) && !pm.resolvedAt;
+                        }
+                      );
+
+                      return (
+                        <motion.div
+                          key={order.orderId}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="p-5 rounded-xl"
+                          style={{
+                            background: `linear-gradient(135deg, ${colors.deepNavy}DD 0%, ${colors.deepNavy}BB 100%)`,
+                            border: `1.5px solid ${colors.gold}40`
+                          }}
+                        >
+                          <div className="flex items-start justify-between mb-4">
+                            <div>
+                              <h3 className="text-lg font-semibold mb-1" style={{ color: colors.gold }}>
+                                Order ID: {order.orderId}
+                              </h3>
+                              <p className="text-sm" style={{ color: colors.platinum, opacity: 0.9 }}>
+                                Client: {order.clientName}
+                              </p>
+                              <p className="text-xs mt-1" style={{ color: colors.platinum, opacity: 0.7 }}>
+                                Date: {order.orderDate}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {isBlocked ? (
+                                <span className="px-3 py-1 rounded-full text-xs font-medium" style={{ backgroundColor: `${colors.roseGold}30`, color: colors.roseGold }}>
+                                  Pending
+                                </span>
+                              ) : (
+                                <span className="px-3 py-1 rounded-full text-xs font-medium" style={{ backgroundColor: `${colors.gold}30`, color: colors.gold }}>
+                                  In Progress
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {pendingMsg && (
+                            <div className="mb-4 p-3 rounded-lg" style={{ backgroundColor: `${colors.roseGold}20`, border: `1px solid ${colors.roseGold}40` }}>
+                              <p className="text-sm font-medium mb-1" style={{ color: colors.roseGold }}>
+                                Pending Reason:
+                              </p>
+                              <p className="text-xs" style={{ color: colors.platinum }}>
+                                {pendingMsg.message}
+                              </p>
+                              {pendingMsg.resolvedAt && (
+                                <p className="text-xs mt-2" style={{ color: colors.gold }}>
+                                  Resolved: {pendingMsg.resolvedMessage}
+                                </p>
+                              )}
+                            </div>
+                          )}
+
+                          <div className="flex gap-2">
+                            {isBlocked ? (
+                              <motion.button
+                                onClick={() => handleResolvePending(order)}
+                                className="px-4 py-2 rounded-lg text-sm font-medium"
+                                style={{ backgroundColor: colors.gold, color: colors.deepNavy }}
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                              >
+                                Resolve & Continue
+                              </motion.button>
+                            ) : (
+                              <>
+                                <motion.button
+                                  onClick={() => handleMoveToNext(order.orderId)}
+                                  className="px-4 py-2 rounded-lg text-sm font-medium"
+                                  style={{ backgroundColor: colors.gold, color: colors.deepNavy }}
+                                  whileHover={{ scale: 1.05 }}
+                                  whileTap={{ scale: 0.95 }}
+                                >
+                                  OK
+                                </motion.button>
+                                <motion.button
+                                  onClick={() => handleMarkPending(order)}
+                                  className="px-4 py-2 rounded-lg text-sm font-medium"
+                                  style={{ backgroundColor: colors.roseGold, color: 'white' }}
+                                  whileHover={{ scale: 1.05 }}
+                                  whileTap={{ scale: 0.95 }}
+                                >
+                                  Pending
+                                </motion.button>
+                              </>
+                            )}
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Pending Message Modal */}
+      <AnimatePresence>
+        {pendingModalOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+            onClick={() => setPendingModalOpen(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6"
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                background: `linear-gradient(135deg, ${colors.deepNavy} 0%, ${colors.deepNavy}EE 100%)`,
+                border: `2px solid ${colors.gold}`
+              }}
+            >
+              <h3 className="text-xl font-bold mb-4" style={{ color: colors.gold }}>
+                Mark Order as Pending
+              </h3>
+              <p className="text-sm mb-4" style={{ color: colors.platinum }}>
+                Please provide a reason why this order is pending:
+              </p>
+              <textarea
+                value={pendingMessage}
+                onChange={(e) => setPendingMessage(e.target.value)}
+                className="w-full p-3 rounded-lg mb-4 resize-none"
+                style={{
+                  backgroundColor: `${colors.deepNavy}80`,
+                  border: `1px solid ${colors.gold}40`,
+                  color: colors.platinum
+                }}
+                rows={4}
+                placeholder="Enter pending reason..."
+              />
+              <div className="flex gap-2 justify-end">
+                <button
+                  onClick={() => {
+                    setPendingModalOpen(false);
+                    setPendingMessage('');
+                  }}
+                  className="px-4 py-2 rounded-lg text-sm font-medium"
+                  style={{ backgroundColor: `${colors.gold}30`, color: colors.gold }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSubmitPending}
+                  className="px-4 py-2 rounded-lg text-sm font-medium"
+                  style={{ backgroundColor: colors.gold, color: colors.deepNavy }}
+                >
+                  Submit
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Resolve Pending Modal */}
+      <AnimatePresence>
+        {resolveModalOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+            onClick={() => setResolveModalOpen(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6"
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                background: `linear-gradient(135deg, ${colors.deepNavy} 0%, ${colors.deepNavy}EE 100%)`,
+                border: `2px solid ${colors.gold}`
+              }}
+            >
+              <h3 className="text-xl font-bold mb-4" style={{ color: colors.gold }}>
+                Resolve Pending Issue
+              </h3>
+              <p className="text-sm mb-4" style={{ color: colors.platinum }}>
+                Please provide a resolution message:
+              </p>
+              <textarea
+                value={resolveMessage}
+                onChange={(e) => setResolveMessage(e.target.value)}
+                className="w-full p-3 rounded-lg mb-4 resize-none"
+                style={{
+                  backgroundColor: `${colors.deepNavy}80`,
+                  border: `1px solid ${colors.gold}40`,
+                  color: colors.platinum
+                }}
+                rows={4}
+                placeholder="Enter resolution message..."
+              />
+              <div className="flex gap-2 justify-end">
+                <button
+                  onClick={() => {
+                    setResolveModalOpen(false);
+                    setResolveMessage('');
+                  }}
+                  className="px-4 py-2 rounded-lg text-sm font-medium"
+                  style={{ backgroundColor: `${colors.gold}30`, color: colors.gold }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSubmitResolve}
+                  className="px-4 py-2 rounded-lg text-sm font-medium"
+                  style={{ backgroundColor: colors.gold, color: colors.deepNavy }}
+                >
+                  Resolve & Continue
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

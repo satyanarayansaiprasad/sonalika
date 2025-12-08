@@ -256,6 +256,10 @@ const ProductionDashboard = () => {
       if (response.data.success && response.data.data) {
         const freshOrder = response.data.data.find(o => o.orderId === order.orderId);
         if (freshOrder) {
+          console.log('Fresh order data:', freshOrder);
+          console.log('Current Department:', freshOrder.currentDepartment);
+          console.log('Department Status:', freshOrder.departmentStatus);
+          
           setSelectedOrderForTracking({
             id: freshOrder.orderId,
             orderId: freshOrder.orderId,
@@ -268,9 +272,11 @@ const ProductionDashboard = () => {
             pendingMessages: freshOrder.pendingMessages || []
           });
         } else {
+          console.log('Order not found in fresh data, using provided order:', order);
           setSelectedOrderForTracking(order);
         }
       } else {
+        console.log('No fresh data available, using provided order:', order);
         setSelectedOrderForTracking(order);
       }
     } catch (error) {
@@ -1935,12 +1941,22 @@ const ProductionDashboard = () => {
                 
                 <div className="space-y-6">
                   {sortedDepartments.map((dept, index) => {
+                    // Normalize IDs for comparison (handle both string and ObjectId)
+                    const deptId = String(dept._id);
+                    const currentDeptId = selectedOrderForTracking.currentDepartment 
+                      ? String(selectedOrderForTracking.currentDepartment._id || selectedOrderForTracking.currentDepartment)
+                      : null;
+                    
                     // Get department status from order
                     const deptStatus = selectedOrderForTracking.departmentStatus?.find(
-                      ds => ds.department?._id === dept._id || ds.department === dept._id
+                      ds => {
+                        const dsDeptId = ds.department?._id ? String(ds.department._id) : String(ds.department);
+                        return dsDeptId === deptId;
+                      }
                     );
-                    const isCurrentDept = selectedOrderForTracking.currentDepartment?._id === dept._id || 
-                                         selectedOrderForTracking.currentDepartment === dept._id;
+                    
+                    // Check if this is the current department
+                    const isCurrentDept = currentDeptId === deptId;
                     const isCompleted = deptStatus?.status === 'completed';
                     const isBlocked = deptStatus?.status === 'blocked';
                     const isInProgress = deptStatus?.status === 'in_progress' || isCurrentDept;
@@ -1948,7 +1964,10 @@ const ProductionDashboard = () => {
                     
                     // Get pending message for this department
                     const pendingMsg = selectedOrderForTracking.pendingMessages?.find(
-                      pm => (pm.department?._id === dept._id || pm.department === dept._id) && !pm.resolvedAt
+                      pm => {
+                        const pmDeptId = pm.department?._id ? String(pm.department._id) : String(pm.department);
+                        return pmDeptId === deptId && !pm.resolvedAt;
+                      }
                     );
 
                     return (
@@ -2098,39 +2117,54 @@ const ProductionDashboard = () => {
                                 )}
                               </div>
                               {/* Show OK/Pending buttons for current department */}
-                              {isCurrentDept && selectedOrderForTracking.status === 'accepted' && (
-                                <div className="mt-3 flex gap-2">
-                                  {isBlocked ? (
-                                    <motion.button
-                                      onClick={handleResolvePending}
-                                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
-                                      whileHover={{ scale: 1.05 }}
-                                      whileTap={{ scale: 0.95 }}
-                                    >
-                                      Resolve & Continue
-                                    </motion.button>
-                                  ) : (
-                                    <>
-                                      <motion.button
-                                        onClick={() => handleMoveToNext(selectedOrderForTracking.orderId)}
-                                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
-                                        whileHover={{ scale: 1.05 }}
-                                        whileTap={{ scale: 0.95 }}
-                                      >
-                                        OK
-                                      </motion.button>
-                                      <motion.button
-                                        onClick={() => handleMarkPending(dept)}
-                                        className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm font-medium"
-                                        whileHover={{ scale: 1.05 }}
-                                        whileTap={{ scale: 0.95 }}
-                                      >
-                                        Pending
-                                      </motion.button>
-                                    </>
-                                  )}
-                                </div>
-                              )}
+                              {(() => {
+                                // Debug logging
+                                if (index === 0) {
+                                  console.log('Department check for:', dept.name);
+                                  console.log('isCurrentDept:', isCurrentDept);
+                                  console.log('Order status:', selectedOrderForTracking.status);
+                                  console.log('Current Department ID:', currentDeptId);
+                                  console.log('Department ID:', deptId);
+                                }
+                                
+                                // Show buttons if this is the current department and order is accepted
+                                if (isCurrentDept && selectedOrderForTracking.status === 'accepted') {
+                                  return (
+                                    <div className="mt-3 flex gap-2">
+                                      {isBlocked ? (
+                                        <motion.button
+                                          onClick={handleResolvePending}
+                                          className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+                                          whileHover={{ scale: 1.05 }}
+                                          whileTap={{ scale: 0.95 }}
+                                        >
+                                          Resolve & Continue
+                                        </motion.button>
+                                      ) : (
+                                        <>
+                                          <motion.button
+                                            onClick={() => handleMoveToNext(selectedOrderForTracking.orderId)}
+                                            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+                                            whileHover={{ scale: 1.05 }}
+                                            whileTap={{ scale: 0.95 }}
+                                          >
+                                            OK
+                                          </motion.button>
+                                          <motion.button
+                                            onClick={() => handleMarkPending(dept)}
+                                            className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm font-medium"
+                                            whileHover={{ scale: 1.05 }}
+                                            whileTap={{ scale: 0.95 }}
+                                          >
+                                            Pending
+                                          </motion.button>
+                                        </>
+                                      )}
+                                    </div>
+                                  );
+                                }
+                                return null;
+                              })()}
                             </div>
                             {dept.serialNumber && (
                               <span className={`

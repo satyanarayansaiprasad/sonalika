@@ -168,6 +168,8 @@ exports.acceptOrder = async (req, res) => {
     await order.populate('departmentStatus.department', 'name serialNumber');
 
     console.log(`Order ${orderId} successfully accepted and assigned to department ${firstDepartment.name}`);
+    console.log('Order currentDepartment:', order.currentDepartment);
+    console.log('Order departmentStatus:', JSON.stringify(order.departmentStatus, null, 2));
 
     res.status(200).json({ 
       success: true, 

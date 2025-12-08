@@ -40,14 +40,20 @@ const Home = () => {
     try {
       setLoadingOrders(true);
       const apiBaseUrl = getApiBaseUrl();
+      console.log('Fetching orders for department:', departmentId);
+      console.log('API URL:', `${apiBaseUrl}/api/orders/department/${departmentId}`);
       const response = await axios.get(`${apiBaseUrl}/api/orders/department/${departmentId}`);
+      console.log('Orders response:', response.data);
       if (response.data.success) {
+        console.log('Orders found:', response.data.data?.length || 0);
         setDepartmentOrders(response.data.data || []);
       } else {
+        console.log('No success in response');
         setDepartmentOrders([]);
       }
     } catch (error) {
       console.error('Error fetching orders by department:', error);
+      console.error('Error details:', error.response?.data);
       setDepartmentOrders([]);
     } finally {
       setLoadingOrders(false);
@@ -56,6 +62,7 @@ const Home = () => {
 
   // Handle department click
   const handleDepartmentClick = async (dept) => {
+    console.log('Department clicked:', dept);
     setSelectedDepartment(dept);
     await fetchOrdersByDepartment(dept._id);
   };

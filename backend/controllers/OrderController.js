@@ -130,31 +130,44 @@ exports.acceptOrder = async (req, res) => {
       });
     }
 
-    // Find department with SL number 1
+    // Find department with SL number 1 (serialNumber: 1)
     const firstDepartment = await Department.findOne({ serialNumber: 1 });
     
     if (!firstDepartment) {
+      console.error('No department with serialNumber 1 found');
       return res.status(400).json({ 
         success: false, 
         error: 'No department with SL number 1 found. Please create a department with SL number 1 first.' 
       });
     }
 
+    console.log(`Assigning order ${orderId} to department ${firstDepartment.name} (SL: ${firstDepartment.serialNumber})`);
+
+    // Update order status and assign to first department
     order.status = 'accepted';
     order.acceptedDate = new Date();
     order.currentDepartment = firstDepartment._id;
     
-    // Initialize department status for first department
+    // Initialize department status array for first department
+    // Clear any existing departmentStatus to start fresh
     order.departmentStatus = [{
       department: firstDepartment._id,
       status: 'in_progress',
-      completedAt: null
+      completedAt: null,
+      pendingAt: null,
+      resolvedAt: null
     }];
+    
+    // Clear any existing pending messages
+    order.pendingMessages = [];
     
     await order.save();
     
-    // Populate department info
+    // Populate department info for response
     await order.populate('currentDepartment', 'name serialNumber');
+    await order.populate('departmentStatus.department', 'name serialNumber');
+
+    console.log(`Order ${orderId} successfully accepted and assigned to department ${firstDepartment.name}`);
 
     res.status(200).json({ 
       success: true, 
@@ -162,6 +175,7 @@ exports.acceptOrder = async (req, res) => {
       message: 'Order accepted successfully and assigned to first department' 
     });
   } catch (error) {
+    console.error('Error accepting order:', error);
     res.status(500).json({ 
       success: false, 
       error: error.message 

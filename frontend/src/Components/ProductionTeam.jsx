@@ -1994,21 +1994,21 @@ const ProductionDashboard = () => {
                 <p>No departments found. Please add departments first.</p>
               </div>
             ) : (
-              <div className="relative">
+              <div className="relative pl-8">
                 {/* Animated Progress Line */}
-                <div className="absolute left-6 top-0 bottom-0 w-1 bg-gray-200">
+                <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gray-200 z-0">
                   <motion.div
-                    className="absolute top-0 left-0 w-full bg-gradient-to-b from-green-500 via-blue-500 to-gray-300"
+                    className="absolute top-0 left-0 w-full bg-gradient-to-b from-green-500 via-blue-500 to-gray-300 z-0"
                     initial={{ height: '0%' }}
                     animate={{ 
                       height: `${(selectedOrderForTracking.departmentStatus?.filter(ds => ds.status === 'completed').length || 0) / sortedDepartments.length * 100}%` 
                     }}
                     transition={{ duration: 1, ease: "easeOut" }}
-                    style={{ borderRadius: '4px' }}
+                    style={{ borderRadius: '2px' }}
                   />
                 </div>
                 
-                <div className="space-y-6">
+                <div className="space-y-4 relative z-10">
                   {sortedDepartments.map((dept, index) => {
                     // Normalize IDs for comparison (handle both string and ObjectId)
                     const deptId = String(dept._id);
@@ -2049,10 +2049,10 @@ const ProductionDashboard = () => {
                           type: "spring",
                           stiffness: 100
                         }}
-                        className="relative flex items-center gap-4"
+                        className="relative flex items-start gap-4 mb-4"
                       >
                         {/* Animated Status Circle */}
-                        <div className="relative z-10 flex-shrink-0">
+                        <div className="relative z-20 flex-shrink-0 mt-1">
                           <motion.div
                             className={`
                               w-12 h-12 rounded-full flex items-center justify-center
@@ -2119,7 +2119,7 @@ const ProductionDashboard = () => {
                         {/* Department Info Card */}
                         <motion.div
                           className={`
-                            flex-1 p-4 rounded-lg border-l-4 transition-all duration-300
+                            flex-1 p-4 rounded-lg border-l-4 transition-all duration-300 relative z-10
                             ${isCompleted 
                               ? 'bg-green-50 border-green-500 shadow-sm' 
                               : isBlocked
@@ -2129,11 +2129,11 @@ const ProductionDashboard = () => {
                               : 'bg-gray-50 border-gray-300'
                             }
                           `}
-                          whileHover={{ scale: 1.02, x: 5 }}
+                          whileHover={{ scale: 1.01, x: 2 }}
                           transition={{ type: "spring", stiffness: 300 }}
                         >
-                          <div className="flex items-center justify-between">
-                            <div className="flex-1">
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1 min-w-0">
                               <h4 className={`
                                 text-lg font-semibold mb-1
                                 ${isCompleted ? 'text-green-800' : isBlocked ? 'text-red-800' : isActive ? 'text-blue-800' : 'text-gray-600'}
@@ -2187,19 +2187,10 @@ const ProductionDashboard = () => {
                               </div>
                               {/* Show OK/Pending buttons for current department */}
                               {(() => {
-                                // Debug logging
-                                if (index === 0) {
-                                  console.log('Department check for:', dept.name);
-                                  console.log('isCurrentDept:', isCurrentDept);
-                                  console.log('Order status:', selectedOrderForTracking.status);
-                                  console.log('Current Department ID:', currentDeptId);
-                                  console.log('Department ID:', deptId);
-                                }
-                                
                                 // Show buttons if this is the current department and order is accepted
                                 if (isCurrentDept && selectedOrderForTracking.status === 'accepted') {
                                   return (
-                                    <div className="mt-3 flex gap-2">
+                                    <div className="mt-3 flex gap-2 flex-wrap">
                                       {isBlocked ? (
                                         <motion.button
                                           onClick={handleResolvePending}
@@ -2237,7 +2228,7 @@ const ProductionDashboard = () => {
                             </div>
                             {dept.serialNumber && (
                               <span className={`
-                                px-3 py-1 rounded-full text-xs font-semibold
+                                px-3 py-1 rounded-full text-xs font-semibold flex-shrink-0
                                 ${isCompleted 
                                   ? 'bg-green-200 text-green-800' 
                                   : isBlocked

@@ -1994,9 +1994,9 @@ const ProductionDashboard = () => {
                 <p>No departments found. Please add departments first.</p>
               </div>
             ) : (
-              <div className="relative min-h-[400px]">
+              <div className="relative">
                 {/* Animated Progress Line */}
-                <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gray-200" style={{ zIndex: 0 }}>
+                <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gray-200" style={{ zIndex: 0, pointerEvents: 'none' }}>
                   <motion.div
                     className="absolute top-0 left-0 w-full bg-gradient-to-b from-green-500 via-blue-500 to-gray-300"
                     initial={{ height: '0%' }}
@@ -2008,7 +2008,7 @@ const ProductionDashboard = () => {
                   />
                 </div>
                 
-                <div className="space-y-6 pl-20 relative">
+                <div className="relative pl-20">
                   {sortedDepartments.map((dept, index) => {
                     // Normalize IDs for comparison (handle both string and ObjectId)
                     const deptId = String(dept._id);
@@ -2040,20 +2040,23 @@ const ProductionDashboard = () => {
                     );
 
                     return (
-                      <motion.div
+                      <div
                         key={dept._id}
-                        initial={{ opacity: 0, x: -50 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ 
-                          delay: index * 0.15,
-                          type: "spring",
-                          stiffness: 100
-                        }}
-                        className="relative flex items-start gap-4 mb-6"
-                        style={{ zIndex: 10, minHeight: '80px' }}
+                        className="relative mb-8"
+                        style={{ zIndex: 10 }}
                       >
-                        {/* Animated Status Circle */}
-                        <div className="relative flex-shrink-0 -ml-14 mt-1" style={{ zIndex: 20 }}>
+                        <motion.div
+                          initial={{ opacity: 0, x: -50 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ 
+                            delay: index * 0.15,
+                            type: "spring",
+                            stiffness: 100
+                          }}
+                          className="flex items-start gap-4"
+                        >
+                          {/* Animated Status Circle */}
+                          <div className="relative flex-shrink-0 -ml-14" style={{ zIndex: 20, marginTop: '4px' }}>
                           <motion.div
                             className={`
                               w-12 h-12 rounded-full flex items-center justify-center
@@ -2117,25 +2120,25 @@ const ProductionDashboard = () => {
                           )}
                         </div>
 
-                        {/* Department Info Card */}
-                        <motion.div
-                          className={`
-                            flex-1 p-5 rounded-lg border-l-4 transition-all duration-300
-                            ${isCompleted 
-                              ? 'bg-green-50 border-green-500 shadow-sm' 
-                              : isBlocked
-                              ? 'bg-red-50 border-red-500 shadow-md'
-                              : isActive 
-                              ? 'bg-blue-50 border-blue-500 shadow-md' 
-                              : 'bg-gray-50 border-gray-300'
-                            }
-                          `}
-                          whileHover={{ scale: 1.01, x: 2 }}
-                          transition={{ type: "spring", stiffness: 300 }}
-                          style={{ zIndex: 15, marginBottom: '0' }}
-                        >
-                          <div className="flex items-start justify-between gap-4 w-full">
-                            <div className="flex-1 min-w-0">
+                          {/* Department Info Card */}
+                          <motion.div
+                            className={`
+                              flex-1 p-5 rounded-lg border-l-4 transition-all duration-300
+                              ${isCompleted 
+                                ? 'bg-green-50 border-green-500 shadow-sm' 
+                                : isBlocked
+                                ? 'bg-red-50 border-red-500 shadow-md'
+                                : isActive 
+                                ? 'bg-blue-50 border-blue-500 shadow-md' 
+                                : 'bg-gray-50 border-gray-300'
+                              }
+                            `}
+                            whileHover={{ scale: 1.01, x: 2 }}
+                            transition={{ type: "spring", stiffness: 300 }}
+                            style={{ zIndex: 15 }}
+                          >
+                            <div className="flex items-start justify-between gap-4 w-full">
+                              <div className="flex-1 min-w-0">
                               <h4 className={`
                                 text-lg font-semibold mb-1
                                 ${isCompleted ? 'text-green-800' : isBlocked ? 'text-red-800' : isActive ? 'text-blue-800' : 'text-gray-600'}

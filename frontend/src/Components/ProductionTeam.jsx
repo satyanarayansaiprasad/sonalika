@@ -2247,8 +2247,9 @@ const ProductionDashboard = () => {
                               </span>
                             )}
                           </div>
+                          </motion.div>
                         </motion.div>
-                      </motion.div>
+                      </div>
                     );
                   })}
                 </div>

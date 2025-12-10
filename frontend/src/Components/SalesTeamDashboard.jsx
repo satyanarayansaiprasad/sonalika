@@ -797,10 +797,47 @@ const getFilteredOrders = () => {
       console.log('❌ Socket.IO disconnected (Sales Team)');
     });
 
-    // Listen for real-time order completion updates
+    // Listen for real-time order updates
+    socketRef.current.on('order-accepted', (data) => {
+      console.log('📨 Order accepted:', data);
+      fetchCompletedOrders();
+      if (selectedClientId) {
+        fetchOrderHistory(selectedClientId);
+      }
+      fetchAllOrderHistory();
+    });
+
     socketRef.current.on('order-completed', (data) => {
       console.log('📨 Order completed:', data);
       fetchCompletedOrders(); // Refresh completed orders list
+      if (selectedClientId) {
+        fetchOrderHistory(selectedClientId);
+      }
+      fetchAllOrderHistory();
+    });
+
+    socketRef.current.on('order-moved', (data) => {
+      console.log('📨 Order moved:', data);
+      if (selectedClientId) {
+        fetchOrderHistory(selectedClientId);
+      }
+      fetchAllOrderHistory();
+    });
+
+    socketRef.current.on('order-pending', (data) => {
+      console.log('📨 Order pending:', data);
+      if (selectedClientId) {
+        fetchOrderHistory(selectedClientId);
+      }
+      fetchAllOrderHistory();
+    });
+
+    socketRef.current.on('order-resolved', (data) => {
+      console.log('📨 Order resolved:', data);
+      if (selectedClientId) {
+        fetchOrderHistory(selectedClientId);
+      }
+      fetchAllOrderHistory();
     });
 
     return () => {
@@ -809,7 +846,7 @@ const getFilteredOrders = () => {
         socketRef.current.disconnect();
       }
     };
-  }, []);
+  }, [selectedClientId]);
 
   // Fetch detailed order history when history menu is selected
   useEffect(() => {

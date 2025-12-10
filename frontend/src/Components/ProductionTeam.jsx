@@ -1994,7 +1994,7 @@ const ProductionDashboard = () => {
                 <p>No departments found. Please add departments first.</p>
               </div>
             ) : (
-              <div className="relative">
+              <div className="relative py-4">
                 {/* Animated Progress Line */}
                 <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gray-200" style={{ zIndex: 0, pointerEvents: 'none' }}>
                   <motion.div
@@ -2008,7 +2008,7 @@ const ProductionDashboard = () => {
                   />
                 </div>
                 
-                <div className="relative pl-20">
+                <div className="relative">
                   {sortedDepartments.map((dept, index) => {
                     // Normalize IDs for comparison (handle both string and ObjectId)
                     const deptId = String(dept._id);
@@ -2042,7 +2042,7 @@ const ProductionDashboard = () => {
                     return (
                       <div
                         key={dept._id}
-                        className="relative mb-8"
+                        className="relative mb-6 pl-12"
                         style={{ zIndex: 10 }}
                       >
                         <motion.div
@@ -2056,7 +2056,7 @@ const ProductionDashboard = () => {
                           className="flex items-start gap-4"
                         >
                           {/* Animated Status Circle */}
-                          <div className="relative flex-shrink-0 -ml-14" style={{ zIndex: 20, marginTop: '4px' }}>
+                          <div className="absolute left-0 top-2 flex-shrink-0" style={{ zIndex: 20, transform: 'translateX(-50%)' }}>
                           <motion.div
                             className={`
                               w-12 h-12 rounded-full flex items-center justify-center
@@ -2123,7 +2123,7 @@ const ProductionDashboard = () => {
                           {/* Department Info Card */}
                           <motion.div
                             className={`
-                              flex-1 p-5 rounded-lg border-l-4 transition-all duration-300
+                              flex-1 p-5 rounded-lg border-l-4 transition-all duration-300 ml-4
                               ${isCompleted 
                                 ? 'bg-green-50 border-green-500 shadow-sm' 
                                 : isBlocked

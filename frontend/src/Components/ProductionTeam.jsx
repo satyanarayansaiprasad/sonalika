@@ -2502,10 +2502,10 @@ const ProductionDashboard = () => {
         </button>
       </div>
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden relative">
         {/* Sidebar - Fixed and not scrolling */}
         <motion.div 
-          className={`fixed inset-y-0 left-0 transform ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 z-20 ${sidebarCollapsed ? 'w-20' : 'w-64'} bg-[#00072D] text-white transition-all duration-200 ease-in-out md:transition-all flex flex-col shadow-2xl`}
+          className={`fixed inset-y-0 left-0 transform ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 z-30 ${sidebarCollapsed ? 'w-20' : 'w-64'} bg-[#00072D] text-white transition-all duration-200 ease-in-out flex flex-col shadow-2xl`}
           style={{ 
             height: '100vh',
             background: `linear-gradient(180deg, #00072D 0%, #1a1a2e 100%)`
@@ -2669,9 +2669,10 @@ const ProductionDashboard = () => {
 
         {/* Main Content - Scrollable */}
         <div 
-          className="flex-1 overflow-y-auto p-4 md:p-6 md:pt-20"
+          className="flex-1 overflow-y-auto p-4 md:p-6"
           style={{ 
             marginLeft: sidebarCollapsed ? '80px' : '256px',
+            width: sidebarCollapsed ? 'calc(100% - 80px)' : 'calc(100% - 256px)',
             height: '100vh',
             paddingTop: '80px'
           }}

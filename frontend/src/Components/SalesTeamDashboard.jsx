@@ -508,33 +508,51 @@ const SalesDashboard = () => {
         return;
       }
 
+      // Fetch all orders from Order API to get real-time status
+      let orderStatusMap = {};
+      try {
+        const ordersRes = await axios.get(`${API_BASE_URL}/api/orders/all`);
+        if (ordersRes.data.success && ordersRes.data.data) {
+          ordersRes.data.data.forEach(order => {
+            orderStatusMap[order.orderId] = order.status;
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching order statuses:', error);
+      }
+
       // Convert orders to array and transform data
-      const ordersArray = client.orders.map((order, index) => ({
-        id: order.orderId || `order_${index}`,
-        orderId: order.orderId,
-        orderDate: order.orderDate ? new Date(order.orderDate) : null,
-        status: order.status || "ongoing",
-        expectedCompletionDate: order.expectedCompletionDate ? new Date(order.expectedCompletionDate) : null,
-        totalAmount: order.totalAmount || 0,
-        orderDescription: order.orderDescription || "",
-        orderItems: (order.orderItems || []).map((item) => ({
-          srNo: item.srNo || 0,
-          styleNo: item.styleNo || "",
-          diamondClarity: item.diamondClarity || "",
-          diamondColor: item.diamondColor || "",
-          goldPurity: item.goldPurity || "",
-          goldColor: item.goldColor || "",
-          quantity: item.quantity || 0,
-          grossWeight: item.grossWeight || 0,
-          netWeight: item.netWeight || 0,
-          diaWeight: item.diaWeight || 0,
-          pcs: item.pcs || 0,
-          mmSize: item.mmSize || 0,
-          seiveSize: item.seiveSize || "",
-          sieveSizeRange: item.sieveSizeRange || "",
-          remark: item.remark || item.description || "", // Support both old and new field names
-        })),
-      }));
+      const ordersArray = client.orders.map((order, index) => {
+        // Get real-time status from Order API, fallback to order status or "ongoing"
+        const realTimeStatus = orderStatusMap[order.orderId] || order.status || "ongoing";
+        
+        return {
+          id: order.orderId || `order_${index}`,
+          orderId: order.orderId,
+          orderDate: order.orderDate ? new Date(order.orderDate) : null,
+          status: realTimeStatus, // Use real-time status from Order API
+          expectedCompletionDate: order.expectedCompletionDate ? new Date(order.expectedCompletionDate) : null,
+          totalAmount: order.totalAmount || 0,
+          orderDescription: order.orderDescription || "",
+          orderItems: (order.orderItems || []).map((item) => ({
+            srNo: item.srNo || 0,
+            styleNo: item.styleNo || "",
+            diamondClarity: item.diamondClarity || "",
+            diamondColor: item.diamondColor || "",
+            goldPurity: item.goldPurity || "",
+            goldColor: item.goldColor || "",
+            quantity: item.quantity || 0,
+            grossWeight: item.grossWeight || 0,
+            netWeight: item.netWeight || 0,
+            diaWeight: item.diaWeight || 0,
+            pcs: item.pcs || 0,
+            mmSize: item.mmSize || 0,
+            seiveSize: item.seiveSize || "",
+            sieveSizeRange: item.sieveSizeRange || "",
+            remark: item.remark || item.description || "", // Support both old and new field names
+          })),
+        };
+      });
 
       // Sort by date (newest first)
       ordersArray.sort((a, b) => new Date(b.orderDate) - new Date(a.orderDate));
@@ -660,43 +678,61 @@ const getFilteredOrders = () => {
     try {
       const allOrders = [];
       
+      // Fetch all orders from Order API to get real-time status
+      let orderStatusMap = {};
+      try {
+        const ordersRes = await axios.get(`${API_BASE_URL}/api/orders/all`);
+        if (ordersRes.data.success && ordersRes.data.data) {
+          ordersRes.data.data.forEach(order => {
+            orderStatusMap[order.orderId] = order.status;
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching order statuses:', error);
+      }
+      
       // Fetch detailed order history for each client
       for (const client of clients) {
         try {
           const res = await axios.get(`${API_BASE_URL}/api/team/order-history/${client.uniqueId}`);
           if (res.data.success && res.data.orders) {
-            const clientOrders = res.data.orders.map((order, index) => ({
-              id: order.orderId || `order_${index}`,
-              orderId: order.orderId,
-              orderDate: order.orderDate ? new Date(order.orderDate) : null,
-              status: order.status || "ongoing",
-              expectedCompletionDate: order.expectedCompletionDate ? new Date(order.expectedCompletionDate) : null,
-              totalAmount: order.totalAmount || 0,
-              orderDescription: order.orderDescription || "",
-              orderItems: (order.orderItems || []).map((item) => ({
-                srNo: item.srNo || 0,
-                styleNo: item.styleNo || "",
-                diamondClarity: item.diamondClarity || "",
-                diamondColor: item.diamondColor || "",
-                goldPurity: item.goldPurity || "",
-                goldColor: item.goldColor || "",
-                quantity: item.quantity || 0,
-                grossWeight: item.grossWeight || 0,
-                netWeight: item.netWeight || 0,
-                diaWeight: item.diaWeight || 0,
-                pcs: item.pcs || 0,
-                mmSize: item.mmSize || 0,
-                seiveSize: item.seiveSize || "",
-                sieveSizeRange: item.sieveSizeRange || "",
-                remark: item.remark || item.description || "",
-              })),
-              client: {
-                uniqueId: client.uniqueId,
-                name: client.name,
-                gstNo: client.gstNo,
-                address: client.address
-              }
-            }));
+            const clientOrders = res.data.orders.map((order, index) => {
+              // Get real-time status from Order API, fallback to order status or "ongoing"
+              const realTimeStatus = orderStatusMap[order.orderId] || order.status || "ongoing";
+              
+              return {
+                id: order.orderId || `order_${index}`,
+                orderId: order.orderId,
+                orderDate: order.orderDate ? new Date(order.orderDate) : null,
+                status: realTimeStatus, // Use real-time status from Order API
+                expectedCompletionDate: order.expectedCompletionDate ? new Date(order.expectedCompletionDate) : null,
+                totalAmount: order.totalAmount || 0,
+                orderDescription: order.orderDescription || "",
+                orderItems: (order.orderItems || []).map((item) => ({
+                  srNo: item.srNo || 0,
+                  styleNo: item.styleNo || "",
+                  diamondClarity: item.diamondClarity || "",
+                  diamondColor: item.diamondColor || "",
+                  goldPurity: item.goldPurity || "",
+                  goldColor: item.goldColor || "",
+                  quantity: item.quantity || 0,
+                  grossWeight: item.grossWeight || 0,
+                  netWeight: item.netWeight || 0,
+                  diaWeight: item.diaWeight || 0,
+                  pcs: item.pcs || 0,
+                  mmSize: item.mmSize || 0,
+                  seiveSize: item.seiveSize || "",
+                  sieveSizeRange: item.sieveSizeRange || "",
+                  remark: item.remark || item.description || "",
+                })),
+                client: {
+                  uniqueId: client.uniqueId,
+                  name: client.name,
+                  gstNo: client.gstNo,
+                  address: client.address
+                }
+              };
+            });
             allOrders.push(...clientOrders);
           }
         } catch (error) {

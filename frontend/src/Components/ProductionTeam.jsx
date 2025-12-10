@@ -2632,7 +2632,7 @@ const ProductionDashboard = () => {
 
         {/* Desktop Header */}
         <motion.div 
-          className="hidden md:block fixed top-0 right-0 left-64 bg-[#00072D] text-white p-4 flex justify-between items-center shadow-lg z-10 transition-all duration-200 border-b-2"
+          className="hidden md:block fixed top-0 right-0 left-64 bg-[#00072D] text-white p-4 flex justify-between items-center shadow-lg z-20 transition-all duration-200 border-b-2"
           style={{ 
             left: sidebarCollapsed ? '80px' : '256px',
             borderColor: '#f9e79f',
@@ -2668,7 +2668,14 @@ const ProductionDashboard = () => {
         </motion.div>
 
         {/* Main Content - Scrollable */}
-        <div className="flex-1 overflow-auto p-4 md:p-6 md:pt-20">
+        <div 
+          className="flex-1 overflow-y-auto p-4 md:p-6 md:pt-20"
+          style={{ 
+            marginLeft: sidebarCollapsed ? '80px' : '256px',
+            height: '100vh',
+            paddingTop: '80px'
+          }}
+        >
           {activeMenu === 'dashboard' && renderDashboard()}
 
           {activeMenu === 'master' && (

@@ -58,6 +58,41 @@ exports.getOrdersByStatus = async (req, res) => {
 // Get accepted orders
 exports.getAcceptedOrders = async (req, res) => {
   try {
+    const Department = require('../models/Department');
+    
+    // First, check for accepted orders without currentDepartment and assign them to SL No. 1
+    const unassignedOrders = await Order.find({ 
+      status: 'accepted',
+      $or: [
+        { currentDepartment: null },
+        { currentDepartment: { $exists: false } }
+      ]
+    });
+    
+    if (unassignedOrders.length > 0) {
+      console.log(`Found ${unassignedOrders.length} accepted orders without currentDepartment. Assigning to SL No. 1...`);
+      const firstDepartment = await Department.findOne({ serialNumber: 1 });
+      
+      if (firstDepartment) {
+        for (const order of unassignedOrders) {
+          order.currentDepartment = firstDepartment._id;
+          if (!order.departmentStatus || order.departmentStatus.length === 0) {
+            order.departmentStatus = [{
+              department: firstDepartment._id,
+              status: 'in_progress',
+              completedAt: null,
+              pendingAt: null,
+              resolvedAt: null
+            }];
+          }
+          await order.save();
+          console.log(`✅ Assigned order ${order.orderId} to department ${firstDepartment.name} (SL: ${firstDepartment.serialNumber})`);
+        }
+      } else {
+        console.warn('⚠️ No department with SL No. 1 found. Cannot auto-assign orders.');
+      }
+    }
+    
     const orders = await Order.find({ status: 'accepted' })
       .populate('currentDepartment', 'name serialNumber')
       .populate('departmentStatus.department', 'name serialNumber')
@@ -68,6 +103,7 @@ exports.getAcceptedOrders = async (req, res) => {
       data: orders 
     });
   } catch (error) {
+    console.error('Error in getAcceptedOrders:', error);
     res.status(500).json({ 
       success: false, 
       error: error.message 

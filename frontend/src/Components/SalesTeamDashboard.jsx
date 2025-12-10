@@ -128,6 +128,7 @@ const SalesDashboard = () => {
 });
 
   const [orderHistory, setOrderHistory] = useState([]);
+  const [completedOrders, setCompletedOrders] = useState([]);
   const [selectedClientId, setSelectedClientId] = useState(null);
   const [styleNumbers, setStyleNumbers] = useState([]);
   const [orderAmount, setOrderAmount] = useState(0);
@@ -713,9 +714,39 @@ const getFilteredOrders = () => {
     }
   };
 
+  // Fetch completed orders from API
+  const fetchCompletedOrders = async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/orders/completed`);
+      if (response.data.success && response.data.data) {
+        const transformedOrders = response.data.data.map(order => ({
+          _id: order._id,
+          orderId: order.orderId,
+          orderDate: order.orderDate,
+          clientName: order.clientName,
+          description: order.description,
+          status: order.status,
+          completedDate: order.completedDate,
+          totalAmount: order.totalAmount || 0
+        }));
+        setCompletedOrders(transformedOrders);
+      }
+    } catch (error) {
+      console.error('Error fetching completed orders:', error);
+    }
+  };
+
   useEffect(() => {
     fetchClients();
     fetchStyleNumbers();
+    fetchCompletedOrders();
+    
+    // Set up interval to check for new completed orders
+    const interval = setInterval(() => {
+      fetchCompletedOrders();
+    }, 5000); // Check every 5 seconds
+    
+    return () => clearInterval(interval);
   }, []);
 
   // Fetch detailed order history when history menu is selected
@@ -1572,21 +1603,12 @@ const OngoingOrderModal = ({ order, visible, onClose }) => {
           </h2>
           </div>
           <Table
-            dataSource={clients.flatMap((client) => {
-              const ongoingOrders = (client.orders || []).filter(
-                (order) => order.status === "completed"
-              );
-              return ongoingOrders.map((order) => ({
-                ...order,
-                clientuniqueId: client.uniqueId,
-                client,
-              }));
-            })}
+            dataSource={completedOrders}
             columns={[
               {
-                title: "Unique ID",
-                dataIndex: "clientuniqueId",
-                key: "uniqueId",
+                title: "Order ID",
+                dataIndex: "orderId",
+                key: "orderId",
                 render: (text) => (
                   <span
                     className="font-mono font-semibold"
@@ -1597,32 +1619,38 @@ const OngoingOrderModal = ({ order, visible, onClose }) => {
                 ),
               },
               {
+                title: "Client Name",
+                dataIndex: "clientName",
+                key: "clientName",
+                render: (text) => (
+                  <span className="text-gray-700">{text || 'N/A'}</span>
+                ),
+              },
+              {
+                title: "Order Date",
+                dataIndex: "orderDate",
+                key: "orderDate",
+                render: (date) => date ? dayjs(date).format('DD MMM YYYY') : '-',
+              },
+              {
+                title: "Completed Date",
+                dataIndex: "completedDate",
+                key: "completedDate",
+                render: (date) => date ? dayjs(date).format('DD MMM YYYY') : '-',
+              },
+              {
                 title: "Status",
                 key: "status",
                 render: (_, record) => {
-                  let statusColor = colors.darkGold;
-                  let backgroundColor = "#e6f4ff";
-
-                  if (record.status === "COMPLETED") {
-                    statusColor = colors.green;
-                    backgroundColor = "#f6ffed";
-                  } else if (record.status === "CANCELLED") {
-                    statusColor = colors.red;
-                    backgroundColor = "#fff2f0";
-                  } else if (record.status === "PENDING") {
-                    statusColor = colors.orange;
-                    backgroundColor = "#fff7e6";
-                  }
-
                   return (
                     <Tag
                       style={{
-                        backgroundColor,
-                        color: statusColor,
-                        borderColor: statusColor,
+                        backgroundColor: "#f6ffed",
+                        color: colors.success || "#08965b",
+                        borderColor: colors.success || "#08965b",
                       }}
                     >
-                      {record.status || "COMPLETED"}
+                      COMPLETED
                     </Tag>
                   );
                 },

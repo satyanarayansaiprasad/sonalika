@@ -214,6 +214,15 @@ exports.acceptOrder = async (req, res) => {
       console.log(`📊 First department ID: ${order.departmentStatus[0].department?._id || order.departmentStatus[0].department}`);
     }
 
+    // Emit Socket.IO event for real-time update
+    if (global.io) {
+      global.io.to('orders').emit('order-accepted', {
+        order: order,
+        message: `Order ${orderId} has been accepted and assigned to ${firstDepartment.name}`
+      });
+      console.log(`📡 Emitted order-accepted event for order ${orderId}`);
+    }
+
     res.status(200).json({ 
       success: true, 
       data: order,
@@ -586,6 +595,22 @@ exports.moveToNextDepartment = async (req, res) => {
     await order.populate('currentDepartment', 'name serialNumber');
     await order.populate('departmentStatus.department', 'name serialNumber');
 
+    // Emit Socket.IO event for real-time update
+    if (global.io) {
+      if (nextDepartment) {
+        global.io.to('orders').emit('order-moved', {
+          order: order,
+          message: `Order ${orderId} moved to ${nextDepartment.name}`
+        });
+      } else {
+        global.io.to('orders').emit('order-completed', {
+          order: order,
+          message: `Order ${orderId} has been completed`
+        });
+      }
+      console.log(`📡 Emitted order update event for order ${orderId}`);
+    }
+
     res.status(200).json({ 
       success: true, 
       data: order,
@@ -649,6 +674,15 @@ exports.markOrderPending = async (req, res) => {
     await order.populate('departmentStatus.department', 'name serialNumber');
     await order.populate('pendingMessages.department', 'name serialNumber');
 
+    // Emit Socket.IO event for real-time update
+    if (global.io) {
+      global.io.to('orders').emit('order-pending', {
+        order: order,
+        message: `Order ${orderId} marked as pending in ${order.currentDepartment?.name}`
+      });
+      console.log(`📡 Emitted order-pending event for order ${orderId}`);
+    }
+
     res.status(200).json({ 
       success: true, 
       data: order,
@@ -708,6 +742,15 @@ exports.resolvePending = async (req, res) => {
     await order.populate('currentDepartment', 'name serialNumber');
     await order.populate('departmentStatus.department', 'name serialNumber');
     await order.populate('pendingMessages.department', 'name serialNumber');
+
+    // Emit Socket.IO event for real-time update
+    if (global.io) {
+      global.io.to('orders').emit('order-resolved', {
+        order: order,
+        message: `Pending issue resolved for order ${orderId}`
+      });
+      console.log(`📡 Emitted order-resolved event for order ${orderId}`);
+    }
 
     res.status(200).json({ 
       success: true, 

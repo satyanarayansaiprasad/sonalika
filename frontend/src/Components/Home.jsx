@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { io } from "socket.io-client";
 import { FiX, FiCheckCircle, FiClock, FiXCircle, FiPackage } from "react-icons/fi";
 import SonalikaLogo from "./SonalikaLogo.png";
 const Home = () => {
@@ -17,6 +18,7 @@ const Home = () => {
   const [selectedOrderForAction, setSelectedOrderForAction] = useState(null);
   const [resolveModalOpen, setResolveModalOpen] = useState(false);
   const [resolveMessage, setResolveMessage] = useState('');
+  const socketRef = useRef(null);
 
   // Premium gold and jewel tones color palette
   const colors = {
@@ -239,6 +241,70 @@ const Home = () => {
       fetchDepartments();
     }
   }, [step]);
+
+  // Socket.IO connection for real-time updates
+  useEffect(() => {
+    const apiBaseUrl = getApiBaseUrl();
+    const socketUrl = apiBaseUrl.replace('https://', 'wss://').replace('http://', 'ws://');
+    socketRef.current = io(socketUrl, {
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionAttempts: 5
+    });
+
+    socketRef.current.on('connect', () => {
+      console.log('✅ Socket.IO connected (Home)');
+      socketRef.current.emit('join-orders');
+    });
+
+    socketRef.current.on('disconnect', () => {
+      console.log('❌ Socket.IO disconnected (Home)');
+    });
+
+    // Listen for real-time order updates
+    socketRef.current.on('order-accepted', (data) => {
+      console.log('📨 Order accepted:', data);
+      if (selectedDepartment) {
+        fetchOrdersByDepartment(selectedDepartment._id);
+      }
+    });
+
+    socketRef.current.on('order-moved', (data) => {
+      console.log('📨 Order moved:', data);
+      if (selectedDepartment) {
+        fetchOrdersByDepartment(selectedDepartment._id);
+      }
+    });
+
+    socketRef.current.on('order-completed', (data) => {
+      console.log('📨 Order completed:', data);
+      if (selectedDepartment) {
+        fetchOrdersByDepartment(selectedDepartment._id);
+      }
+    });
+
+    socketRef.current.on('order-pending', (data) => {
+      console.log('📨 Order pending:', data);
+      if (selectedDepartment) {
+        fetchOrdersByDepartment(selectedDepartment._id);
+      }
+    });
+
+    socketRef.current.on('order-resolved', (data) => {
+      console.log('📨 Order resolved:', data);
+      if (selectedDepartment) {
+        fetchOrdersByDepartment(selectedDepartment._id);
+      }
+    });
+
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.emit('leave-orders');
+        socketRef.current.disconnect();
+      }
+    };
+  }, [selectedDepartment]); // eslint-disable-line react-hooks/exhaustive-deps
   // Enhanced animations
   const fadeIn = {
     hidden: { opacity: 0 },

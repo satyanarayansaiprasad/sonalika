@@ -4,8 +4,13 @@ const session = require('express-session');
 const cors = require('cors');
 const mongoose = require('mongoose');
 const path = require('path');
+const http = require('http');
+const { Server } = require('socket.io');
 const app = express();
 const port = process.env.PORT || 3001;
+
+// Create HTTP server
+const server = http.createServer(app);
 
 // MongoDB connection (using URI from .env)
 // Use connection options that prevent hanging
@@ -162,9 +167,43 @@ app.use((err, req, res, next) => {
   });
 });
 
+// Initialize Socket.IO
+const io = new Server(server, {
+  cors: {
+    origin: normalizedOrigins,
+    methods: ['GET', 'POST'],
+    credentials: true
+  }
+});
+
+// Store io instance globally so controllers can access it
+global.io = io;
+
+// Socket.IO connection handling
+io.on('connection', (socket) => {
+  console.log(`✅ Client connected: ${socket.id}`);
+  
+  // Join room for order updates
+  socket.on('join-orders', () => {
+    socket.join('orders');
+    console.log(`Client ${socket.id} joined orders room`);
+  });
+  
+  // Leave room
+  socket.on('leave-orders', () => {
+    socket.leave('orders');
+    console.log(`Client ${socket.id} left orders room`);
+  });
+  
+  socket.on('disconnect', () => {
+    console.log(`❌ Client disconnected: ${socket.id}`);
+  });
+});
+
 // Start server
-const server = app.listen(port, () => {
+server.listen(port, () => {
   console.log(`✅ Server is running on port ${port}`);
+  console.log(`✅ Socket.IO server initialized`);
   console.log(`✅ Health check available at /health`);
   console.log(`✅ Routes available at /api/*`);
 });

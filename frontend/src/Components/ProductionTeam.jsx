@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { io } from 'socket.io-client';
 import { FiMenu, FiX, FiHome, FiDatabase, FiShoppingBag, FiPlus, FiAward, FiChevronDown, FiChevronUp, FiTrash2, FiEdit2, FiCheckCircle, FiLogOut, FiClock, FiXCircle, FiBriefcase, FiPackage, FiTruck, FiMapPin } from 'react-icons/fi';
 
 const API_BASE_URL = 'https://sonalika.onrender.com';
@@ -149,6 +150,9 @@ const ProductionDashboard = () => {
     imageFile: null
   });
 
+  // Socket.IO connection
+  const socketRef = useRef(null);
+
   useEffect(() => {
     fetchAllProductMasters();
     fetchAllDesignMasters();
@@ -157,14 +161,79 @@ const ProductionDashboard = () => {
     loadRejectedOrders();
     loadCompletedOrders();
     
-    // Set up interval to check for new orders
-    const interval = setInterval(() => {
+    // Initialize Socket.IO connection
+    const apiBaseUrl = getApiBaseUrl();
+    const socketUrl = apiBaseUrl.replace('https://', 'wss://').replace('http://', 'ws://');
+    socketRef.current = io(socketUrl, {
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionAttempts: 5
+    });
+
+    socketRef.current.on('connect', () => {
+      console.log('✅ Socket.IO connected');
+      socketRef.current.emit('join-orders');
+    });
+
+    socketRef.current.on('disconnect', () => {
+      console.log('❌ Socket.IO disconnected');
+    });
+
+    // Listen for real-time order updates
+    socketRef.current.on('order-accepted', (data) => {
+      console.log('📨 Order accepted:', data);
+      showNotification(data.message || 'New order accepted', false);
       loadAcceptedOrders();
-      loadRejectedOrders();
+      if (selectedOrderForTracking && selectedOrderForTracking.orderId === data.order.orderId) {
+        handleTrackOrder(data.order);
+      }
+    });
+
+    socketRef.current.on('order-moved', (data) => {
+      console.log('📨 Order moved:', data);
+      showNotification(data.message || 'Order moved to next department', false);
+      loadAcceptedOrders();
       loadCompletedOrders();
-    }, 2000); // Check every 2 seconds
-    
-    return () => clearInterval(interval);
+      if (selectedOrderForTracking && selectedOrderForTracking.orderId === data.order.orderId) {
+        handleTrackOrder(data.order);
+      }
+    });
+
+    socketRef.current.on('order-completed', (data) => {
+      console.log('📨 Order completed:', data);
+      showNotification(data.message || 'Order completed successfully', false);
+      loadAcceptedOrders();
+      loadCompletedOrders();
+      if (selectedOrderForTracking && selectedOrderForTracking.orderId === data.order.orderId) {
+        setSelectedOrderForTracking(null);
+      }
+    });
+
+    socketRef.current.on('order-pending', (data) => {
+      console.log('📨 Order pending:', data);
+      showNotification(data.message || 'Order marked as pending', false);
+      loadAcceptedOrders();
+      if (selectedOrderForTracking && selectedOrderForTracking.orderId === data.order.orderId) {
+        handleTrackOrder(data.order);
+      }
+    });
+
+    socketRef.current.on('order-resolved', (data) => {
+      console.log('📨 Order resolved:', data);
+      showNotification(data.message || 'Pending issue resolved', false);
+      loadAcceptedOrders();
+      if (selectedOrderForTracking && selectedOrderForTracking.orderId === data.order.orderId) {
+        handleTrackOrder(data.order);
+      }
+    });
+
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.emit('leave-orders');
+        socketRef.current.disconnect();
+      }
+    };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadAcceptedOrders = async () => {

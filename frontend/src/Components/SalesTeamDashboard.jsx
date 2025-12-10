@@ -1,5 +1,6 @@
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
+import { io } from "socket.io-client";
 import {
   Layout,
   Menu,
@@ -130,6 +131,7 @@ const SalesDashboard = () => {
   const [orderHistory, setOrderHistory] = useState([]);
   const [completedOrders, setCompletedOrders] = useState([]);
   const [selectedClientId, setSelectedClientId] = useState(null);
+  const socketRef = useRef(null);
   const [styleNumbers, setStyleNumbers] = useState([]);
   const [orderAmount, setOrderAmount] = useState(0);
   const [orderDescription, setOrderDescription] = useState("");
@@ -741,12 +743,36 @@ const getFilteredOrders = () => {
     fetchStyleNumbers();
     fetchCompletedOrders();
     
-    // Set up interval to check for new completed orders
-    const interval = setInterval(() => {
-      fetchCompletedOrders();
-    }, 5000); // Check every 5 seconds
-    
-    return () => clearInterval(interval);
+    // Initialize Socket.IO connection for real-time updates
+    const socketUrl = API_BASE_URL.replace('https://', 'wss://').replace('http://', 'ws://');
+    socketRef.current = io(socketUrl, {
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionAttempts: 5
+    });
+
+    socketRef.current.on('connect', () => {
+      console.log('✅ Socket.IO connected (Sales Team)');
+      socketRef.current.emit('join-orders');
+    });
+
+    socketRef.current.on('disconnect', () => {
+      console.log('❌ Socket.IO disconnected (Sales Team)');
+    });
+
+    // Listen for real-time order completion updates
+    socketRef.current.on('order-completed', (data) => {
+      console.log('📨 Order completed:', data);
+      fetchCompletedOrders(); // Refresh completed orders list
+    });
+
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.emit('leave-orders');
+        socketRef.current.disconnect();
+      }
+    };
   }, []);
 
   // Fetch detailed order history when history menu is selected

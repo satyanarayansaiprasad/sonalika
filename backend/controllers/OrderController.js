@@ -134,14 +134,15 @@ exports.acceptOrder = async (req, res) => {
     const firstDepartment = await Department.findOne({ serialNumber: 1 });
     
     if (!firstDepartment) {
-      console.error('No department with serialNumber 1 found');
+      console.error('❌ No department with serialNumber 1 found');
       return res.status(400).json({ 
         success: false, 
         error: 'No department with SL number 1 found. Please create a department with SL number 1 first.' 
       });
     }
 
-    console.log(`Assigning order ${orderId} to department ${firstDepartment.name} (SL: ${firstDepartment.serialNumber})`);
+    console.log(`✅ Found department with SL No. 1: ${firstDepartment.name} (ID: ${firstDepartment._id})`);
+    console.log(`📦 Assigning order ${orderId} to department ${firstDepartment.name} (SL: ${firstDepartment.serialNumber})`);
 
     // Update order status and assign to first department
     order.status = 'accepted';
@@ -167,9 +168,15 @@ exports.acceptOrder = async (req, res) => {
     await order.populate('currentDepartment', 'name serialNumber');
     await order.populate('departmentStatus.department', 'name serialNumber');
 
-    console.log(`Order ${orderId} successfully accepted and assigned to department ${firstDepartment.name}`);
-    console.log('Order currentDepartment:', order.currentDepartment);
-    console.log('Order departmentStatus:', JSON.stringify(order.departmentStatus, null, 2));
+    console.log(`✅ Order ${orderId} successfully accepted and assigned to department ${firstDepartment.name}`);
+    console.log(`📍 Order currentDepartment ID: ${order.currentDepartment?._id || order.currentDepartment}`);
+    console.log(`📍 Order currentDepartment Name: ${order.currentDepartment?.name}`);
+    console.log(`📍 Order currentDepartment SL: ${order.currentDepartment?.serialNumber}`);
+    console.log(`📊 Order departmentStatus count: ${order.departmentStatus?.length || 0}`);
+    if (order.departmentStatus && order.departmentStatus.length > 0) {
+      console.log(`📊 First department status: ${order.departmentStatus[0].status}`);
+      console.log(`📊 First department ID: ${order.departmentStatus[0].department?._id || order.departmentStatus[0].department}`);
+    }
 
     res.status(200).json({ 
       success: true, 
@@ -393,7 +400,10 @@ exports.getCompletedOrders = async (req, res) => {
 // Get orders by department
 exports.getOrdersByDepartment = async (req, res) => {
   try {
+    const Department = require('../models/Department');
     const { departmentId } = req.params;
+    
+    console.log(`Fetching orders for department: ${departmentId}`);
     
     // Find orders where currentDepartment matches the departmentId
     const orders = await Order.find({ 
@@ -405,11 +415,62 @@ exports.getOrdersByDepartment = async (req, res) => {
       .populate('pendingMessages.department', 'name serialNumber')
       .sort({ acceptedDate: -1 });
     
+    console.log(`Found ${orders.length} orders for department ${departmentId}`);
+    
+    // Also check for accepted orders that don't have a currentDepartment assigned
+    // and assign them to SL No. 1 if the requested department is SL No. 1
+    const requestedDept = await Department.findById(departmentId);
+    if (requestedDept && requestedDept.serialNumber === 1) {
+      const unassignedOrders = await Order.find({ 
+        status: 'accepted',
+        $or: [
+          { currentDepartment: null },
+          { currentDepartment: { $exists: false } }
+        ]
+      });
+      
+      if (unassignedOrders.length > 0) {
+        console.log(`Found ${unassignedOrders.length} accepted orders without currentDepartment. Assigning to SL No. 1...`);
+        
+        for (const order of unassignedOrders) {
+          order.currentDepartment = requestedDept._id;
+          if (!order.departmentStatus || order.departmentStatus.length === 0) {
+            order.departmentStatus = [{
+              department: requestedDept._id,
+              status: 'in_progress',
+              completedAt: null,
+              pendingAt: null,
+              resolvedAt: null
+            }];
+          }
+          await order.save();
+        }
+        
+        // Fetch the updated orders
+        const updatedOrders = await Order.find({ 
+          currentDepartment: departmentId,
+          status: 'accepted'
+        })
+          .populate('currentDepartment', 'name serialNumber')
+          .populate('departmentStatus.department', 'name serialNumber')
+          .populate('pendingMessages.department', 'name serialNumber')
+          .sort({ acceptedDate: -1 });
+        
+        console.log(`After assignment, found ${updatedOrders.length} orders for department ${departmentId}`);
+        
+        return res.status(200).json({ 
+          success: true, 
+          data: updatedOrders 
+        });
+      }
+    }
+    
     res.status(200).json({ 
       success: true, 
       data: orders 
     });
   } catch (error) {
+    console.error('Error in getOrdersByDepartment:', error);
     res.status(500).json({ 
       success: false, 
       error: error.message 

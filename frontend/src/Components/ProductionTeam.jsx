@@ -54,12 +54,12 @@ const ProductionDashboard = () => {
     const saved = localStorage.getItem('activeMenu');
     return saved || 'dashboard';
   });
-  
+
   const [masterType, setMasterType] = useState(() => {
     const saved = localStorage.getItem('masterType');
     return saved || null;
   });
-  
+
   const [categories, setCategories] = useState([]);
   const [categoryTypes, setCategoryTypes] = useState([]);
   const [sizeValues, setSizeValues] = useState([]);
@@ -93,7 +93,10 @@ const ProductionDashboard = () => {
   const [resolveModalOpen, setResolveModalOpen] = useState(false);
   const [resolveMessage, setResolveMessage] = useState('');
   const [completedOrders, setCompletedOrders] = useState([]);
-  
+  const [metalModalOpen, setMetalModalOpen] = useState(false);
+  const [metalData, setMetalData] = useState([{ metal: 'Gold', clientSide: '', companySide: '' }]);
+  const availableMetals = ['Gold', 'Silver', 'Copper', 'Platinum', 'Diamond', 'Other'];
+
   // API Base URL
   const getApiBaseUrl = () => {
     const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
@@ -134,7 +137,7 @@ const ProductionDashboard = () => {
     sizeType: '',
     sizeValue: ''
   });
-  
+
   const [designForm, setDesignForm] = useState({
     serialNumber: '',
     category: '',
@@ -160,7 +163,7 @@ const ProductionDashboard = () => {
     loadAcceptedOrders();
     loadRejectedOrders();
     loadCompletedOrders();
-    
+
     // Initialize Socket.IO connection
     const apiBaseUrl = getApiBaseUrl();
     const socketUrl = apiBaseUrl.replace('https://', 'wss://').replace('http://', 'ws://');
@@ -298,7 +301,7 @@ const ProductionDashboard = () => {
       setLoadingDesigns(true);
       const apiBaseUrl = getApiBaseUrl();
       const response = await axios.get(`${apiBaseUrl}/api/pdmaster/getDesignsByDepartment`);
-      
+
       if (response.data && response.data.success && response.data.data) {
         setDesignsByDepartment(response.data.data);
       } else {
@@ -328,7 +331,7 @@ const ProductionDashboard = () => {
           console.log('Fresh order data:', freshOrder);
           console.log('Current Department:', freshOrder.currentDepartment);
           console.log('Department Status:', freshOrder.departmentStatus);
-          
+
           setSelectedOrderForTracking({
             id: freshOrder.orderId,
             orderId: freshOrder.orderId,
@@ -365,7 +368,7 @@ const ProductionDashboard = () => {
     try {
       const apiBaseUrl = getApiBaseUrl();
       const response = await axios.put(`${apiBaseUrl}/api/orders/move-to-next/${orderId}`);
-      
+
       if (response.data.success) {
         showNotification(response.data.message || 'Order moved to next department');
         await loadAcceptedOrders();
@@ -403,7 +406,7 @@ const ProductionDashboard = () => {
         `${apiBaseUrl}/api/orders/mark-pending/${selectedOrderForTracking.orderId}`,
         { message: pendingMessage.trim() }
       );
-      
+
       if (response.data.success) {
         showNotification('Order marked as pending');
         setPendingModalOpen(false);
@@ -435,12 +438,19 @@ const ProductionDashboard = () => {
         `${apiBaseUrl}/api/orders/resolve-pending/${selectedOrderForTracking.orderId}`,
         { resolvedMessage: resolveMessage.trim() || 'Issue resolved' }
       );
-      
+
       if (response.data.success) {
         showNotification('Pending issue resolved');
         setResolveModalOpen(false);
         setResolveMessage('');
         await loadAcceptedOrders();
+
+        // Check if current department is Casting
+        const currentDeptName = selectedOrderForTracking.currentDepartment?.name || '';
+        if (currentDeptName.toLowerCase().includes('casting')) {
+          setMetalModalOpen(true);
+        }
+
         if (selectedOrderForTracking) {
           const updatedOrder = response.data.data;
           setSelectedOrderForTracking({
@@ -485,7 +495,7 @@ const ProductionDashboard = () => {
         `${apiBaseUrl}/api/pdmaster/updateDesignDepartment/${designId}`,
         { departmentId: departmentId || null }
       );
-      
+
       if (response.data.success) {
         showNotification('Design department updated successfully');
         setEditingDesignDepartment(null);
@@ -505,7 +515,7 @@ const ProductionDashboard = () => {
       console.log('Fetching departments from:', `${apiBaseUrl}/api/departments/all`);
       const response = await axios.get(`${apiBaseUrl}/api/departments/all`);
       console.log('Departments API response:', response.data);
-      
+
       if (response.data && response.data.success && response.data.data) {
         console.log('Setting departments:', response.data.data);
         setDepartments(response.data.data);
@@ -539,7 +549,7 @@ const ProductionDashboard = () => {
         description: '',
         isActive: true
       };
-      
+
       // Add serialNumber if provided
       if (newDepartmentSerialNumber.trim() !== '') {
         const serialNum = parseInt(newDepartmentSerialNumber.trim());
@@ -547,9 +557,9 @@ const ProductionDashboard = () => {
           requestData.serialNumber = serialNum;
         }
       }
-      
+
       const response = await axios.post(`${apiBaseUrl}/api/departments/create`, requestData);
-      
+
       if (response.data.success) {
         showNotification('Department created successfully');
         setNewDepartmentName('');
@@ -573,7 +583,7 @@ const ProductionDashboard = () => {
       const requestData = {
         name: editingDepartmentName.trim()
       };
-      
+
       // Add serialNumber if provided
       if (editingDepartmentSerialNumber.trim() !== '') {
         const serialNum = parseInt(editingDepartmentSerialNumber.trim());
@@ -581,9 +591,9 @@ const ProductionDashboard = () => {
           requestData.serialNumber = serialNum;
         }
       }
-      
+
       const response = await axios.put(`${apiBaseUrl}/api/departments/update/${id}`, requestData);
-      
+
       if (response.data.success) {
         showNotification('Department updated successfully');
         setEditingDepartmentId(null);
@@ -605,7 +615,7 @@ const ProductionDashboard = () => {
     try {
       const apiBaseUrl = getApiBaseUrl();
       const response = await axios.delete(`${apiBaseUrl}/api/departments/delete/${id}`);
-      
+
       if (response.data.success) {
         showNotification('Department deleted successfully');
         fetchDepartments();
@@ -725,7 +735,7 @@ const ProductionDashboard = () => {
 
   const handleProductSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!productForm.category || !productForm.sizeType || !productForm.sizeValue) {
       showNotification('Please fill all fields', true);
       return;
@@ -733,7 +743,7 @@ const ProductionDashboard = () => {
 
     try {
       setLoading(true);
-      
+
       const response = await axios.post(
         `${API_BASE_URL}/api/pdmaster/createProductMaster`,
         {
@@ -764,7 +774,7 @@ const ProductionDashboard = () => {
 
   const handleMMSizeChange = (mmSize) => {
     const mapping = MM_SIZE_MAPPING[mmSize];
-    
+
     if (mapping) {
       const newFormData = {
         ...designForm,
@@ -778,10 +788,10 @@ const ProductionDashboard = () => {
 
   const handleDesignSubmit = async (e) => {
     e.preventDefault();
-    
-    if (!designForm.serialNumber || !designForm.category || !designForm.grossWt || !designForm.netWt || 
-        !designForm.diaWt || !designForm.diaPcs || !designForm.clarity || 
-        !designForm.color || !designForm.imageFile) {
+
+    if (!designForm.serialNumber || !designForm.category || !designForm.grossWt || !designForm.netWt ||
+      !designForm.diaWt || !designForm.diaPcs || !designForm.clarity ||
+      !designForm.color || !designForm.imageFile) {
       showNotification('Please fill all fields and upload a design image', true);
       return;
     }
@@ -794,7 +804,7 @@ const ProductionDashboard = () => {
 
     try {
       setLoading(true);
-      
+
       const formData = new FormData();
       formData.append('serialNumber', designForm.serialNumber);
       formData.append('category', designForm.category);
@@ -808,7 +818,7 @@ const ProductionDashboard = () => {
       const mmSizeValue = designForm.mmSize !== null ? parseFloat(designForm.mmSize) : 0;
       const seiveSizeValue = designForm.seiveSize || '';
       const sieveSizeRangeValue = designForm.sieveSizeRange || '';
-      
+
       formData.append('mmSize', mmSizeValue);
       formData.append('seiveSize', seiveSizeValue);
       formData.append('sieveSizeRange', sieveSizeRangeValue);
@@ -853,14 +863,14 @@ const ProductionDashboard = () => {
 
   const handleAddCategory = async (e) => {
     e.preventDefault();
-    
+
     try {
       setLoading(true);
       const response = await axios.post(`${API_BASE_URL}/api/pdmaster/category-size`, {
         name: newCategory.name,
         types: newCategory.types
       });
-      
+
       if (response.data.message === "Category added successfully") {
         showNotification('Category added successfully!');
         setNewCategory({
@@ -946,16 +956,16 @@ const ProductionDashboard = () => {
     };
 
     return (
-    <div className="space-y-6">
+      <div className="space-y-6">
         <div className="mb-6">
           <h1 className="text-3xl font-bold mb-2" style={{ color: colors.deepNavy }}>
             Production Dashboard
           </h1>
           <p className="text-gray-600">Manage your product and design masters efficiently</p>
-      </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <motion.div 
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <motion.div
             className="rounded-xl shadow-lg p-6 border-2 relative overflow-hidden group cursor-pointer"
             style={{
               background: `linear-gradient(135deg, ${colors.deepNavy} 0%, #1a1a2e 100%)`,
@@ -973,14 +983,14 @@ const ProductionDashboard = () => {
               <div className="flex items-center justify-between mb-4">
                 <div className="p-4 rounded-xl bg-white bg-opacity-20">
                   <FiShoppingBag className="text-2xl" style={{ color: colors.gold }} />
-            </div>
-            </div>
+                </div>
+              </div>
               <h3 className="text-sm font-medium opacity-80 mb-2">Product Masters</h3>
               <p className="text-4xl font-bold" style={{ color: colors.gold }}>{productMasters.length}</p>
-          </div>
+            </div>
           </motion.div>
-        
-          <motion.div 
+
+          <motion.div
             className="rounded-xl shadow-lg p-6 border-2 relative overflow-hidden group cursor-pointer"
             style={{
               background: `linear-gradient(135deg, ${colors.deepNavy} 0%, #1a1a2e 100%)`,
@@ -998,15 +1008,15 @@ const ProductionDashboard = () => {
               <div className="flex items-center justify-between mb-4">
                 <div className="p-4 rounded-xl bg-white bg-opacity-20">
                   <FiAward className="text-2xl" style={{ color: colors.gold }} />
-            </div>
-            </div>
+                </div>
+              </div>
               <h3 className="text-sm font-medium opacity-80 mb-2">Design Masters</h3>
               <p className="text-4xl font-bold" style={{ color: colors.gold }}>{designMasters.length}</p>
-          </div>
+            </div>
           </motion.div>
-      </div>
+        </div>
 
-        <motion.div 
+        <motion.div
           className="bg-white rounded-xl shadow-lg p-6 border-2"
           style={{ borderColor: colors.gold }}
           initial={{ opacity: 0, y: 20 }}
@@ -1018,8 +1028,8 @@ const ProductionDashboard = () => {
             <h2 className="text-xl font-bold" style={{ color: colors.deepNavy }}>Recent Activity</h2>
           </div>
           <div className="space-y-3">
-          {productMasters.slice(0, 3).map((product, index) => (
-              <motion.div 
+            {productMasters.slice(0, 3).map((product, index) => (
+              <motion.div
                 key={`product-${index}`}
                 className="flex items-center p-4 hover:bg-gray-50 rounded-lg transition-all border border-transparent hover:border-gray-200"
                 whileHover={{ x: 4 }}
@@ -1029,18 +1039,18 @@ const ProductionDashboard = () => {
               >
                 <div className="p-3 rounded-xl mr-4" style={{ backgroundColor: `${colors.info}15` }}>
                   <FiShoppingBag className="text-xl" style={{ color: colors.info }} />
-              </div>
+                </div>
                 <div className="flex-1">
                   <p className="font-semibold text-gray-800">New Product Added</p>
                   <p className="text-sm text-gray-600">{product.category} - {product.serialNumber}</p>
-              </div>
+                </div>
                 <div className="text-sm text-gray-400 font-medium">
-                Just now
-              </div>
+                  Just now
+                </div>
               </motion.div>
-          ))}
-          {designMasters.slice(0, 3).map((design, index) => (
-              <motion.div 
+            ))}
+            {designMasters.slice(0, 3).map((design, index) => (
+              <motion.div
                 key={`design-${index}`}
                 className="flex items-center p-4 hover:bg-gray-50 rounded-lg transition-all border border-transparent hover:border-gray-200"
                 whileHover={{ x: 4 }}
@@ -1050,32 +1060,32 @@ const ProductionDashboard = () => {
               >
                 <div className="p-3 rounded-xl mr-4" style={{ backgroundColor: `${colors.warning}15` }}>
                   <FiAward className="text-xl" style={{ color: colors.warning }} />
-              </div>
+                </div>
                 <div className="flex-1">
                   <p className="font-semibold text-gray-800">New Design Added</p>
                   <p className="text-sm text-gray-600">{design.serialNumber} - {design.styleNumber || 'N/A'}</p>
-              </div>
+                </div>
                 <div className="text-sm text-gray-400 font-medium">
-                Just now
-              </div>
+                  Just now
+                </div>
               </motion.div>
-          ))}
+            ))}
             {productMasters.length === 0 && designMasters.length === 0 && (
               <div className="text-center py-8 text-gray-500">
                 <p>No recent activity</p>
-        </div>
+              </div>
             )}
-      </div>
+          </div>
         </motion.div>
-    </div>
-  );
+      </div>
+    );
   };
 
   const renderProductMasterForm = () => (
     <div className="bg-white h-screen rounded-xl shadow-lg p-6">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-semibold text-gray-800">Create Product Master</h2>
-        <button 
+        <button
           onClick={() => {
             setMasterType(null);
             setActiveMenu('master');
@@ -1085,7 +1095,7 @@ const ProductionDashboard = () => {
           <FiX className="text-xl" />
         </button>
       </div>
-      
+
       <form onSubmit={handleProductSubmit} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
@@ -1102,7 +1112,7 @@ const ProductionDashboard = () => {
               ))}
             </select>
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Size Type</label>
             <select
@@ -1118,13 +1128,13 @@ const ProductionDashboard = () => {
               ))}
             </select>
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Size Value</label>
             <select
               className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
               value={productForm.sizeValue}
-              onChange={(e) => setProductForm({...productForm, sizeValue: e.target.value})}
+              onChange={(e) => setProductForm({ ...productForm, sizeValue: e.target.value })}
               disabled={!productForm.sizeType}
               required
             >
@@ -1137,10 +1147,10 @@ const ProductionDashboard = () => {
             </select>
           </div>
         </div>
-        
+
         <div className="flex justify-end">
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             className="bg-[#00072D] text-white px-6 py-3 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition flex items-center"
             disabled={loading}
           >
@@ -1163,7 +1173,7 @@ const ProductionDashboard = () => {
       <div className="mt-12  p-6">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-semibold text-gray-800">Category Management</h2>
-          <button 
+          <button
             onClick={() => setShowAddCategory(!showAddCategory)}
             className="flex items-center text-[#00072D] hover:text-blue-700"
           >
@@ -1189,7 +1199,7 @@ const ProductionDashboard = () => {
                 type="text"
                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
                 value={newCategory.name}
-                onChange={(e) => setNewCategory({...newCategory, name: e.target.value.toUpperCase()})}
+                onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value.toUpperCase() })}
                 placeholder="e.g., NECKLACE, BRACELET"
                 required
               />
@@ -1285,9 +1295,9 @@ const ProductionDashboard = () => {
                 <FiPlus className="mr-1" />
                 Add Another Size Type
               </button>
-              
-              <button 
-                type="submit" 
+
+              <button
+                type="submit"
                 className="bg-[#00072D] text-white px-6 py-3 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition flex items-center"
                 disabled={loading}
               >
@@ -1318,7 +1328,7 @@ const ProductionDashboard = () => {
                     <FiEdit2 />
                   </button>
                 </div>
-                
+
                 <div className="space-y-3">
                   {category.types.map((type, typeIndex) => (
                     <div key={typeIndex} className="ml-4">
@@ -1345,7 +1355,7 @@ const ProductionDashboard = () => {
     <div className="bg-white rounded-xl shadow-lg p-6">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-semibold text-gray-800">Create Design Master</h2>
-        <button 
+        <button
           onClick={() => {
             setMasterType(null);
             setActiveMenu('master');
@@ -1355,32 +1365,32 @@ const ProductionDashboard = () => {
           <FiX className="text-xl" />
         </button>
       </div>
-      
+
       <form onSubmit={handleDesignSubmit} className="space-y-6">
-       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-  <div>
-    <label className="block text-sm font-medium text-gray-700 mb-1">Category *</label>
-    <select
-      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-      value={designForm.category || ''}
-      onChange={(e) => {
-        const selectedCategory = e.target.value;
-        const matchedProduct = productMasters.find(p => p.category === selectedCategory);
-        setDesignForm({
-          ...designForm,
-          category: selectedCategory,
-          serialNumber: matchedProduct?.serialNumber || ''
-        });
-      }}
-      required
-    >
-      <option value="">Select category</option>
-      {categories.map(category => (
-        <option key={category._id} value={category.name}>{category.name}</option>
-      ))}
-    </select>
-  </div>
-</div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Category *</label>
+            <select
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+              value={designForm.category || ''}
+              onChange={(e) => {
+                const selectedCategory = e.target.value;
+                const matchedProduct = productMasters.find(p => p.category === selectedCategory);
+                setDesignForm({
+                  ...designForm,
+                  category: selectedCategory,
+                  serialNumber: matchedProduct?.serialNumber || ''
+                });
+              }}
+              required
+            >
+              <option value="">Select category</option>
+              {categories.map(category => (
+                <option key={category._id} value={category.name}>{category.name}</option>
+              ))}
+            </select>
+          </div>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
           <div>
@@ -1390,7 +1400,7 @@ const ProductionDashboard = () => {
                 type="text"
                 className="block w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition"
                 value={designForm.grossWt}
-                onChange={(e) => setDesignForm({...designForm, grossWt: e.target.value})}
+                onChange={(e) => setDesignForm({ ...designForm, grossWt: e.target.value })}
                 placeholder="0.00"
                 required
               />
@@ -1399,7 +1409,7 @@ const ProductionDashboard = () => {
               </div>
             </div>
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Net Weight</label>
             <div className="relative rounded-md shadow-sm">
@@ -1407,7 +1417,7 @@ const ProductionDashboard = () => {
                 type="text"
                 className="block w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition"
                 value={designForm.netWt}
-                onChange={(e) => setDesignForm({...designForm, netWt: e.target.value})}
+                onChange={(e) => setDesignForm({ ...designForm, netWt: e.target.value })}
                 placeholder="0.00"
                 required
               />
@@ -1416,7 +1426,7 @@ const ProductionDashboard = () => {
               </div>
             </div>
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Diamond Weight</label>
             <div className="relative rounded-md shadow-sm">
@@ -1424,7 +1434,7 @@ const ProductionDashboard = () => {
                 type="text"
                 className="block w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition"
                 value={designForm.diaWt}
-                onChange={(e) => setDesignForm({...designForm, diaWt: e.target.value})}
+                onChange={(e) => setDesignForm({ ...designForm, diaWt: e.target.value })}
                 placeholder="0.00"
                 required
               />
@@ -1433,24 +1443,24 @@ const ProductionDashboard = () => {
               </div>
             </div>
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Diamond Pieces</label>
             <input
               type="text"
               className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition"
               value={designForm.diaPcs}
-              onChange={(e) => setDesignForm({...designForm, diaPcs: e.target.value})}
+              onChange={(e) => setDesignForm({ ...designForm, diaPcs: e.target.value })}
               required
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Clarity</label>
             <select
               className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition"
               value={designForm.clarity}
-              onChange={(e) => setDesignForm({...designForm, clarity: e.target.value})}
+              onChange={(e) => setDesignForm({ ...designForm, clarity: e.target.value })}
               required
             >
               <option value="">Select clarity</option>
@@ -1460,13 +1470,13 @@ const ProductionDashboard = () => {
               <option value="i">I</option>
             </select>
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Color</label>
             <select
               className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition"
               value={designForm.color}
-              onChange={(e) => setDesignForm({...designForm, color: e.target.value})}
+              onChange={(e) => setDesignForm({ ...designForm, color: e.target.value })}
               required
             >
               <option value="">Select color</option>
@@ -1477,7 +1487,7 @@ const ProductionDashboard = () => {
             </select>
           </div>
         </div>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">MM Size *</label>
@@ -1486,7 +1496,7 @@ const ProductionDashboard = () => {
               value={designForm.mmSize ? String(designForm.mmSize) : ''}
               onChange={(e) => {
                 const value = e.target.value;
-                
+
                 if (value) {
                   const numValue = parseFloat(value);
                   handleMMSizeChange(numValue);
@@ -1508,7 +1518,7 @@ const ProductionDashboard = () => {
               ))}
             </select>
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Seive / Size</label>
             <input
@@ -1518,7 +1528,7 @@ const ProductionDashboard = () => {
               readOnly
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Sieve Size Range</label>
             <input
@@ -1529,7 +1539,7 @@ const ProductionDashboard = () => {
             />
           </div>
         </div>
-        
+
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Design Image</label>
           <div className="flex items-center space-x-4">
@@ -1552,16 +1562,16 @@ const ProductionDashboard = () => {
             </div>
             {previewImage && (
               <div className="relative group">
-                <img 
-                  src={previewImage} 
-                  alt="Preview" 
+                <img
+                  src={previewImage}
+                  alt="Preview"
                   className="h-16 w-16 object-cover rounded-lg"
                 />
                 <button
                   type="button"
                   onClick={() => {
                     setPreviewImage(null);
-                    setDesignForm({...designForm, imageFile: null});
+                    setDesignForm({ ...designForm, imageFile: null });
                   }}
                   className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition"
                 >
@@ -1574,10 +1584,10 @@ const ProductionDashboard = () => {
             Upload a high-quality image (JPEG, PNG, WebP) under 5MB
           </p>
         </div>
-        
+
         <div className="flex justify-end">
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             className="bg-[#00072D] text-white px-6 py-3 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition flex items-center"
             disabled={loading}
           >
@@ -1601,7 +1611,7 @@ const ProductionDashboard = () => {
           <h2 className="text-xl font-semibold text-gray-800">Design Master Records</h2>
           <span className="text-sm text-gray-500">{designMasters.length} records</span>
         </div>
-        
+
         <div className="overflow-x-auto">
           <div className="inline-block min-w-full align-middle">
             <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 rounded-lg">
@@ -1627,9 +1637,9 @@ const ProductionDashboard = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{design.styleNumber}</td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         {design.imageFile ? (
-                          <img 
-                            src={design.imageFile} 
-                            alt="Design" 
+                          <img
+                            src={design.imageFile}
+                            alt="Design"
                             className="h-10 w-10 object-cover rounded-lg"
                             onError={(e) => {
                               e.target.onerror = null;
@@ -1663,9 +1673,9 @@ const ProductionDashboard = () => {
   const renderMasterDataMenu = () => (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold text-gray-800">Master Data Management</h1>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div 
+        <div
           className="bg-white rounded-xl shadow-lg p-6 cursor-pointer hover:shadow-xl transition"
           onClick={() => setMasterType('product')}
         >
@@ -1679,7 +1689,7 @@ const ProductionDashboard = () => {
             </div>
           </div>
         </div>
-        <div 
+        <div
           className="bg-white rounded-xl shadow-lg p-6 cursor-pointer hover:shadow-xl transition"
           onClick={() => setMasterType('design')}
         >
@@ -1879,7 +1889,7 @@ const ProductionDashboard = () => {
           className="bg-white rounded-xl shadow-lg p-6"
         >
           <h2 className="text-2xl font-bold text-gray-800 mb-6">Complete Orders</h2>
-          
+
           {completedOrders.length === 0 ? (
             <div className="text-center py-12 text-gray-500">
               <FiCheckCircle className="mx-auto text-4xl mb-2 opacity-50" />
@@ -2000,22 +2010,22 @@ const ProductionDashboard = () => {
                   <motion.div
                     className="absolute top-0 left-0 w-full bg-gradient-to-b from-green-500 via-blue-500 to-gray-300"
                     initial={{ height: '0%' }}
-                    animate={{ 
-                      height: `${(selectedOrderForTracking.departmentStatus?.filter(ds => ds.status === 'completed').length || 0) / sortedDepartments.length * 100}%` 
+                    animate={{
+                      height: `${(selectedOrderForTracking.departmentStatus?.filter(ds => ds.status === 'completed').length || 0) / sortedDepartments.length * 100}%`
                     }}
                     transition={{ duration: 1, ease: "easeOut" }}
                     style={{ borderRadius: '2px' }}
                   />
                 </div>
-                
+
                 <div className="relative">
                   {sortedDepartments.map((dept, index) => {
                     // Normalize IDs for comparison (handle both string and ObjectId)
                     const deptId = String(dept._id);
-                    const currentDeptId = selectedOrderForTracking.currentDepartment 
+                    const currentDeptId = selectedOrderForTracking.currentDepartment
                       ? String(selectedOrderForTracking.currentDepartment._id || selectedOrderForTracking.currentDepartment)
                       : null;
-                    
+
                     // Get department status from order
                     const deptStatus = selectedOrderForTracking.departmentStatus?.find(
                       ds => {
@@ -2023,14 +2033,14 @@ const ProductionDashboard = () => {
                         return dsDeptId === deptId;
                       }
                     );
-                    
+
                     // Check if this is the current department
                     const isCurrentDept = currentDeptId === deptId;
                     const isCompleted = deptStatus?.status === 'completed';
                     const isBlocked = deptStatus?.status === 'blocked';
                     const isInProgress = deptStatus?.status === 'in_progress' || isCurrentDept;
                     const isActive = isCurrentDept || isInProgress;
-                    
+
                     // Get pending message for this department
                     const pendingMsg = selectedOrderForTracking.pendingMessages?.find(
                       pm => {
@@ -2048,7 +2058,7 @@ const ProductionDashboard = () => {
                         <motion.div
                           initial={{ opacity: 0, x: -50 }}
                           animate={{ opacity: 1, x: 0 }}
-                          transition={{ 
+                          transition={{
                             delay: index * 0.15,
                             type: "spring",
                             stiffness: 100
@@ -2057,80 +2067,80 @@ const ProductionDashboard = () => {
                         >
                           {/* Animated Status Circle */}
                           <div className="absolute left-0 top-2 flex-shrink-0" style={{ zIndex: 20, transform: 'translateX(-50%)' }}>
-                          <motion.div
-                            className={`
+                            <motion.div
+                              className={`
                               w-12 h-12 rounded-full flex items-center justify-center
-                              ${isCompleted 
-                                ? 'bg-green-500' 
-                                : isBlocked
-                                ? 'bg-red-500'
-                                : isActive 
-                                ? 'bg-blue-500' 
-                                : 'bg-gray-300'
-                              }
+                              ${isCompleted
+                                  ? 'bg-green-500'
+                                  : isBlocked
+                                    ? 'bg-red-500'
+                                    : isActive
+                                      ? 'bg-blue-500'
+                                      : 'bg-gray-300'
+                                }
                             `}
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            transition={{ 
-                              delay: index * 0.15 + 0.2,
-                              type: "spring",
-                              stiffness: 200
-                            }}
-                          >
-                            {isCompleted ? (
+                              initial={{ scale: 0 }}
+                              animate={{ scale: 1 }}
+                              transition={{
+                                delay: index * 0.15 + 0.2,
+                                type: "spring",
+                                stiffness: 200
+                              }}
+                            >
+                              {isCompleted ? (
+                                <motion.div
+                                  initial={{ scale: 0, rotate: -180 }}
+                                  animate={{ scale: 1, rotate: 0 }}
+                                  transition={{ delay: index * 0.15 + 0.3 }}
+                                >
+                                  <FiCheckCircle className="text-white text-xl" />
+                                </motion.div>
+                              ) : isBlocked ? (
+                                <FiXCircle className="text-white text-xl" />
+                              ) : isActive ? (
+                                <motion.div
+                                  animate={{ rotate: 360 }}
+                                  transition={{
+                                    duration: 2,
+                                    repeat: Infinity,
+                                    ease: "linear"
+                                  }}
+                                >
+                                  <FiClock className="text-white text-xl" />
+                                </motion.div>
+                              ) : (
+                                <FiPackage className="text-white text-lg" />
+                              )}
+                            </motion.div>
+
+                            {/* Pulse animation for active */}
+                            {isActive && !isCompleted && !isBlocked && (
                               <motion.div
-                                initial={{ scale: 0, rotate: -180 }}
-                                animate={{ scale: 1, rotate: 0 }}
-                                transition={{ delay: index * 0.15 + 0.3 }}
-                              >
-                                <FiCheckCircle className="text-white text-xl" />
-                              </motion.div>
-                            ) : isBlocked ? (
-                              <FiXCircle className="text-white text-xl" />
-                            ) : isActive ? (
-                              <motion.div
-                                animate={{ rotate: 360 }}
-                                transition={{ 
+                                className={`absolute inset-0 rounded-full bg-blue-500`}
+                                animate={{
+                                  scale: [1, 1.5, 1],
+                                  opacity: [0.5, 0, 0.5]
+                                }}
+                                transition={{
                                   duration: 2,
                                   repeat: Infinity,
-                                  ease: "linear"
+                                  ease: "easeInOut"
                                 }}
-                              >
-                                <FiClock className="text-white text-xl" />
-                              </motion.div>
-                            ) : (
-                              <FiPackage className="text-white text-lg" />
+                              />
                             )}
-                          </motion.div>
-                          
-                          {/* Pulse animation for active */}
-                          {isActive && !isCompleted && !isBlocked && (
-                            <motion.div
-                              className={`absolute inset-0 rounded-full bg-blue-500`}
-                              animate={{ 
-                                scale: [1, 1.5, 1],
-                                opacity: [0.5, 0, 0.5]
-                              }}
-                              transition={{ 
-                                duration: 2,
-                                repeat: Infinity,
-                                ease: "easeInOut"
-                              }}
-                            />
-                          )}
-                        </div>
+                          </div>
 
                           {/* Department Info Card */}
                           <motion.div
                             className={`
                               flex-1 p-5 rounded-lg border-l-4 transition-all duration-300 ml-4
-                              ${isCompleted 
-                                ? 'bg-green-50 border-green-500 shadow-sm' 
+                              ${isCompleted
+                                ? 'bg-green-50 border-green-500 shadow-sm'
                                 : isBlocked
-                                ? 'bg-red-50 border-red-500 shadow-md'
-                                : isActive 
-                                ? 'bg-blue-50 border-blue-500 shadow-md' 
-                                : 'bg-gray-50 border-gray-300'
+                                  ? 'bg-red-50 border-red-500 shadow-md'
+                                  : isActive
+                                    ? 'bg-blue-50 border-blue-500 shadow-md'
+                                    : 'bg-gray-50 border-gray-300'
                               }
                             `}
                             whileHover={{ scale: 1.01, x: 2 }}
@@ -2139,114 +2149,114 @@ const ProductionDashboard = () => {
                           >
                             <div className="flex items-start justify-between gap-4 w-full">
                               <div className="flex-1 min-w-0">
-                              <h4 className={`
+                                <h4 className={`
                                 text-lg font-semibold mb-1
                                 ${isCompleted ? 'text-green-800' : isBlocked ? 'text-red-800' : isActive ? 'text-blue-800' : 'text-gray-600'}
                               `}>
-                                {dept.name}
-                              </h4>
-                              <div className="flex items-center gap-3 flex-wrap">
-                                {isCompleted ? (
-                                  <motion.span
-                                    className="text-sm text-green-700 font-medium"
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    transition={{ delay: index * 0.15 + 0.4 }}
-                                  >
-                                    ✓ Completed
-                                  </motion.span>
-                                ) : isBlocked ? (
-                                  <motion.span
-                                    className="text-sm text-red-700 font-medium"
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                  >
-                                    ⚠ Pending
-                                  </motion.span>
-                                ) : isActive ? (
-                                  <motion.span
-                                    className="text-sm text-blue-700 font-medium"
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: [0.5, 1, 0.5] }}
-                                    transition={{ 
-                                      duration: 1.5,
-                                      repeat: Infinity,
-                                      delay: index * 0.15
-                                    }}
-                                  >
-                                    In Progress...
-                                  </motion.span>
-                                ) : (
-                                  <span className="text-sm text-gray-500">
-                                    Pending
-                                  </span>
-                                )}
-                                {pendingMsg && (
-                                  <div className="text-xs text-red-600 bg-red-50 px-2 py-1 rounded border border-red-200">
-                                    <p className="font-medium">Pending: {pendingMsg.message}</p>
-                                    {pendingMsg.resolvedAt && (
-                                      <p className="text-green-600 mt-1">Resolved: {pendingMsg.resolvedMessage}</p>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-                              {/* Show OK/Pending buttons for current department */}
-                              {(() => {
-                                // Show buttons if this is the current department and order is accepted
-                                if (isCurrentDept && selectedOrderForTracking.status === 'accepted') {
-                                  return (
-                                    <div className="mt-3 flex gap-2 flex-wrap">
-                                      {isBlocked ? (
-                                        <motion.button
-                                          onClick={handleResolvePending}
-                                          className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
-                                          whileHover={{ scale: 1.05 }}
-                                          whileTap={{ scale: 0.95 }}
-                                        >
-                                          Resolve & Continue
-                                        </motion.button>
-                                      ) : (
-                                        <>
+                                  {dept.name}
+                                </h4>
+                                <div className="flex items-center gap-3 flex-wrap">
+                                  {isCompleted ? (
+                                    <motion.span
+                                      className="text-sm text-green-700 font-medium"
+                                      initial={{ opacity: 0 }}
+                                      animate={{ opacity: 1 }}
+                                      transition={{ delay: index * 0.15 + 0.4 }}
+                                    >
+                                      ✓ Completed
+                                    </motion.span>
+                                  ) : isBlocked ? (
+                                    <motion.span
+                                      className="text-sm text-red-700 font-medium"
+                                      initial={{ opacity: 0 }}
+                                      animate={{ opacity: 1 }}
+                                    >
+                                      ⚠ Pending
+                                    </motion.span>
+                                  ) : isActive ? (
+                                    <motion.span
+                                      className="text-sm text-blue-700 font-medium"
+                                      initial={{ opacity: 0 }}
+                                      animate={{ opacity: [0.5, 1, 0.5] }}
+                                      transition={{
+                                        duration: 1.5,
+                                        repeat: Infinity,
+                                        delay: index * 0.15
+                                      }}
+                                    >
+                                      In Progress...
+                                    </motion.span>
+                                  ) : (
+                                    <span className="text-sm text-gray-500">
+                                      Pending
+                                    </span>
+                                  )}
+                                  {pendingMsg && (
+                                    <div className="text-xs text-red-600 bg-red-50 px-2 py-1 rounded border border-red-200">
+                                      <p className="font-medium">Pending: {pendingMsg.message}</p>
+                                      {pendingMsg.resolvedAt && (
+                                        <p className="text-green-600 mt-1">Resolved: {pendingMsg.resolvedMessage}</p>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                                {/* Show OK/Pending buttons for current department */}
+                                {(() => {
+                                  // Show buttons if this is the current department and order is accepted
+                                  if (isCurrentDept && selectedOrderForTracking.status === 'accepted') {
+                                    return (
+                                      <div className="mt-3 flex gap-2 flex-wrap">
+                                        {isBlocked ? (
                                           <motion.button
-                                            onClick={() => handleMoveToNext(selectedOrderForTracking.orderId)}
+                                            onClick={handleResolvePending}
                                             className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
                                             whileHover={{ scale: 1.05 }}
                                             whileTap={{ scale: 0.95 }}
                                           >
-                                            OK
+                                            Resolve & Continue
                                           </motion.button>
-                                          <motion.button
-                                            onClick={() => handleMarkPending(dept)}
-                                            className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm font-medium"
-                                            whileHover={{ scale: 1.05 }}
-                                            whileTap={{ scale: 0.95 }}
-                                          >
-                                            Pending
-                                          </motion.button>
-                                        </>
-                                      )}
-                                    </div>
-                                  );
-                                }
-                                return null;
-                              })()}
-                            </div>
-                            {dept.serialNumber && (
-                              <span className={`
+                                        ) : (
+                                          <>
+                                            <motion.button
+                                              onClick={() => handleMoveToNext(selectedOrderForTracking.orderId)}
+                                              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+                                              whileHover={{ scale: 1.05 }}
+                                              whileTap={{ scale: 0.95 }}
+                                            >
+                                              OK
+                                            </motion.button>
+                                            <motion.button
+                                              onClick={() => handleMarkPending(dept)}
+                                              className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm font-medium"
+                                              whileHover={{ scale: 1.05 }}
+                                              whileTap={{ scale: 0.95 }}
+                                            >
+                                              Pending
+                                            </motion.button>
+                                          </>
+                                        )}
+                                      </div>
+                                    );
+                                  }
+                                  return null;
+                                })()}
+                              </div>
+                              {dept.serialNumber && (
+                                <span className={`
                                 px-3 py-1 rounded-full text-xs font-semibold flex-shrink-0
-                                ${isCompleted 
-                                  ? 'bg-green-200 text-green-800' 
-                                  : isBlocked
-                                  ? 'bg-red-200 text-red-800'
-                                  : isActive 
-                                  ? 'bg-blue-200 text-blue-800' 
-                                  : 'bg-gray-200 text-gray-600'
-                                }
+                                ${isCompleted
+                                    ? 'bg-green-200 text-green-800'
+                                    : isBlocked
+                                      ? 'bg-red-200 text-red-800'
+                                      : isActive
+                                        ? 'bg-blue-200 text-blue-800'
+                                        : 'bg-gray-200 text-gray-600'
+                                  }
                               `}>
-                                #{dept.serialNumber}
-                              </span>
-                            )}
-                          </div>
+                                  #{dept.serialNumber}
+                                </span>
+                              )}
+                            </div>
                           </motion.div>
                         </motion.div>
                       </div>
@@ -2270,7 +2280,7 @@ const ProductionDashboard = () => {
         >
           <h2 className="text-2xl font-bold text-gray-800 mb-6">Track Orders</h2>
           <p className="text-gray-600 mb-6">Select an order to track its progress through departments</p>
-          
+
           {acceptedOrders.length === 0 ? (
             <div className="text-center py-12 text-gray-500">
               <FiShoppingBag className="mx-auto text-4xl mb-2 opacity-50" />
@@ -2328,7 +2338,7 @@ const ProductionDashboard = () => {
           className="bg-white rounded-xl shadow-lg p-6"
         >
           <h2 className="text-2xl font-bold text-gray-800 mb-6">Add Department</h2>
-          
+
           {/* Simple Add Department Form */}
           <div className="mb-6 space-y-3">
             <div className="flex gap-3">
@@ -2476,7 +2486,7 @@ const ProductionDashboard = () => {
         <div className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg flex items-center ${notification.isError ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>
           <FiCheckCircle className="mr-2" />
           <span>{notification.message}</span>
-          <button 
+          <button
             onClick={() => setNotification({ show: false, message: '', isError: false })}
             className="ml-4"
           >
@@ -2487,7 +2497,7 @@ const ProductionDashboard = () => {
 
       {/* Mobile header */}
       <div className="md:hidden bg-[#00072D] text-white p-4 flex justify-between items-center sticky top-0 z-10 shadow-md">
-        <button 
+        <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           className="p-2 rounded-md focus:outline-none hover:bg-white/10 transition-colors"
         >
@@ -2504,9 +2514,9 @@ const ProductionDashboard = () => {
 
       <div className="flex flex-1 overflow-hidden relative">
         {/* Sidebar - Fixed and not scrolling */}
-        <motion.div 
+        <motion.div
           className={`fixed inset-y-0 left-0 transform ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 z-30 ${sidebarCollapsed ? 'w-20' : 'w-64'} bg-[#00072D] text-white transition-all duration-200 ease-in-out flex flex-col shadow-2xl`}
-          style={{ 
+          style={{
             height: '100vh',
             background: `linear-gradient(180deg, #00072D 0%, #1a1a2e 100%)`
           }}
@@ -2516,18 +2526,18 @@ const ProductionDashboard = () => {
         >
           <div className="p-4 border-b-2 border-white/20">
             <div className="flex items-center justify-between">
-            <motion.button
-              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-              className="hidden md:block p-2 rounded-lg hover:bg-white/10 transition-all ml-auto"
-              whileHover={{ scale: 1.1, rotate: 90 }}
-              whileTap={{ scale: 0.9 }}
-            >
-              {sidebarCollapsed ? <FiMenu className="text-xl" /> : <FiX className="text-xl" />}
-            </motion.button>
+              <motion.button
+                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                className="hidden md:block p-2 rounded-lg hover:bg-white/10 transition-all ml-auto"
+                whileHover={{ scale: 1.1, rotate: 90 }}
+                whileTap={{ scale: 0.9 }}
+              >
+                {sidebarCollapsed ? <FiMenu className="text-xl" /> : <FiX className="text-xl" />}
+              </motion.button>
             </div>
           </div>
           <nav className="mt-6 flex-1 overflow-y-auto px-2">
-            <motion.div 
+            <motion.div
               className={`flex items-center px-4 py-4 cursor-pointer rounded-xl transition-all mb-2 ${activeMenu === 'dashboard' ? 'bg-white/10 shadow-lg' : 'hover:bg-white/5'}`}
               onClick={() => {
                 setActiveMenu('dashboard');
@@ -2541,7 +2551,7 @@ const ProductionDashboard = () => {
               <FiHome className="mr-3 flex-shrink-0 text-lg" />
               {!sidebarCollapsed && <span className="font-medium">Dashboard</span>}
             </motion.div>
-            <motion.div 
+            <motion.div
               className={`flex items-center px-4 py-4 cursor-pointer rounded-xl transition-all mb-2 ${activeMenu === 'master' ? 'bg-white/10 shadow-lg' : 'hover:bg-white/5'}`}
               onClick={() => {
                 setActiveMenu('master');
@@ -2555,7 +2565,7 @@ const ProductionDashboard = () => {
               <FiDatabase className="mr-3 flex-shrink-0 text-lg" />
               {!sidebarCollapsed && <span className="font-medium">Master Data</span>}
             </motion.div>
-            <motion.div 
+            <motion.div
               className={`flex items-center px-4 py-4 cursor-pointer rounded-xl transition-all ${activeMenu === 'acceptedOrders' ? 'bg-white/10 shadow-lg' : 'hover:bg-white/5'}`}
               onClick={() => {
                 setActiveMenu('acceptedOrders');
@@ -2571,7 +2581,7 @@ const ProductionDashboard = () => {
               <FiCheckCircle className="mr-3 flex-shrink-0 text-lg" />
               {!sidebarCollapsed && <span className="font-medium">Accepted Orders</span>}
             </motion.div>
-            <motion.div 
+            <motion.div
               className={`flex items-center px-4 py-4 cursor-pointer rounded-xl transition-all mb-2 ${activeMenu === 'departments' ? 'bg-white/10 shadow-lg' : 'hover:bg-white/5'}`}
               onClick={() => {
                 setActiveMenu('departments');
@@ -2586,7 +2596,7 @@ const ProductionDashboard = () => {
               <FiBriefcase className="mr-3 flex-shrink-0 text-lg" />
               {!sidebarCollapsed && <span className="font-medium">Departments</span>}
             </motion.div>
-            <motion.div 
+            <motion.div
               className={`flex items-center px-4 py-4 cursor-pointer rounded-xl transition-all mb-2 ${activeMenu === 'trackOrder' ? 'bg-white/10 shadow-lg' : 'hover:bg-white/5'}`}
               onClick={() => {
                 setActiveMenu('trackOrder');
@@ -2600,7 +2610,7 @@ const ProductionDashboard = () => {
               <FiShoppingBag className="mr-3 flex-shrink-0 text-lg" />
               {!sidebarCollapsed && <span className="font-medium">Track Order</span>}
             </motion.div>
-            <motion.div 
+            <motion.div
               className={`flex items-center px-4 py-4 cursor-pointer rounded-xl transition-all mb-2 ${activeMenu === 'completedOrders' ? 'bg-white/10 shadow-lg' : 'hover:bg-white/5'}`}
               onClick={() => {
                 setActiveMenu('completedOrders');
@@ -2617,23 +2627,23 @@ const ProductionDashboard = () => {
           </nav>
           {!sidebarCollapsed && (
             <div className="p-4 text-xs text-white/40 border-t border-white/10 text-center">
-           PageTraffics
-          </div>
+              PageTraffics
+            </div>
           )}
         </motion.div>
 
         {/* Overlay for mobile menu */}
         {mobileMenuOpen && (
-          <div 
+          <div
             className="fixed inset-0 bg-black bg-opacity-50 z-10 md:hidden"
             onClick={() => setMobileMenuOpen(false)}
           ></div>
         )}
 
         {/* Desktop Header */}
-        <motion.div 
+        <motion.div
           className="hidden md:block fixed top-0 right-0 left-64 bg-[#00072D] text-white p-4 flex justify-between items-center shadow-lg z-20 transition-all duration-200 border-b-2"
-          style={{ 
+          style={{
             left: sidebarCollapsed ? '80px' : '256px',
             borderColor: '#f9e79f',
             background: `linear-gradient(90deg, #00072D 0%, #1a1a2e 100%)`
@@ -2668,9 +2678,9 @@ const ProductionDashboard = () => {
         </motion.div>
 
         {/* Main Content - Scrollable */}
-        <div 
+        <div
           className="flex-1 overflow-y-auto p-4 md:p-6"
-          style={{ 
+          style={{
             marginLeft: sidebarCollapsed ? '80px' : '256px',
             width: sidebarCollapsed ? 'calc(100% - 80px)' : 'calc(100% - 256px)',
             height: '100vh',
@@ -2779,6 +2789,138 @@ const ProductionDashboard = () => {
                 whileTap={{ scale: 0.95 }}
               >
                 Cancel
+              </motion.button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Metal Input Modal */}
+      {metalModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-xl shadow-2xl p-6 max-w-2xl w-full"
+          >
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold text-gray-800">Record Remaining Metals - {selectedOrderForTracking?.orderId}</h3>
+              <button
+                onClick={() => {
+                  setMetalModalOpen(false);
+                  setMetalData([{ metal: 'Gold', clientSide: '', companySide: '' }]);
+                }}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <FiX size={24} />
+              </button>
+            </div>
+
+            <p className="text-sm text-gray-600 mb-6">
+              Please enter the remaining metals for this order (returned from Casting).
+            </p>
+
+            <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
+              {metalData.map((row, index) => (
+                <div key={index} className="flex gap-3 items-end bg-gray-50 p-3 rounded-lg border border-gray-200">
+                  <div className="flex-1">
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">Metal</label>
+                    <select
+                      value={row.metal}
+                      onChange={(e) => {
+                        const newData = [...metalData];
+                        newData[index].metal = e.target.value;
+                        setMetalData(newData);
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                    >
+                      {availableMetals.map(m => <option key={m} value={m}>{m}</option>)}
+                    </select>
+                  </div>
+                  <div className="flex-1">
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">Client Side</label>
+                    <input
+                      type="number"
+                      value={row.clientSide}
+                      onChange={(e) => {
+                        const newData = [...metalData];
+                        newData[index].clientSide = e.target.value;
+                        setMetalData(newData);
+                      }}
+                      placeholder="Qty"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">Company Side</label>
+                    <input
+                      type="number"
+                      value={row.companySide}
+                      onChange={(e) => {
+                        const newData = [...metalData];
+                        newData[index].companySide = e.target.value;
+                        setMetalData(newData);
+                      }}
+                      placeholder="Qty"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                    />
+                  </div>
+                  <button
+                    onClick={() => {
+                      if (metalData.length > 1) {
+                        setMetalData(metalData.filter((_, i) => i !== index));
+                      }
+                    }}
+                    className="p-2 text-red-500 hover:bg-red-50 rounded-lg"
+                  >
+                    <FiTrash2 />
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <button
+              onClick={() => setMetalData([...metalData, { metal: 'Gold', clientSide: '', companySide: '' }])}
+              className="mt-4 flex items-center gap-2 text-blue-600 font-medium hover:text-blue-700"
+            >
+              <FiPlus /> Add Metal
+            </button>
+
+            <div className="flex gap-3 mt-8">
+              <motion.button
+                onClick={async () => {
+                  try {
+                    const apiBaseUrl = getApiBaseUrl();
+                    const response = await axios.post(
+                      `${apiBaseUrl}/api/orders/record-metals/${selectedOrderForTracking.orderId}`,
+                      { metals: metalData }
+                    );
+                    if (response.data.success) {
+                      showNotification('Metals recorded and sent to Accounts');
+                      setMetalModalOpen(false);
+                      setMetalData([{ metal: 'Gold', clientSide: '', companySide: '' }]);
+                    }
+                  } catch (error) {
+                    console.error('Error recording metals:', error);
+                    showNotification('Failed to record metals', true);
+                  }
+                }}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                Save & Update Accounts
+              </motion.button>
+              <motion.button
+                onClick={() => {
+                  setMetalModalOpen(false);
+                  setMetalData([{ metal: 'Gold', clientSide: '', companySide: '' }]);
+                }}
+                className="flex-1 px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                Skip
               </motion.button>
             </div>
           </motion.div>

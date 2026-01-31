@@ -2,15 +2,15 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Edit2, Save, X, LogOut, DollarSign, Gem, Coins, Package, ShoppingBag, CheckCircle, XCircle } from 'lucide-react';
+import { Edit2, Save, X, LogOut, DollarSign, Gem, Coins, Package, ShoppingBag, CheckCircle, XCircle, History } from 'lucide-react';
 
 const AccountsDashboard = () => {
   const navigate = useNavigate();
-  
+
   // Active tab state
   const [activeTab, setActiveTab] = useState('inventory');
   const [loading, setLoading] = useState(false);
-  
+
   // Inventory from DB
   const [inventory, setInventory] = useState({
     gold: { quantity: 1500.50, unit: 'grams' },
@@ -25,14 +25,15 @@ const AccountsDashboard = () => {
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const [selectedOrderForReject, setSelectedOrderForReject] = useState(null);
   const [rejectionReason, setRejectionReason] = useState('');
-  
+
   // Orders from DB
   const [orders, setOrders] = useState([]);
-  
+  const [history, setHistory] = useState([]);
+
   // Track if we've already tried auto-sync
   const hasAutoSynced = useRef(false);
   const initialFetchDone = useRef(false);
-  
+
   // API Base URL
   const getApiBaseUrl = () => {
     const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
@@ -56,13 +57,14 @@ const AccountsDashboard = () => {
     // Check authentication
     const isAuthenticated = sessionStorage.getItem('isAuthenticated');
     const role = sessionStorage.getItem('role');
-    
+
     if (!isAuthenticated || role !== 'accounts') {
       navigate('/');
     } else {
       // Fetch inventory and orders from DB
       fetchInventory();
       fetchOrders();
+      fetchHistory();
     }
   }, [navigate]);
 
@@ -99,15 +101,15 @@ const AccountsDashboard = () => {
       const apiBaseUrl = getApiBaseUrl();
       const apiUrl = `${apiBaseUrl}/api/orders/all`;
       console.log('Fetching orders from:', apiUrl);
-      
+
       const response = await axios.get(apiUrl);
       console.log('Full API response:', response);
       console.log('Response data:', response.data);
       console.log('Response status:', response.status);
-      
+
       // Handle different response structures
       let ordersData = null;
-      
+
       if (response.data) {
         // Check if response.data is an array directly
         if (Array.isArray(response.data)) {
@@ -131,13 +133,13 @@ const AccountsDashboard = () => {
           ordersData = [];
         }
       }
-      
+
       if (ordersData && Array.isArray(ordersData)) {
         // Transform DB orders to match frontend format
         const transformedOrders = ordersData.map((order, index) => {
           // Handle both MongoDB _id and orderId
           const orderId = order.orderId || order._id?.toString() || `order-${index}`;
-          
+
           return {
             id: orderId,
             orderId: orderId,
@@ -154,7 +156,7 @@ const AccountsDashboard = () => {
             rejectedDate: order.rejectedDate
           };
         });
-        
+
         console.log('Transformed orders:', transformedOrders);
         console.log('Setting orders count:', transformedOrders.length);
         setOrders(transformedOrders);
@@ -169,13 +171,13 @@ const AccountsDashboard = () => {
       console.error('Error response:', error.response?.data);
       console.error('Error status:', error.response?.status);
       console.error('Error config:', error.config);
-      
+
       // Show user-friendly error
       if (error.response) {
         const status = error.response.status;
         const statusText = error.response.statusText || 'Unknown Error';
         console.error(`Server responded with status ${status} (${statusText}):`, error.response.data);
-        
+
         if (status === 404) {
           console.warn('⚠️ Route not found. The backend may not have the latest code deployed.');
           console.warn('Please ensure the backend server has been restarted with the latest code.');
@@ -187,8 +189,23 @@ const AccountsDashboard = () => {
       } else {
         console.error('Error setting up request:', error.message);
       }
-      
+
       setOrders([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchHistory = async () => {
+    try {
+      setLoading(true);
+      const apiBaseUrl = getApiBaseUrl();
+      const response = await axios.get(`${apiBaseUrl}/api/orders/metal-history`);
+      if (response.data.success) {
+        setHistory(response.data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching metal history:', error);
     } finally {
       setLoading(false);
     }
@@ -220,9 +237,9 @@ const AccountsDashboard = () => {
           unit: editValues.unit || inventory[item].unit
         }
       };
-      
+
       const response = await axios.put(`${apiBaseUrl}/api/inventory/update`, updatedInventory);
-      
+
       if (response.data.success) {
         setInventory(response.data.data);
         setEditing(null);
@@ -251,7 +268,7 @@ const AccountsDashboard = () => {
   // Check if order can be accepted (all materials available)
   const checkMaterialsAvailability = (order) => {
     const missingMaterials = [];
-    
+
     if (inventory.gold.quantity < order.gold.quantity) {
       missingMaterials.push('Gold');
     }
@@ -264,7 +281,7 @@ const AccountsDashboard = () => {
     if (inventory.platinum.quantity < order.platinum.quantity) {
       missingMaterials.push('Platinum');
     }
-    
+
     return { available: missingMaterials.length === 0, missingMaterials };
   };
 
@@ -284,12 +301,12 @@ const AccountsDashboard = () => {
       if (!available) {
         // Auto-reject if any material is insufficient
         const rejectionMessage = `${missingMaterials.join(', ')} ${missingMaterials.length === 1 ? 'is' : 'are'} not available`;
-        
+
         // Reject order via API
         await axios.put(`${apiBaseUrl}/api/orders/reject/${actualOrderId}`, {
           rejectionReason: rejectionMessage
         });
-        
+
         // Refresh orders
         await fetchOrders();
         alert(`Order rejected automatically: ${rejectionMessage}`);
@@ -298,7 +315,7 @@ const AccountsDashboard = () => {
 
       // Accept order via API
       await axios.put(`${apiBaseUrl}/api/orders/accept/${actualOrderId}`);
-      
+
       // Deduct materials from inventory
       const updatedInventory = {
         gold: { ...inventory.gold, quantity: inventory.gold.quantity - order.gold.quantity },
@@ -307,14 +324,14 @@ const AccountsDashboard = () => {
         platinum: { ...inventory.platinum, quantity: inventory.platinum.quantity - order.platinum.quantity },
         other: inventory.other
       };
-      
+
       // Update inventory in DB
       await axios.put(`${apiBaseUrl}/api/inventory/update`, updatedInventory);
-      
+
       // Refresh both inventory and orders
       await fetchInventory();
       await fetchOrders();
-      
+
     } catch (error) {
       console.error('Error accepting order:', error);
       alert('Failed to accept order. Please try again.');
@@ -334,21 +351,21 @@ const AccountsDashboard = () => {
   // Handle Reject Order - Confirm Rejection
   const handleConfirmReject = async () => {
     if (!selectedOrderForReject) return;
-    
+
     try {
       setLoading(true);
       const apiBaseUrl = getApiBaseUrl();
       const reason = rejectionReason.trim() || 'Not enough materials available at accounts';
       const actualOrderId = selectedOrderForReject.orderId || selectedOrderForReject.id;
-      
+
       // Reject order via API
       await axios.put(`${apiBaseUrl}/api/orders/reject/${actualOrderId}`, {
         rejectionReason: reason
       });
-      
+
       // Refresh orders
       await fetchOrders();
-      
+
       setRejectModalOpen(false);
       setSelectedOrderForReject(null);
       setRejectionReason('');
@@ -467,7 +484,7 @@ const AccountsDashboard = () => {
                         value={editValues.quantity}
                         onChange={(e) => handleChange('quantity', e.target.value)}
                         className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2"
-                        style={{ 
+                        style={{
                           borderColor: item.color,
                           focusRingColor: item.color
                         }}
@@ -484,7 +501,7 @@ const AccountsDashboard = () => {
                         value={editValues.unit}
                         onChange={(e) => handleChange('unit', e.target.value)}
                         className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2"
-                        style={{ 
+                        style={{
                           borderColor: item.color,
                           focusRingColor: item.color
                         }}
@@ -503,7 +520,7 @@ const AccountsDashboard = () => {
   // Render Orders View
   const renderOrders = () => {
     const pendingOrders = orders.filter(o => o.status === 'pending');
-    
+
     return (
       <motion.div
         className="rounded-lg shadow p-4 md:p-6 min-h-[calc(100vh-8rem)] border-2"
@@ -611,7 +628,7 @@ const AccountsDashboard = () => {
                   const diamond = order.diamond || { quantity: 0, unit: 'carats' };
                   const silver = order.silver || { quantity: 0, unit: 'grams' };
                   const platinum = order.platinum || { quantity: 0, unit: 'grams' };
-                  
+
                   return (
                     <motion.tr
                       key={orderId}
@@ -620,8 +637,8 @@ const AccountsDashboard = () => {
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: index * 0.1 }}
                       style={{
-                        backgroundColor: order.status === 'accepted' ? '#d1fae5' : 
-                                       order.status === 'rejected' ? '#fee2e2' : 'white'
+                        backgroundColor: order.status === 'accepted' ? '#d1fae5' :
+                          order.status === 'rejected' ? '#fee2e2' : 'white'
                       }}
                     >
                       <td className="px-4 py-3 border border-gray-300 font-semibold">{orderId}</td>
@@ -633,11 +650,10 @@ const AccountsDashboard = () => {
                       <td className="px-4 py-3 border border-gray-300">{silver.quantity} {silver.unit}</td>
                       <td className="px-4 py-3 border border-gray-300">{platinum.quantity} {platinum.unit}</td>
                       <td className="px-4 py-3 border border-gray-300">
-                        <span className={`px-2 py-1 rounded text-xs font-semibold ${
-                          order.status === 'accepted' ? 'bg-green-100 text-green-800' :
+                        <span className={`px-2 py-1 rounded text-xs font-semibold ${order.status === 'accepted' ? 'bg-green-100 text-green-800' :
                           order.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                          'bg-yellow-100 text-yellow-800'
-                        }`}>
+                            'bg-yellow-100 text-yellow-800'
+                          }`}>
                           {(order.status || 'pending').toUpperCase()}
                         </span>
                       </td>
@@ -680,12 +696,96 @@ const AccountsDashboard = () => {
     );
   };
 
+  // Render History View
+  const renderHistory = () => (
+    <motion.div
+      className="rounded-lg shadow p-4 md:p-6 min-h-[calc(100vh-8rem)] border-2"
+      style={{
+        backgroundColor: colors.diamond,
+        borderColor: colors.gold,
+      }}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+    >
+      <div className="mb-6 flex justify-between items-center">
+        <div>
+          <h3 className="text-3xl font-bold mb-2" style={{ color: colors.deepNavy }}>
+            Metal Movement History
+          </h3>
+          <p className="text-gray-600">Track all received and returned metals per order</p>
+        </div>
+        <motion.button
+          onClick={fetchHistory}
+          className="px-4 py-2 rounded-lg text-white transition-colors"
+          style={{ backgroundColor: colors.info }}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          disabled={loading}
+        >
+          {loading ? 'Refreshing...' : 'Refresh History'}
+        </motion.button>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="w-full border-collapse">
+          <thead>
+            <tr style={{ backgroundColor: colors.deepNavy, color: colors.gold }}>
+              <th className="px-4 py-3 text-left border border-gray-300">Date & Time</th>
+              <th className="px-4 py-3 text-left border border-gray-300">Order ID</th>
+              <th className="px-4 py-3 text-left border border-gray-300">Metal</th>
+              <th className="px-4 py-3 text-right border border-gray-300">Client Side</th>
+              <th className="px-4 py-3 text-right border border-gray-300">Company Side</th>
+              <th className="px-4 py-3 text-right border border-gray-300">Total Returned</th>
+              <th className="px-4 py-3 text-center border border-gray-300">Type</th>
+            </tr>
+          </thead>
+          <tbody>
+            {history.length === 0 ? (
+              <tr>
+                <td colSpan="7" className="px-4 py-8 text-center text-gray-500">
+                  No records found
+                </td>
+              </tr>
+            ) : (
+              history.map((record, index) => (
+                <motion.tr
+                  key={record._id || index}
+                  className="hover:bg-gray-50 bg-white"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                >
+                  <td className="px-4 py-3 border border-gray-300">
+                    {new Date(record.createdAt).toLocaleString()}
+                  </td>
+                  <td className="px-4 py-3 border border-gray-300 font-semibold">{record.orderId}</td>
+                  <td className="px-4 py-3 border border-gray-300">{record.metal}</td>
+                  <td className="px-4 py-3 border border-gray-300 text-right">{record.clientSide}</td>
+                  <td className="px-4 py-3 border border-gray-300 text-right">{record.companySide}</td>
+                  <td className="px-4 py-3 border border-gray-300 text-right font-bold text-green-600">
+                    +{record.totalQuantity}
+                  </td>
+                  <td className="px-4 py-3 border border-gray-300 text-center">
+                    <span className="px-2 py-1 rounded text-xs font-semibold bg-green-100 text-green-800">
+                      {record.type.toUpperCase()}
+                    </span>
+                  </td>
+                </motion.tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    </motion.div>
+  );
+
   return (
     <div className="min-h-screen flex bg-gray-50">
       {/* Sidebar */}
       <motion.div
         className="w-64 text-white flex-shrink-0 hidden md:block shadow-2xl"
-        style={{ 
+        style={{
           backgroundColor: colors.deepNavy,
           background: `linear-gradient(180deg, ${colors.deepNavy} 0%, #1a1a2e 100%)`
         }}
@@ -697,8 +797,8 @@ const AccountsDashboard = () => {
           className="h-20 flex items-center justify-center border-b-2 relative"
           style={{ borderColor: colors.gold }}
         >
-          <motion.span 
-            className="text-xl font-bold tracking-wider" 
+          <motion.span
+            className="text-xl font-bold tracking-wider"
             style={{ color: colors.gold }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -710,9 +810,8 @@ const AccountsDashboard = () => {
         <nav className="p-4 flex flex-col h-full">
           <div className="flex-1">
             <motion.div
-              className={`w-full flex items-center p-4 rounded-xl transition-all mb-2 cursor-pointer ${
-                activeTab === 'inventory' ? 'shadow-lg' : 'hover:bg-white/5'
-              }`}
+              className={`w-full flex items-center p-4 rounded-xl transition-all mb-2 cursor-pointer ${activeTab === 'inventory' ? 'shadow-lg' : 'hover:bg-white/5'
+                }`}
               style={{
                 backgroundColor: activeTab === 'inventory' ? colors.gold : 'transparent',
                 color: activeTab === 'inventory' ? colors.deepNavy : colors.gold,
@@ -725,9 +824,8 @@ const AccountsDashboard = () => {
               <span className="font-medium">Inventory</span>
             </motion.div>
             <motion.div
-              className={`w-full flex items-center p-4 rounded-xl transition-all mb-2 cursor-pointer ${
-                activeTab === 'orders' ? 'shadow-lg' : 'hover:bg-white/5'
-              }`}
+              className={`w-full flex items-center p-4 rounded-xl transition-all mb-2 cursor-pointer ${activeTab === 'orders' ? 'shadow-lg' : 'hover:bg-white/5'
+                }`}
               style={{
                 backgroundColor: activeTab === 'orders' ? colors.gold : 'transparent',
                 color: activeTab === 'orders' ? colors.deepNavy : colors.gold,
@@ -738,6 +836,23 @@ const AccountsDashboard = () => {
             >
               <ShoppingBag className="h-5 w-5 mr-3" />
               <span className="font-medium">All Orders</span>
+            </motion.div>
+            <motion.div
+              className={`w-full flex items-center p-4 rounded-xl transition-all mb-2 cursor-pointer ${activeTab === 'history' ? 'shadow-lg' : 'hover:bg-white/5'
+                }`}
+              style={{
+                backgroundColor: activeTab === 'history' ? colors.gold : 'transparent',
+                color: activeTab === 'history' ? colors.deepNavy : colors.gold,
+              }}
+              onClick={() => {
+                setActiveTab('history');
+                fetchHistory();
+              }}
+              whileHover={{ scale: 1.02, x: 4 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <History className="h-5 w-5 mr-3" />
+              <span className="font-medium">Metal History</span>
             </motion.div>
           </div>
         </nav>
@@ -775,9 +890,9 @@ const AccountsDashboard = () => {
               <motion.button
                 onClick={handleLogout}
                 className="flex items-center space-x-2 px-4 py-2 rounded-lg hover:bg-red-600/20 transition-all border"
-                style={{ 
+                style={{
                   borderColor: colors.gold,
-                  color: colors.gold 
+                  color: colors.gold
                 }}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -814,13 +929,12 @@ const AccountsDashboard = () => {
         </div>
 
         {/* Content */}
-        <main
-          className="flex-1 overflow-y-auto p-4 md:p-6 md:pt-24"
-          style={{ backgroundColor: colors.light }}
-        >
+        {/* Main Content - Scrollable */}
+        <div className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-100">
           {activeTab === 'inventory' && renderInventory()}
           {activeTab === 'orders' && renderOrders()}
-        </main>
+          {activeTab === 'history' && renderHistory()}
+        </div>
       </div>
 
       {/* Rejection Modal */}
@@ -865,7 +979,7 @@ const AccountsDashboard = () => {
                 onChange={(e) => setRejectionReason(e.target.value)}
                 placeholder="Enter reason for rejection (e.g., Not enough materials available at accounts)"
                 className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 resize-none"
-                style={{ 
+                style={{
                   borderColor: colors.gold,
                   focusRingColor: colors.gold
                 }}
@@ -881,7 +995,7 @@ const AccountsDashboard = () => {
                   setRejectionReason('');
                 }}
                 className="px-4 py-2 rounded-lg border transition-colors"
-                style={{ 
+                style={{
                   borderColor: colors.gold,
                   color: colors.deepNavy
                 }}

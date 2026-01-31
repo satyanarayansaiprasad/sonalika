@@ -4,8 +4,8 @@ const OrderController = require('../controllers/OrderController');
 
 // Test endpoint to verify route is working
 router.get('/test', (req, res) => {
-  res.json({ 
-    success: true, 
+  res.json({
+    success: true,
     message: 'Orders route is working!',
     timestamp: new Date().toISOString()
   });
@@ -55,6 +55,12 @@ router.put('/mark-pending/:orderId', OrderController.markOrderPending);
 
 // Resolve pending order
 router.put('/resolve-pending/:orderId', OrderController.resolvePending);
+
+// Record metals for an order
+router.post('/record-metals/:orderId', OrderController.recordMetals);
+
+// Get metal history
+router.get('/metal-history', OrderController.getMetalHistory);
 
 module.exports = router;
 

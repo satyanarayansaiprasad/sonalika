@@ -1,37 +1,39 @@
 const Order = require('../models/Order');
+const Inventory = require('../models/Inventory');
+const MetalHistory = require('../models/MetalHistory');
 
 // Get all orders
 exports.getAllOrders = async (req, res) => {
   try {
     const orders = await Order.find().sort({ createdAt: -1 });
     console.log('Found orders:', orders.length);
-    
+
     // Convert Mongoose documents to plain objects
     const ordersArray = orders.map(order => order.toObject ? order.toObject() : order);
-    
+
     console.log('Orders array length:', ordersArray.length);
     if (ordersArray.length > 0) {
       console.log('First order sample:', JSON.stringify(ordersArray[0], null, 2));
     }
-    
+
     const response = {
       success: true,
       data: ordersArray,
       count: ordersArray.length
     };
-    
+
     console.log('Sending response with structure:', {
       success: response.success,
       dataLength: response.data.length,
       count: response.count
     });
-    
+
     res.status(200).json(response);
   } catch (error) {
     console.error('Error fetching orders:', error);
     console.error('Error stack:', error.stack);
-    res.status(500).json({ 
-      success: false, 
+    res.status(500).json({
+      success: false,
       error: error.message,
       details: error.stack
     });
@@ -43,14 +45,14 @@ exports.getOrdersByStatus = async (req, res) => {
   try {
     const { status } = req.params;
     const orders = await Order.find({ status }).sort({ createdAt: -1 });
-    res.status(200).json({ 
-      success: true, 
-      data: orders 
+    res.status(200).json({
+      success: true,
+      data: orders
     });
   } catch (error) {
-    res.status(500).json({ 
-      success: false, 
-      error: error.message 
+    res.status(500).json({
+      success: false,
+      error: error.message
     });
   }
 };
@@ -59,20 +61,20 @@ exports.getOrdersByStatus = async (req, res) => {
 exports.getAcceptedOrders = async (req, res) => {
   try {
     const Department = require('../models/Department');
-    
+
     // First, check for accepted orders without currentDepartment and assign them to SL No. 1
-    const unassignedOrders = await Order.find({ 
+    const unassignedOrders = await Order.find({
       status: 'accepted',
       $or: [
         { currentDepartment: null },
         { currentDepartment: { $exists: false } }
       ]
     });
-    
+
     if (unassignedOrders.length > 0) {
       console.log(`Found ${unassignedOrders.length} accepted orders without currentDepartment. Assigning to SL No. 1...`);
       const firstDepartment = await Department.findOne({ serialNumber: 1 });
-      
+
       if (firstDepartment) {
         for (const order of unassignedOrders) {
           order.currentDepartment = firstDepartment._id;
@@ -92,21 +94,21 @@ exports.getAcceptedOrders = async (req, res) => {
         console.warn('⚠️ No department with SL No. 1 found. Cannot auto-assign orders.');
       }
     }
-    
+
     const orders = await Order.find({ status: 'accepted' })
       .populate('currentDepartment', 'name serialNumber')
       .populate('departmentStatus.department', 'name serialNumber')
       .populate('pendingMessages.department', 'name serialNumber')
       .sort({ acceptedDate: -1 });
-    res.status(200).json({ 
-      success: true, 
-      data: orders 
+    res.status(200).json({
+      success: true,
+      data: orders
     });
   } catch (error) {
     console.error('Error in getAcceptedOrders:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: error.message 
+    res.status(500).json({
+      success: false,
+      error: error.message
     });
   }
 };
@@ -115,14 +117,14 @@ exports.getAcceptedOrders = async (req, res) => {
 exports.getRejectedOrders = async (req, res) => {
   try {
     const orders = await Order.find({ status: 'rejected' }).sort({ rejectedDate: -1 });
-    res.status(200).json({ 
-      success: true, 
-      data: orders 
+    res.status(200).json({
+      success: true,
+      data: orders
     });
   } catch (error) {
-    res.status(500).json({ 
-      success: false, 
-      error: error.message 
+    res.status(500).json({
+      success: false,
+      error: error.message
     });
   }
 };
@@ -132,15 +134,15 @@ exports.createOrder = async (req, res) => {
   try {
     const order = new Order(req.body);
     await order.save();
-    res.status(201).json({ 
-      success: true, 
+    res.status(201).json({
+      success: true,
       data: order,
-      message: 'Order created successfully' 
+      message: 'Order created successfully'
     });
   } catch (error) {
-    res.status(400).json({ 
-      success: false, 
-      error: error.message 
+    res.status(400).json({
+      success: false,
+      error: error.message
     });
   }
 };
@@ -151,29 +153,29 @@ exports.acceptOrder = async (req, res) => {
     const Department = require('../models/Department');
     const { orderId } = req.params;
     const order = await Order.findOne({ orderId });
-    
+
     if (!order) {
-      return res.status(404).json({ 
-        success: false, 
-        error: 'Order not found' 
+      return res.status(404).json({
+        success: false,
+        error: 'Order not found'
       });
     }
 
     if (order.status !== 'pending') {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Order is not in pending status' 
+      return res.status(400).json({
+        success: false,
+        error: 'Order is not in pending status'
       });
     }
 
     // Find department with SL number 1 (serialNumber: 1)
     const firstDepartment = await Department.findOne({ serialNumber: 1 });
-    
+
     if (!firstDepartment) {
       console.error('❌ No department with serialNumber 1 found');
-      return res.status(400).json({ 
-        success: false, 
-        error: 'No department with SL number 1 found. Please create a department with SL number 1 first.' 
+      return res.status(400).json({
+        success: false,
+        error: 'No department with SL number 1 found. Please create a department with SL number 1 first.'
       });
     }
 
@@ -184,7 +186,7 @@ exports.acceptOrder = async (req, res) => {
     order.status = 'accepted';
     order.acceptedDate = new Date();
     order.currentDepartment = firstDepartment._id;
-    
+
     // Initialize department status array for first department
     // Clear any existing departmentStatus to start fresh
     order.departmentStatus = [{
@@ -194,12 +196,12 @@ exports.acceptOrder = async (req, res) => {
       pendingAt: null,
       resolvedAt: null
     }];
-    
+
     // Clear any existing pending messages
     order.pendingMessages = [];
-    
+
     await order.save();
-    
+
     // Populate department info for response
     await order.populate('currentDepartment', 'name serialNumber');
     await order.populate('departmentStatus.department', 'name serialNumber');
@@ -223,16 +225,16 @@ exports.acceptOrder = async (req, res) => {
       console.log(`📡 Emitted order-accepted event for order ${orderId}`);
     }
 
-    res.status(200).json({ 
-      success: true, 
+    res.status(200).json({
+      success: true,
       data: order,
-      message: 'Order accepted successfully and assigned to first department' 
+      message: 'Order accepted successfully and assigned to first department'
     });
   } catch (error) {
     console.error('Error accepting order:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: error.message 
+    res.status(500).json({
+      success: false,
+      error: error.message
     });
   }
 };
@@ -242,20 +244,20 @@ exports.rejectOrder = async (req, res) => {
   try {
     const { orderId } = req.params;
     const { rejectionReason } = req.body;
-    
+
     const order = await Order.findOne({ orderId });
-    
+
     if (!order) {
-      return res.status(404).json({ 
-        success: false, 
-        error: 'Order not found' 
+      return res.status(404).json({
+        success: false,
+        error: 'Order not found'
       });
     }
 
     if (order.status !== 'pending') {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Order is not in pending status' 
+      return res.status(400).json({
+        success: false,
+        error: 'Order is not in pending status'
       });
     }
 
@@ -264,15 +266,15 @@ exports.rejectOrder = async (req, res) => {
     order.rejectedDate = new Date();
     await order.save();
 
-    res.status(200).json({ 
-      success: true, 
+    res.status(200).json({
+      success: true,
       data: order,
-      message: 'Order rejected successfully' 
+      message: 'Order rejected successfully'
     });
   } catch (error) {
-    res.status(500).json({ 
-      success: false, 
-      error: error.message 
+    res.status(500).json({
+      success: false,
+      error: error.message
     });
   }
 };
@@ -288,21 +290,21 @@ exports.updateOrder = async (req, res) => {
     );
 
     if (!order) {
-      return res.status(404).json({ 
-        success: false, 
-        error: 'Order not found' 
+      return res.status(404).json({
+        success: false,
+        error: 'Order not found'
       });
     }
 
-    res.status(200).json({ 
-      success: true, 
+    res.status(200).json({
+      success: true,
       data: order,
-      message: 'Order updated successfully' 
+      message: 'Order updated successfully'
     });
   } catch (error) {
-    res.status(500).json({ 
-      success: false, 
-      error: error.message 
+    res.status(500).json({
+      success: false,
+      error: error.message
     });
   }
 };
@@ -314,20 +316,20 @@ exports.deleteOrder = async (req, res) => {
     const order = await Order.findOneAndDelete({ orderId });
 
     if (!order) {
-      return res.status(404).json({ 
-        success: false, 
-        error: 'Order not found' 
+      return res.status(404).json({
+        success: false,
+        error: 'Order not found'
       });
     }
 
-    res.status(200).json({ 
-      success: true, 
-      message: 'Order deleted successfully' 
+    res.status(200).json({
+      success: true,
+      message: 'Order deleted successfully'
     });
   } catch (error) {
-    res.status(500).json({ 
-      success: false, 
-      error: error.message 
+    res.status(500).json({
+      success: false,
+      error: error.message
     });
   }
 };
@@ -337,7 +339,7 @@ exports.syncOrdersFromClients = async (req, res) => {
   try {
     const Clienttss = require('../models/Clienttss');
     const clients = await Clienttss.find();
-    
+
     let syncedCount = 0;
     let skippedCount = 0;
     let errorCount = 0;
@@ -430,14 +432,14 @@ exports.getCompletedOrders = async (req, res) => {
       .populate('currentDepartment', 'name serialNumber')
       .populate('departmentStatus.department', 'name serialNumber')
       .sort({ completedDate: -1 });
-    res.status(200).json({ 
-      success: true, 
-      data: orders 
+    res.status(200).json({
+      success: true,
+      data: orders
     });
   } catch (error) {
-    res.status(500).json({ 
-      success: false, 
-      error: error.message 
+    res.status(500).json({
+      success: false,
+      error: error.message
     });
   }
 };
@@ -447,11 +449,11 @@ exports.getOrdersByDepartment = async (req, res) => {
   try {
     const Department = require('../models/Department');
     const { departmentId } = req.params;
-    
+
     console.log(`Fetching orders for department: ${departmentId}`);
-    
+
     // Find orders where currentDepartment matches the departmentId
-    const orders = await Order.find({ 
+    const orders = await Order.find({
       currentDepartment: departmentId,
       status: 'accepted' // Only show accepted orders
     })
@@ -459,24 +461,24 @@ exports.getOrdersByDepartment = async (req, res) => {
       .populate('departmentStatus.department', 'name serialNumber')
       .populate('pendingMessages.department', 'name serialNumber')
       .sort({ acceptedDate: -1 });
-    
+
     console.log(`Found ${orders.length} orders for department ${departmentId}`);
-    
+
     // Also check for accepted orders that don't have a currentDepartment assigned
     // and assign them to SL No. 1 if the requested department is SL No. 1
     const requestedDept = await Department.findById(departmentId);
     if (requestedDept && requestedDept.serialNumber === 1) {
-      const unassignedOrders = await Order.find({ 
+      const unassignedOrders = await Order.find({
         status: 'accepted',
         $or: [
           { currentDepartment: null },
           { currentDepartment: { $exists: false } }
         ]
       });
-      
+
       if (unassignedOrders.length > 0) {
         console.log(`Found ${unassignedOrders.length} accepted orders without currentDepartment. Assigning to SL No. 1...`);
-        
+
         for (const order of unassignedOrders) {
           order.currentDepartment = requestedDept._id;
           if (!order.departmentStatus || order.departmentStatus.length === 0) {
@@ -490,9 +492,9 @@ exports.getOrdersByDepartment = async (req, res) => {
           }
           await order.save();
         }
-        
+
         // Fetch the updated orders
-        const updatedOrders = await Order.find({ 
+        const updatedOrders = await Order.find({
           currentDepartment: departmentId,
           status: 'accepted'
         })
@@ -500,25 +502,25 @@ exports.getOrdersByDepartment = async (req, res) => {
           .populate('departmentStatus.department', 'name serialNumber')
           .populate('pendingMessages.department', 'name serialNumber')
           .sort({ acceptedDate: -1 });
-        
+
         console.log(`After assignment, found ${updatedOrders.length} orders for department ${departmentId}`);
-        
-        return res.status(200).json({ 
-          success: true, 
-          data: updatedOrders 
+
+        return res.status(200).json({
+          success: true,
+          data: updatedOrders
         });
       }
     }
-    
-    res.status(200).json({ 
-      success: true, 
-      data: orders 
+
+    res.status(200).json({
+      success: true,
+      data: orders
     });
   } catch (error) {
     console.error('Error in getOrdersByDepartment:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: error.message 
+    res.status(500).json({
+      success: false,
+      error: error.message
     });
   }
 };
@@ -528,27 +530,27 @@ exports.moveToNextDepartment = async (req, res) => {
   try {
     const Department = require('../models/Department');
     const { orderId } = req.params;
-    
+
     const order = await Order.findOne({ orderId }).populate('currentDepartment', 'serialNumber');
-    
+
     if (!order) {
-      return res.status(404).json({ 
-        success: false, 
-        error: 'Order not found' 
+      return res.status(404).json({
+        success: false,
+        error: 'Order not found'
       });
     }
 
     if (order.status !== 'accepted') {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Order must be accepted to move between departments' 
+      return res.status(400).json({
+        success: false,
+        error: 'Order must be accepted to move between departments'
       });
     }
 
     if (!order.currentDepartment) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Order has no current department assigned' 
+      return res.status(400).json({
+        success: false,
+        error: 'Order has no current department assigned'
       });
     }
 
@@ -563,8 +565,8 @@ exports.moveToNextDepartment = async (req, res) => {
 
     // Find next department by serial number
     const currentSerialNumber = order.currentDepartment.serialNumber;
-    const nextDepartment = await Department.findOne({ 
-      serialNumber: currentSerialNumber + 1 
+    const nextDepartment = await Department.findOne({
+      serialNumber: currentSerialNumber + 1
     }).sort({ serialNumber: 1 });
 
     if (!nextDepartment) {
@@ -575,7 +577,7 @@ exports.moveToNextDepartment = async (req, res) => {
     } else {
       // Move to next department
       order.currentDepartment = nextDepartment._id;
-      
+
       // Add status for new department
       const existingStatus = order.departmentStatus.find(
         ds => ds.department.toString() === nextDepartment._id.toString()
@@ -611,15 +613,15 @@ exports.moveToNextDepartment = async (req, res) => {
       console.log(`📡 Emitted order update event for order ${orderId}`);
     }
 
-    res.status(200).json({ 
-      success: true, 
+    res.status(200).json({
+      success: true,
       data: order,
       message: nextDepartment ? 'Order moved to next department' : 'Order completed successfully'
     });
   } catch (error) {
-    res.status(500).json({ 
-      success: false, 
-      error: error.message 
+    res.status(500).json({
+      success: false,
+      error: error.message
     });
   }
 };
@@ -629,27 +631,27 @@ exports.markOrderPending = async (req, res) => {
   try {
     const { orderId } = req.params;
     const { message } = req.body;
-    
+
     if (!message || message.trim() === '') {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Pending message is required' 
+      return res.status(400).json({
+        success: false,
+        error: 'Pending message is required'
       });
     }
 
     const order = await Order.findOne({ orderId }).populate('currentDepartment');
-    
+
     if (!order) {
-      return res.status(404).json({ 
-        success: false, 
-        error: 'Order not found' 
+      return res.status(404).json({
+        success: false,
+        error: 'Order not found'
       });
     }
 
     if (!order.currentDepartment) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Order has no current department assigned' 
+      return res.status(400).json({
+        success: false,
+        error: 'Order has no current department assigned'
       });
     }
 
@@ -683,15 +685,15 @@ exports.markOrderPending = async (req, res) => {
       console.log(`📡 Emitted order-pending event for order ${orderId}`);
     }
 
-    res.status(200).json({ 
-      success: true, 
+    res.status(200).json({
+      success: true,
       data: order,
-      message: 'Order marked as pending' 
+      message: 'Order marked as pending'
     });
   } catch (error) {
-    res.status(500).json({ 
-      success: false, 
-      error: error.message 
+    res.status(500).json({
+      success: false,
+      error: error.message
     });
   }
 };
@@ -701,20 +703,20 @@ exports.resolvePending = async (req, res) => {
   try {
     const { orderId } = req.params;
     const { resolvedMessage } = req.body;
-    
+
     const order = await Order.findOne({ orderId }).populate('currentDepartment');
-    
+
     if (!order) {
-      return res.status(404).json({ 
-        success: false, 
-        error: 'Order not found' 
+      return res.status(404).json({
+        success: false,
+        error: 'Order not found'
       });
     }
 
     if (!order.currentDepartment) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Order has no current department assigned' 
+      return res.status(400).json({
+        success: false,
+        error: 'Order has no current department assigned'
       });
     }
 
@@ -752,16 +754,107 @@ exports.resolvePending = async (req, res) => {
       console.log(`📡 Emitted order-resolved event for order ${orderId}`);
     }
 
-    res.status(200).json({ 
-      success: true, 
+    res.status(200).json({
+      success: true,
       data: order,
-      message: 'Pending order resolved' 
+      message: 'Pending order resolved'
     });
   } catch (error) {
-    res.status(500).json({ 
-      success: false, 
-      error: error.message 
+    res.status(500).json({
+      success: false,
+      error: error.message
     });
   }
 };
 
+
+// Record remaining metals for an order
+exports.recordMetals = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { metals } = req.body; // Array of { metal, clientSide, companySide }
+
+    if (!metals || !Array.isArray(metals)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Metals data is required'
+      });
+    }
+
+    const order = await Order.findOne({ orderId });
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        error: 'Order not found'
+      });
+    }
+
+    const inventory = await Inventory.getInventory();
+    const historyRecords = [];
+
+    for (const item of metals) {
+      const { metal, clientSide, companySide } = item;
+      const totalQuantity = (parseFloat(clientSide) || 0) + (parseFloat(companySide) || 0);
+
+      // Add to order's remaining metals
+      order.remainingMetals.push({
+        metal,
+        clientSide: parseFloat(clientSide) || 0,
+        companySide: parseFloat(companySide) || 0,
+        totalQuantity,
+        recordedAt: new Date()
+      });
+
+      // Update inventory balance
+      // We assume the metal name in input matches inventory field names or 'other'
+      const metalKey = metal.toLowerCase();
+      if (inventory[metalKey] !== undefined) {
+        inventory[metalKey].quantity += totalQuantity;
+      } else {
+        inventory.other.quantity += totalQuantity;
+      }
+
+      // Create history record
+      historyRecords.push({
+        orderId,
+        metal,
+        clientSide: parseFloat(clientSide) || 0,
+        companySide: parseFloat(companySide) || 0,
+        totalQuantity,
+        type: 'returned'
+      });
+    }
+
+    await order.save();
+    await inventory.save();
+    await MetalHistory.insertMany(historyRecords);
+
+    res.status(200).json({
+      success: true,
+      message: 'Metals recorded and inventory updated successfully',
+      data: order
+    });
+  } catch (error) {
+    console.error('Error recording metals:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+};
+
+// Get metal history for all orders
+exports.getMetalHistory = async (req, res) => {
+  try {
+    const history = await MetalHistory.find().sort({ createdAt: -1 });
+    res.status(200).json({
+      success: true,
+      data: history
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+};

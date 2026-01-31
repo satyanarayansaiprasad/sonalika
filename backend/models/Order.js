@@ -1,22 +1,22 @@
 const mongoose = require("mongoose");
 
 const orderSchema = new mongoose.Schema({
-  orderId: { 
-    type: String, 
-    required: true, 
-    unique: true 
+  orderId: {
+    type: String,
+    required: true,
+    unique: true
   },
-  orderDate: { 
-    type: String, 
-    required: true 
+  orderDate: {
+    type: String,
+    required: true
   },
-  clientName: { 
-    type: String, 
-    required: true 
+  clientName: {
+    type: String,
+    required: true
   },
-  description: { 
-    type: String, 
-    required: true 
+  description: {
+    type: String,
+    required: true
   },
   gold: {
     quantity: { type: Number, required: true },
@@ -34,20 +34,20 @@ const orderSchema = new mongoose.Schema({
     quantity: { type: Number, required: true },
     unit: { type: String, default: 'grams' }
   },
-  status: { 
-    type: String, 
-    enum: ['pending', 'accepted', 'rejected', 'completed'], 
-    default: 'pending' 
+  status: {
+    type: String,
+    enum: ['pending', 'accepted', 'rejected', 'completed'],
+    default: 'pending'
   },
-  rejectionReason: { 
-    type: String, 
-    default: '' 
+  rejectionReason: {
+    type: String,
+    default: ''
   },
-  acceptedDate: { 
-    type: Date 
+  acceptedDate: {
+    type: Date
   },
-  rejectedDate: { 
-    type: Date 
+  rejectedDate: {
+    type: Date
   },
   completedDate: {
     type: Date
@@ -106,18 +106,27 @@ const orderSchema = new mongoose.Schema({
       remark: String
     }
   ],
-  createdAt: { 
-    type: Date, 
-    default: Date.now 
+  remainingMetals: [
+    {
+      metal: String,
+      clientSide: Number,
+      companySide: Number,
+      totalQuantity: Number,
+      recordedAt: { type: Date, default: Date.now }
+    }
+  ],
+  createdAt: {
+    type: Date,
+    default: Date.now
   },
-  updatedAt: { 
-    type: Date, 
-    default: Date.now 
+  updatedAt: {
+    type: Date,
+    default: Date.now
   }
 });
 
 // Update the updatedAt field before saving
-orderSchema.pre('save', function(next) {
+orderSchema.pre('save', function (next) {
   this.updatedAt = Date.now();
   next();
 });
